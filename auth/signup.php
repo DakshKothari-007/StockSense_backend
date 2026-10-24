@@ -90,7 +90,7 @@ try {
         $fullName,
         $shopName,
         $email,
-        $password
+        $passwordHash
     ]);
 
     http_response_code(201);
