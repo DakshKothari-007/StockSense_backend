@@ -1,9 +1,9 @@
-
 <?php
 
+// Tell the Android app that the response will be JSON.
 header("Content-Type: application/json; charset=UTF-8");
 
-// Allow only POST requests
+// Allow only POST requests.
 if ($_SERVER["REQUEST_METHOD"] !== "POST") {
     header("Allow: POST");
     http_response_code(405);
@@ -15,12 +15,13 @@ if ($_SERVER["REQUEST_METHOD"] !== "POST") {
     exit;
 }
 
-// Connect to the database
+// Connect to the StockSense database.
 require_once __DIR__ . "/../config/db.php";
 
-// Read JSON sent by the Android app
+// Read the JSON data sent by the Android app or Postman.
 $data = json_decode(file_get_contents("php://input"), true);
 
+// Check whether valid JSON was received.
 if (!is_array($data)) {
     http_response_code(400);
 
@@ -31,11 +32,11 @@ if (!is_array($data)) {
     exit;
 }
 
-// Get email and password
+// Get the email address and password.
 $email = strtolower(trim($data["email"] ?? ""));
 $password = $data["password"] ?? "";
 
-// Validate input
+// Check whether the email and password are valid inputs.
 if (
     $email === "" ||
     !filter_var($email, FILTER_VALIDATE_EMAIL) ||
@@ -52,19 +53,26 @@ if (
 }
 
 try {
-    // Find the user by email
+
+    // Find the account using its email address.
     $stmt = $pdo->prepare(
-        "SELECT id, full_name, shop_name, email, password_hash
-         FROM users
+        "SELECT id, full_name, shop_name, email, password
+         FROM owner_account
          WHERE email = ?
          LIMIT 1"
     );
 
+    // Execute the query using the email supplied by the user.
     $stmt->execute([$email]);
+
+    // Retrieve the matching account.
     $user = $stmt->fetch();
 
-    // Check the password
-    if (!$user || !password_verify($password, $user["password_hash"])) {
+    // Check the password against the stored password hash.
+    if (
+        !$user ||
+        !password_verify($password, $user["password"])
+    ) {
         http_response_code(401);
 
         echo json_encode([
@@ -74,7 +82,7 @@ try {
         exit;
     }
 
-    // Send successful login response
+    // Login credentials are correct.
     http_response_code(200);
 
     echo json_encode([
@@ -89,8 +97,11 @@ try {
     ]);
 
 } catch (PDOException $e) {
+
+    // Record technical details in the server error log.
     error_log($e->getMessage());
 
+    // Send a generic error to the client.
     http_response_code(500);
 
     echo json_encode([
@@ -98,3 +109,4 @@ try {
         "message" => "Unable to process login."
     ]);
 }
+?>

@@ -65,7 +65,7 @@ if (
 
 try {
     $check = $pdo->prepare(
-        "SELECT id FROM users WHERE email = ? LIMIT 1"
+        "SELECT id FROM owner_account WHERE email = ? LIMIT 1"
     );
     $check->execute([$email]);
 
@@ -81,8 +81,8 @@ try {
     $passwordHash = password_hash($password, PASSWORD_DEFAULT);
 
     $stmt = $pdo->prepare(
-        "INSERT INTO users
-        (full_name, shop_name, email, password_hash)
+        "INSERT INTO owner_account
+        (full_name, shop_name, email, password)
         VALUES (?, ?, ?, ?)"
     );
 
@@ -90,7 +90,7 @@ try {
         $fullName,
         $shopName,
         $email,
-        $passwordHash
+        $password
     ]);
 
     http_response_code(201);
@@ -108,17 +108,11 @@ try {
 } catch (PDOException $e) {
     error_log($e->getMessage());
 
-    if ($e->getCode() === "23000") {
-        http_response_code(409);
-        echo json_encode([
-            "success" => false,
-            "message" => "Email is already registered."
-        ]);
-    } else {
-        http_response_code(500);
-        echo json_encode([
-            "success" => false,
-            "message" => "Unable to create account."
-        ]);
-    }
+    http_response_code(500);
+
+    echo json_encode([
+        "success" => false,
+        "message" => "Database error",
+        "debug" => $e->getMessage()
+    ]);
 }
