@@ -1,6 +1,5 @@
 <?php
 
-// Tell the Android app that the response will be JSON.
 header("Content-Type: application/json; charset=UTF-8");
 
 // Allow only POST requests.
@@ -15,10 +14,10 @@ if ($_SERVER["REQUEST_METHOD"] !== "POST") {
     exit;
 }
 
-// Connect to the StockSense database.
+// Connect to the database.
 require_once __DIR__ . "/../config/db.php";
 
-// Read the JSON data sent by the Android app or Postman.
+// Read the JSON request.
 $data = json_decode(file_get_contents("php://input"), true);
 
 // Check whether valid JSON was received.
@@ -32,11 +31,11 @@ if (!is_array($data)) {
     exit;
 }
 
-// Get the email address and password.
+// Read the login fields.
 $email = strtolower(trim($data["email"] ?? ""));
 $password = $data["password"] ?? "";
 
-// Check whether the email and password are valid inputs.
+// Validate the inputs.
 if (
     $email === "" ||
     !filter_var($email, FILTER_VALIDATE_EMAIL) ||
@@ -54,7 +53,7 @@ if (
 
 try {
 
-    // Find the account using its email address.
+    // Find the account using the email address.
     $stmt = $pdo->prepare(
         "SELECT id, full_name, shop_name, email, password
          FROM owner_account
@@ -62,13 +61,12 @@ try {
          LIMIT 1"
     );
 
-    // Execute the query using the email supplied by the user.
     $stmt->execute([$email]);
 
     // Retrieve the matching account.
     $user = $stmt->fetch();
 
-    // Check the password against the stored password hash.
+    // Check the password against the stored hash.
     if (
         !$user ||
         !password_verify($password, $user["password"])
@@ -82,7 +80,7 @@ try {
         exit;
     }
 
-    // Login credentials are correct.
+    // Login succeeded.
     http_response_code(200);
 
     echo json_encode([
@@ -101,7 +99,6 @@ try {
     // Record technical details in the server error log.
     error_log($e->getMessage());
 
-    // Send a generic error to the client.
     http_response_code(500);
 
     echo json_encode([
