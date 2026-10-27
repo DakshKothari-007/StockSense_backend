@@ -1,6 +1,14 @@
 <?php
 
 header("Content-Type: application/json; charset=UTF-8");
+header("Access-Control-Allow-Origin: *");
+header("Access-Control-Allow-Methods: POST, OPTIONS");
+header("Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With");
+
+if ($_SERVER["REQUEST_METHOD"] === "OPTIONS") {
+    http_response_code(200);
+    exit;
+}
 
 // Allow only POST requests.
 if ($_SERVER["REQUEST_METHOD"] !== "POST") {
@@ -55,7 +63,7 @@ try {
 
     // Find the account using the email address.
     $stmt = $pdo->prepare(
-        "SELECT id, full_name, shop_name, email, password
+        "SELECT id, full_name, shop_name, location, store_type, currency, email, password
          FROM owner_account
          WHERE email = ?
          LIMIT 1"
@@ -90,6 +98,9 @@ try {
             "id" => (int) $user["id"],
             "full_name" => $user["full_name"],
             "shop_name" => $user["shop_name"],
+            "location" => $user["location"] ?? "Indiranagar, Bengaluru",
+            "store_type" => $user["store_type"] ?? "Neighbourhood supermarket",
+            "currency" => $user["currency"] ?? "₹ INR / IST",
             "email" => $user["email"]
         ]
     ]);

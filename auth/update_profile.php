@@ -1,8 +1,15 @@
 
 <?php
-header("Content-Type: application/json");
 
-require_once "../config/db.php";
+header("Content-Type: application/json; charset=UTF-8");
+header("Access-Control-Allow-Origin: *");
+header("Access-Control-Allow-Methods: POST, OPTIONS");
+header("Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With");
+
+if ($_SERVER["REQUEST_METHOD"] === "OPTIONS") {
+    http_response_code(200);
+    exit;
+}
 
 if ($_SERVER["REQUEST_METHOD"] !== "POST") {
     http_response_code(405);
@@ -13,85 +20,120 @@ if ($_SERVER["REQUEST_METHOD"] !== "POST") {
     exit;
 }
 
+require_once __DIR__ . "/../config/db.php";
+
 $data = json_decode(file_get_contents("php://input"), true);
-
-$current_email = trim($data["current_email"] ?? "");
-$full_name = trim($data["full_name"] ?? "");
-$new_email = trim($data["new_email"] ?? "");
-
-if (empty($current_email) || empty($full_name) || empty($new_email)) {
+if (!is_array($data)) {
     http_response_code(400);
     echo json_encode([
         "success" => false,
-        "message" => "Current email, full name, and new email are required."
+        "message" => "Invalid JSON payload."
     ]);
     exit;
 }
 
-if (!filter_var($current_email, FILTER_VALIDATE_EMAIL) ||
-    !filter_var($new_email, FILTER_VALIDATE_EMAIL)) {
-    http_response_code(400);
+$userId = (int)($data["user_id"] ?? $data["id"] ?? 0);
+$currentEmail = strtolower(trim($data["current_email"] ?? $data["email"] ?? ""));
+$fullName = trim($data["full_name"] ?? "");
+$newEmail = strtolower(trim($data["new_email"] ?? $data["email"] ?? ""));
+
+if (empty($fullName)) {
+    http_response_code(422);
     echo json_encode([
         "success" => false,
-        "message" => "Please enter valid email addresses."
+        "message" => "Full name is required."
     ]);
     exit;
 }
 
-if (strlen($full_name) > 100 || strlen($new_email) > 150) {
-    http_response_code(400);
+if ($userId <= 0 && empty($currentEmail)) {
+    http_response_code(422);
     echo json_encode([
         "success" => false,
-        "message" => "Full name or email exceeds the allowed length."
+        "message" => "User ID or current email is required to identify the account."
+    ]);
+    exit;
+}
+
+if (empty($newEmail) || !filter_var($newEmail, FILTER_VALIDATE_EMAIL)) {
+    http_response_code(422);
+    echo json_encode([
+        "success" => false,
+        "message" => "A valid email address is required."
+    ]);
+    exit;
+}
+
+if (strlen($fullName) > 100 || strlen($newEmail) > 150) {
+    http_response_code(422);
+    echo json_encode([
+        "success" => false,
+        "message" => "Full name (max 100) or email (max 150) exceeds the allowed length."
     ]);
     exit;
 }
 
 try {
-    $stmt = $pdo->prepare(
-        "SELECT id FROM owner_account WHERE email = ?"
-    );
-    $stmt->execute([$current_email]);
+    // 1. Identify the user
+    if ($userId > 0) {
+        $stmt = $pdo->prepare("SELECT id, email FROM owner_account WHERE id = ? LIMIT 1");
+        $stmt->execute([$userId]);
+    } else {
+        $stmt = $pdo->prepare("SELECT id, email FROM owner_account WHERE email = ? LIMIT 1");
+        $stmt->execute([$currentEmail]);
+    }
 
-    if (!$stmt->fetch()) {
+    $existing = $stmt->fetch(PDO::FETCH_ASSOC);
+    if (!$existing) {
         http_response_code(404);
         echo json_encode([
             "success" => false,
-            "message" => "Account not found for the current email."
+            "message" => "Account not found."
         ]);
         exit;
     }
 
-    $stmt = $pdo->prepare(
+    $targetId = (int)$existing["id"];
+
+    // 2. Check if the new email belongs to someone else
+    if ($newEmail !== strtolower($existing["email"])) {
+        $dupCheck = $pdo->prepare("SELECT id FROM owner_account WHERE email = ? AND id != ? LIMIT 1");
+        $dupCheck->execute([$newEmail, $targetId]);
+        if ($dupCheck->fetch()) {
+            http_response_code(409);
+            echo json_encode([
+                "success" => false,
+                "message" => "This email address is already in use by another account."
+            ]);
+            exit;
+        }
+    }
+
+    // 3. Update the record
+    $updateStmt = $pdo->prepare(
         "UPDATE owner_account
          SET full_name = ?, email = ?
-         WHERE email = ?"
+         WHERE id = ?"
     );
+    $updateStmt->execute([$fullName, $newEmail, $targetId]);
 
-    $stmt->execute([$full_name, $new_email, $current_email]);
+    // 4. Return updated profile
+    $getUpdated = $pdo->prepare("SELECT id, full_name, shop_name, location, store_type, currency, email, updated_at FROM owner_account WHERE id = ?");
+    $getUpdated->execute([$targetId]);
+    $updatedUser = $getUpdated->fetch(PDO::FETCH_ASSOC);
 
     echo json_encode([
         "success" => true,
         "message" => "Profile updated successfully.",
-        "profile" => [
-            "full_name" => $full_name,
-            "email" => $new_email
-        ]
+        "profile" => $updatedUser
     ]);
 
 } catch (PDOException $e) {
-    if ($e->getCode() === "23000") {
-        http_response_code(409);
-        echo json_encode([
-            "success" => false,
-            "message" => "This email address is already registered."
-        ]);
-    } else {
-        http_response_code(500);
-        echo json_encode([
-            "success" => false,
-            "message" => "A database error occurred."
-        ]);
-    }
+    error_log($e->getMessage());
+    http_response_code(500);
+    echo json_encode([
+        "success" => false,
+        "message" => "A database error occurred."
+    ]);
 }
 ?>

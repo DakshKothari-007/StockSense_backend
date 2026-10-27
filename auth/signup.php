@@ -1,6 +1,14 @@
 <?php
 
 header("Content-Type: application/json; charset=UTF-8");
+header("Access-Control-Allow-Origin: *");
+header("Access-Control-Allow-Methods: POST, OPTIONS");
+header("Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With");
+
+if ($_SERVER["REQUEST_METHOD"] === "OPTIONS") {
+    http_response_code(200);
+    exit;
+}
 
 // Allow only POST requests.
 if ($_SERVER["REQUEST_METHOD"] !== "POST") {
@@ -31,11 +39,14 @@ if (!is_array($data)) {
     exit;
 }
 
-// Read the four signup fields.
+// Read the signup fields.
 $fullName = trim($data["full_name"] ?? "");
 $shopName = trim($data["shop_name"] ?? "");
 $email = strtolower(trim($data["email"] ?? ""));
 $password = $data["password"] ?? "";
+$location = trim($data["location"] ?? "Indiranagar, Bengaluru");
+$storeType = trim($data["store_type"] ?? "Neighbourhood supermarket");
+$currency = trim($data["currency"] ?? "₹ INR / IST");
 
 // Validate the required fields.
 if (
@@ -49,7 +60,7 @@ if (
 
     echo json_encode([
         "success" => false,
-        "message" => "All four fields are required."
+        "message" => "All four fields (full_name, shop_name, email, password) are required."
     ]);
     exit;
 }
@@ -67,7 +78,7 @@ if (
 
     echo json_encode([
         "success" => false,
-        "message" => "Check your details. Password must be 8–72 characters."
+        "message" => "Check your details. Password must be 8–72 characters and email must be valid."
     ]);
     exit;
 }
@@ -97,19 +108,32 @@ try {
     // Hash the password before saving it.
     $passwordHash = password_hash($password, PASSWORD_DEFAULT);
 
-    // Insert the new account into the existing table.
+    // Insert the new account into owner_account.
     $stmt = $pdo->prepare(
         "INSERT INTO owner_account
-        (full_name, shop_name, email, password)
-        VALUES (?, ?, ?, ?)"
+        (full_name, shop_name, location, store_type, currency, email, password)
+        VALUES (?, ?, ?, ?, ?, ?, ?)"
     );
 
     $stmt->execute([
         $fullName,
         $shopName,
+        $location,
+        $storeType,
+        $currency,
         $email,
         $passwordHash
     ]);
+
+    $newUserId = (int)$pdo->lastInsertId();
+
+    // Automatically create default user_settings row
+    try {
+        $settingsStmt = $pdo->prepare("INSERT IGNORE INTO user_settings (user_id) VALUES (?)");
+        $settingsStmt->execute([$newUserId]);
+    } catch (Throwable $ignore) {
+        // Non-blocking
+    }
 
     // Send a successful response.
     http_response_code(201);
@@ -118,9 +142,12 @@ try {
         "success" => true,
         "message" => "StockSense account created successfully.",
         "user" => [
-            "id" => (int) $pdo->lastInsertId(),
+            "id" => $newUserId,
             "full_name" => $fullName,
             "shop_name" => $shopName,
+            "location" => $location,
+            "store_type" => $storeType,
+            "currency" => $currency,
             "email" => $email
         ]
     ]);

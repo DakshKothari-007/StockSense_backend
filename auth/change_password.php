@@ -1,8 +1,15 @@
 
 <?php
-header("Content-Type: application/json");
 
-require_once "../config/db.php";
+header("Content-Type: application/json; charset=UTF-8");
+header("Access-Control-Allow-Origin: *");
+header("Access-Control-Allow-Methods: POST, OPTIONS");
+header("Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With");
+
+if ($_SERVER["REQUEST_METHOD"] === "OPTIONS") {
+    http_response_code(200);
+    exit;
+}
 
 if ($_SERVER["REQUEST_METHOD"] !== "POST") {
     http_response_code(405);
@@ -13,29 +20,40 @@ if ($_SERVER["REQUEST_METHOD"] !== "POST") {
     exit;
 }
 
+require_once __DIR__ . "/../config/db.php";
+
 $data = json_decode(file_get_contents("php://input"), true);
-
-$email = trim($data["email"] ?? "");
-$current_password = $data["current_password"] ?? "";
-$new_password = $data["new_password"] ?? "";
-$confirm_password = $data["confirm_password"] ?? "";
-
-if (
-    empty($email) ||
-    empty($current_password) ||
-    empty($new_password) ||
-    empty($confirm_password)
-) {
+if (!is_array($data)) {
     http_response_code(400);
     echo json_encode([
         "success" => false,
-        "message" => "All fields are required."
+        "message" => "Invalid JSON payload."
     ]);
     exit;
 }
 
-if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-    http_response_code(400);
+$userId = (int)($data["user_id"] ?? $data["id"] ?? 0);
+$email = strtolower(trim($data["email"] ?? ""));
+$currentPassword = $data["current_password"] ?? "";
+$newPassword = $data["new_password"] ?? "";
+$confirmPassword = $data["confirm_password"] ?? "";
+
+if (
+    ($userId <= 0 && empty($email)) ||
+    empty($currentPassword) ||
+    empty($newPassword) ||
+    empty($confirmPassword)
+) {
+    http_response_code(422);
+    echo json_encode([
+        "success" => false,
+        "message" => "All fields (email/id, current password, new password, confirm password) are required."
+    ]);
+    exit;
+}
+
+if (!empty($email) && !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+    http_response_code(422);
     echo json_encode([
         "success" => false,
         "message" => "Please enter a valid email address."
@@ -43,8 +61,8 @@ if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
     exit;
 }
 
-if (strlen($new_password) < 8) {
-    http_response_code(400);
+if (strlen($newPassword) < 8) {
+    http_response_code(422);
     echo json_encode([
         "success" => false,
         "message" => "New password must be at least 8 characters long."
@@ -52,8 +70,8 @@ if (strlen($new_password) < 8) {
     exit;
 }
 
-if ($new_password !== $confirm_password) {
-    http_response_code(400);
+if ($newPassword !== $confirmPassword) {
+    http_response_code(422);
     echo json_encode([
         "success" => false,
         "message" => "New password and confirm password do not match."
@@ -62,27 +80,29 @@ if ($new_password !== $confirm_password) {
 }
 
 try {
-    $stmt = $pdo->prepare(
-        "SELECT password FROM owner_account WHERE email = ?"
-    );
-    $stmt->execute([$email]);
+    if ($userId > 0) {
+        $stmt = $pdo->prepare("SELECT id, password FROM owner_account WHERE id = ? LIMIT 1");
+        $stmt->execute([$userId]);
+    } else {
+        $stmt = $pdo->prepare("SELECT id, password FROM owner_account WHERE email = ? LIMIT 1");
+        $stmt->execute([$email]);
+    }
+
     $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
-    if (!$user || !password_verify($current_password, $user["password"])) {
+    if (!$user || !password_verify($currentPassword, $user["password"])) {
         http_response_code(401);
         echo json_encode([
             "success" => false,
-            "message" => "Email or current password is incorrect."
+            "message" => "Current password is incorrect."
         ]);
         exit;
     }
 
-    $hashed_password = password_hash($new_password, PASSWORD_DEFAULT);
+    $hashedPassword = password_hash($newPassword, PASSWORD_DEFAULT);
 
-    $stmt = $pdo->prepare(
-        "UPDATE owner_account SET password = ? WHERE email = ?"
-    );
-    $stmt->execute([$hashed_password, $email]);
+    $update = $pdo->prepare("UPDATE owner_account SET password = ? WHERE id = ?");
+    $update->execute([$hashedPassword, $user["id"]]);
 
     echo json_encode([
         "success" => true,
@@ -90,6 +110,7 @@ try {
     ]);
 
 } catch (PDOException $e) {
+    error_log($e->getMessage());
     http_response_code(500);
     echo json_encode([
         "success" => false,

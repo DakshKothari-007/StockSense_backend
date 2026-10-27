@@ -1,0 +1,256 @@
+{
+  "info": {
+    "name": "StockSense - Auth & Profile APIs",
+    "description": "Complete collection of Authentication, Profile, and Settings endpoints for StockSense backend tested on local XAMPP.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "1. Signup (Create Account)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"full_name\": \"Ananya Rao\",\n  \"shop_name\": \"Green Basket\",\n  \"location\": \"Indiranagar, Bengaluru\",\n  \"store_type\": \"Neighbourhood supermarket\",\n  \"currency\": \"₹ INR / IST\",\n  \"email\": \"ananya@greenbasket.in\",\n  \"password\": \"password123\"\n}"
+        },
+        "url": {
+          "raw": "http://localhost/StockSense_backend/auth/signup.php",
+          "protocol": "http",
+          "host": ["localhost"],
+          "path": ["StockSense_backend", "auth", "signup.php"]
+        },
+        "description": "Registers a new store owner account, sets default store information, and automatically creates their default settings record."
+      }
+    },
+    {
+      "name": "2. Login",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"ananya@greenbasket.in\",\n  \"password\": \"password123\"\n}"
+        },
+        "url": {
+          "raw": "http://localhost/StockSense_backend/auth/login.php",
+          "protocol": "http",
+          "host": ["localhost"],
+          "path": ["StockSense_backend", "auth", "login.php"]
+        },
+        "description": "Authenticates the store owner and returns account details (ID, name, shop name, location, store type, currency, email)."
+      }
+    },
+    {
+      "name": "3. Get Profile (By Email or ID)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost/StockSense_backend/auth/profile.php?email=ananya@greenbasket.in",
+          "protocol": "http",
+          "host": ["localhost"],
+          "path": ["StockSense_backend", "auth", "profile.php"],
+          "query": [
+            {
+              "key": "email",
+              "value": "ananya@greenbasket.in"
+            }
+          ]
+        },
+        "description": "Fetches the full profile for the ProfileScreen. Supports ?email=... or ?id=... (or JSON POST)."
+      }
+    },
+    {
+      "name": "4. Update Profile Details (Full Name & Email)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"current_email\": \"ananya@greenbasket.in\",\n  \"full_name\": \"Ananya Rao\",\n  \"new_email\": \"ananya.rao@greenbasket.in\"\n}"
+        },
+        "url": {
+          "raw": "http://localhost/StockSense_backend/auth/update_profile.php",
+          "protocol": "http",
+          "host": ["localhost"],
+          "path": ["StockSense_backend", "auth", "update_profile.php"]
+        },
+        "description": "Updates full name and/or email address from the Edit Profile Details dialog on ProfileScreen."
+      }
+    },
+    {
+      "name": "5. Update Shop Details (Shop Name & Location)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"ananya@greenbasket.in\",\n  \"shop_name\": \"Green Basket Superstore\",\n  \"location\": \"Indiranagar 100ft Road, Bengaluru\"\n}"
+        },
+        "url": {
+          "raw": "http://localhost/StockSense_backend/auth/update_shop.php",
+          "protocol": "http",
+          "host": ["localhost"],
+          "path": ["StockSense_backend", "auth", "update_shop.php"]
+        },
+        "description": "Updates the shop name and store location from the Edit Shop dialog on ProfileScreen."
+      }
+    },
+    {
+      "name": "6. Change Password (Logged-in User)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"ananya@greenbasket.in\",\n  \"current_password\": \"password123\",\n  \"new_password\": \"newpassword123\",\n  \"confirm_password\": \"newpassword123\"\n}"
+        },
+        "url": {
+          "raw": "http://localhost/StockSense_backend/auth/change_password.php",
+          "protocol": "http",
+          "host": ["localhost"],
+          "path": ["StockSense_backend", "auth", "change_password.php"]
+        },
+        "description": "Verifies current password and updates to the new password from the Change Password dialog on ProfileScreen."
+      }
+    },
+    {
+      "name": "7. Forgot Password (Check Email)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"ananya@greenbasket.in\"\n}"
+        },
+        "url": {
+          "raw": "http://localhost/StockSense_backend/auth/forgot_password.php",
+          "protocol": "http",
+          "host": ["localhost"],
+          "path": ["StockSense_backend", "auth", "forgot_password.php"]
+        },
+        "description": "Step 1 of password recovery: verifies if the email address exists in the database."
+      }
+    },
+    {
+      "name": "8. Reset Password (New Password)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"ananya@greenbasket.in\",\n  \"new_password\": \"brandnewpass123\",\n  \"confirm_password\": \"brandnewpass123\"\n}"
+        },
+        "url": {
+          "raw": "http://localhost/StockSense_backend/auth/reset_password.php",
+          "protocol": "http",
+          "host": ["localhost"],
+          "path": ["StockSense_backend", "auth", "reset_password.php"]
+        },
+        "description": "Step 2 of password recovery matching ForgotPasswordScreen.kt: sets the new password directly for the given email."
+      }
+    },
+    {
+      "name": "9. Get User Settings & Preferences",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost/StockSense_backend/auth/get_settings.php?email=ananya@greenbasket.in",
+          "protocol": "http",
+          "host": ["localhost"],
+          "path": ["StockSense_backend", "auth", "get_settings.php"],
+          "query": [
+            {
+              "key": "email",
+              "value": "ananya@greenbasket.in"
+            }
+          ]
+        },
+        "description": "Retrieves notification preferences (low-stock alerts, AI recommendations, sales summary, digest) and theme mode for SettingsScreen.kt."
+      }
+    },
+    {
+      "name": "10. Update User Settings & Preferences",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"ananya@greenbasket.in\",\n  \"low_stock_alerts\": true,\n  \"ai_recommendations\": true,\n  \"daily_sales_summary\": true,\n  \"weekly_email_digest\": false,\n  \"theme_mode\": \"DARK\"\n}"
+        },
+        "url": {
+          "raw": "http://localhost/StockSense_backend/auth/update_settings.php",
+          "protocol": "http",
+          "host": ["localhost"],
+          "path": ["StockSense_backend", "auth", "update_settings.php"]
+        },
+        "description": "Updates toggle switches and theme mode from SettingsScreen.kt."
+      }
+    },
+    {
+      "name": "11. Sign Out (Logout)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"ananya@greenbasket.in\"\n}"
+        },
+        "url": {
+          "raw": "http://localhost/StockSense_backend/auth/logout.php",
+          "protocol": "http",
+          "host": ["localhost"],
+          "path": ["StockSense_backend", "auth", "logout.php"]
+        },
+        "description": "Confirms user sign-out corresponding to SignOutScreen.kt."
+      }
+    }
+  ]
+}
