@@ -80,6 +80,44 @@ INSERT INTO `user_settings` (`id`, `user_id`, `low_stock_alerts`, `ai_recommenda
 (2, 3, 1, 1, 1, 0, 'SYSTEM'),
 (3, 4, 1, 1, 1, 0, 'SYSTEM');
 
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `products`
+--
+
+CREATE TABLE `products` (
+  `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `shop_owner_id` int(10) UNSIGNED NOT NULL,
+  `name` varchar(150) NOT NULL,
+  `sku` varchar(50) NOT NULL,
+  `category` varchar(100) NOT NULL DEFAULT 'General',
+  `description` varchar(255) DEFAULT NULL,
+  `price` decimal(10,2) NOT NULL DEFAULT 0.00,
+  `cost_price` decimal(10,2) NOT NULL DEFAULT 0.00,
+  `units` int(11) NOT NULL DEFAULT 0,
+  `min_stock_threshold` int(11) NOT NULL DEFAULT 10,
+  `status` varchar(100) DEFAULT NULL,
+  `icon_type` tinyint(4) NOT NULL DEFAULT 0,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `unique_shop_sku` (`shop_owner_id`, `sku`),
+  KEY `idx_shop_owner` (`shop_owner_id`),
+  CONSTRAINT `fk_products_shop_owner` FOREIGN KEY (`shop_owner_id`) REFERENCES `owner_account` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+--
+-- Dumping data for table `products`
+--
+
+INSERT INTO `products` (`id`, `shop_owner_id`, `name`, `sku`, `category`, `description`, `price`, `cost_price`, `units`, `min_stock_threshold`, `status`, `icon_type`) VALUES
+(1, 2, 'Amul Milk · 500 ml', 'DAI-001', 'Dairy', '500 ml · Fresh daily', 30.00, 27.00, 8, 24, 'Low stock · Minimum 24', 0),
+(2, 2, 'Britannia Marie · 150 g', 'SNK-014', 'Snacks', '150 g · Tea-time biscuits', 30.00, 25.00, 96, 30, 'Slow moving · 6 sold in 30 days', 1),
+(3, 2, 'Aashirvaad Atta - 5 kg', 'STP-003', 'Staples', '5 kg · Whole wheat atta', 260.00, 235.00, 24, 15, NULL, 2),
+(4, 2, 'Tata Tea - 250 g', 'BEV-008', 'Beverages', '250 g · Premium leaf tea', 120.00, 100.00, 42, 20, NULL, 3),
+(5, 2, 'Parle-G · 80 g', 'SNK-002', 'Snacks', '80 g · Glucose biscuits', 10.00, 8.00, 120, 40, NULL, 1);
+
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

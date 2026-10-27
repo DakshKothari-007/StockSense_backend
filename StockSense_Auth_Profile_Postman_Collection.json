@@ -251,6 +251,171 @@
         },
         "description": "Confirms user sign-out corresponding to SignOutScreen.kt."
       }
+    },
+    {
+      "name": "12. Inventory - Get All Products (with Search & Filter)",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer ananya@example.com"
+          }
+        ],
+        "url": {
+          "raw": "http://localhost/StockSense_backend/inventory/get_products.php?filter=all",
+          "protocol": "http",
+          "host": ["localhost"],
+          "path": ["StockSense_backend", "inventory", "get_products.php"],
+          "query": [
+            {
+              "key": "filter",
+              "value": "all",
+              "description": "Options: all (0), low_stock (1), slow_moving (2)"
+            },
+            {
+              "key": "search",
+              "value": "",
+              "description": "Optional search by product name or SKU"
+            }
+          ]
+        },
+        "description": "Fetches the shop's product list for InventoryScreen.kt. Supports filters (All, Low Stock, Slow Moving) and live search query."
+      }
+    },
+    {
+      "name": "13. Inventory - Get Single Product Detail",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer ananya@example.com"
+          }
+        ],
+        "url": {
+          "raw": "http://localhost/StockSense_backend/inventory/get_product_detail.php?sku=DAI-001",
+          "protocol": "http",
+          "host": ["localhost"],
+          "path": ["StockSense_backend", "inventory", "get_product_detail.php"],
+          "query": [
+            {
+              "key": "sku",
+              "value": "DAI-001",
+              "description": "Look up by SKU or pass ?id=1"
+            }
+          ]
+        },
+        "description": "Fetches product details, available stock, selling price, purchase cost, and AI reorder recommendations for ProductDetailScreen.kt."
+      }
+    },
+    {
+      "name": "14. Inventory - Add New Product",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer ananya@example.com"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"Fortune Sunflower Oil · 1 L\",\n  \"sku\": \"OIL-005\",\n  \"category\": \"Staples\",\n  \"description\": \"1 L pouch · Refined oil\",\n  \"price\": 145.00,\n  \"cost_price\": 120.00,\n  \"units\": 50,\n  \"min_stock_threshold\": 15,\n  \"icon_type\": 2\n}"
+        },
+        "url": {
+          "raw": "http://localhost/StockSense_backend/inventory/add_product.php",
+          "protocol": "http",
+          "host": ["localhost"],
+          "path": ["StockSense_backend", "inventory", "add_product.php"]
+        },
+        "description": "Adds a new product to the shop inventory with prepared statements and SKU uniqueness validation."
+      }
+    },
+    {
+      "name": "15. Inventory - Update Product",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer ananya@example.com"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"sku\": \"DAI-001\",\n  \"units\": 68,\n  \"price\": 32.00,\n  \"cost_price\": 27.00,\n  \"min_stock_threshold\": 24\n}"
+        },
+        "url": {
+          "raw": "http://localhost/StockSense_backend/inventory/update_product.php",
+          "protocol": "http",
+          "host": ["localhost"],
+          "path": ["StockSense_backend", "inventory", "update_product.php"]
+        },
+        "description": "Updates product units (stock levels), pricing, threshold, or details. Strictly scoped to the authenticated shop."
+      }
+    },
+    {
+      "name": "16. Inventory - Bulk Import (Import Data Button)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer ananya@example.com"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"mode\": \"add_units\",\n  \"items\": [\n    {\n      \"name\": \"Surf Excel - 500 g\",\n      \"sku\": \"HOM-021\",\n      \"category\": \"Home care\",\n      \"price\": 65.00,\n      \"cost_price\": 58.00,\n      \"units\": 20\n    },\n    {\n      \"name\": \"Amul Milk - 500 ml\",\n      \"sku\": \"DAI-001\",\n      \"units\": 60,\n      \"price\": 30.00,\n      \"cost_price\": 27.00\n    }\n  ]\n}"
+        },
+        "url": {
+          "raw": "http://localhost/StockSense_backend/inventory/import_inventory.php",
+          "protocol": "http",
+          "host": ["localhost"],
+          "path": ["StockSense_backend", "inventory", "import_inventory.php"]
+        },
+        "description": "Processes batch product imports from the 'Import Data' button on InventoryScreen. Supports adding received stock to existing items or inserting new catalog products."
+      }
+    },
+    {
+      "name": "17. Inventory - Delete Product",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer ananya@example.com"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"sku\": \"OIL-005\"\n}"
+        },
+        "url": {
+          "raw": "http://localhost/StockSense_backend/inventory/delete_product.php",
+          "protocol": "http",
+          "host": ["localhost"],
+          "path": ["StockSense_backend", "inventory", "delete_product.php"]
+        },
+        "description": "Deletes a product from the shop inventory. Validates ownership before deletion."
+      }
     }
   ]
 }
