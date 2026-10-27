@@ -1,4 +1,4 @@
-```php
+
 <?php
 header("Content-Type: application/json");
 
@@ -97,4 +97,3 @@ try {
     ]);
 }
 ?>
-```
