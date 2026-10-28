@@ -1,5 +1,98 @@
 # Changelog - StockSense Backend
 
+## [Reorder Module Release] - October 2026
+
+### Added
+- **Database Tables (`purchase_orders`, `purchase_order_items`):**
+  - Added migration script `reorder/add_reorder_tables.sql` and updated `stocksense.sql`:
+    - `purchase_orders`: `id`, `shop_owner_id`, `order_no`, `status` (`placed`, `received`, `cancelled`), `total_estimated_cost`, `total_items`, `total_units`, `received_at`, `notes`, `created_at`. Unique key on `(shop_owner_id, order_no)` and index on `(shop_owner_id, status)`.
+    - `purchase_order_items`: `id`, `purchase_order_id`, `product_id`, `quantity`, `cost_price`, `line_estimated_cost`. Indexes on `purchase_order_id` and `product_id`.
+- **Reorder Endpoints (`reorder/`):**
+  - `reorder/list.php` (`GET`): Explainable, rule-based reorder recommendations with named `REORDER_CONFIG` (`lead_time_days`, `safety_days`, `cover_days`), `daily_sales_rate` (`sold_last_30_days / 30`), `days_of_stock_left` (`null` when rate is 0), open on-order deductions (`on_order_units`), explicit priority rules, and 2x-minimum threshold fallback when history is under 30 days. Global totals cover all pages.
+  - `reorder/create_order.php` (`POST`): Creates purchase order with initial status `'placed'` and server-generated `order_no` (`PO-YYYY-NNN` per shop). Enforces max 100 items per order and 10,000 units per item.
+  - `reorder/orders.php` (`GET`): Lists purchase orders with status filter and single-query items loader.
+  - `reorder/receive.php` (`POST`): Atomically updates status to `'received'` and adds received quantities to `products.units` in one transaction. Prevents receiving twice.
+  - `reorder/cancel.php` (`POST`): Cancels open orders (`placed`). Cancelled orders cannot be received.
+- **Automated Test Runner (`test_reorder_backend.php`):**
+  - 26 automated tests covering rule evaluation, fallback logic, null cost_price, open order subtractions, order creation, receipt, double-receipt rejection, cancellation, and shop isolation.
+
+### Changed
+- **Postman Collection (`StockSense_Postman_Collection.json`):**
+  - Added folder `"7. Reorder Module"` with 7 copy-ready requests and test assertions.
+
+## [Sales Module Release] - October 2026
+
+### Added
+- **Database Tables (`sales`, `sales_items`):**
+  - Added migration script `sales/add_sales_tables.sql` and updated `stocksense.sql`:
+    - `sales`: `id`, `shop_owner_id`, `bill_no`, `sale_date`, `total_amount`, `notes`, `created_at`. Unique key on `(shop_owner_id, bill_no)` and index on `(shop_owner_id, sale_date)`.
+    - `sales_items`: `id`, `sale_id`, `product_id`, `quantity`, `unit_price`, `line_total`. Indexes on `sale_id` and `product_id`.
+- **Sales Endpoints (`sales/`):**
+  - `sales/create.php` (`POST`): Records sale bill, ignores client `unit_price` in favor of DB `products.price`, merges duplicate product lines per bill, performs atomic stock deduction (`UPDATE products SET units = units - ? WHERE id=? AND shop_owner_id=? AND units >= ?`), and rolls back with a detailed 400 if stock is insufficient.
+  - `sales/list.php` (`GET`): Paginated bills (`page`, `limit`), filtered by half-open date range (`sale_date >= ? AND sale_date < ?`), with single-query items loader.
+  - `sales/summary.php` (`GET`): Period total sales, bills count, average bill, daily sales points, top selling products, category breakdown, and hourly sales for today when real timestamps exist.
+  - `sales/import.php` (`POST`): All-or-nothing sales import (JSON or CSV), reports row number and reason for bad rows, groups rows by `bill_no`, supports optional `deduct_stock` (default `false`), and logs import history.
+- **Automated Test Runner (`test_sales_backend.php`):**
+  - 37 automated tests covering creation, stock deduction, rollback, duplicate bills, bad dates, shop isolation, single-query loading, hourly sales, all-or-nothing import, and product deletion prevention.
+
+### Changed
+- **`dashboard/summary.php`:**
+  - Replaced zeros with live queries on `sales` and `sales_items` for today's sales, weekly sales, daily points, and top sellers.
+  - Updated slow-moving calculation using real 30-day sales velocity (`sold_last_30_days`, `stock_cover_days`), shows rule in response, and sets `"has_enough_sales_history" => false` when under 30 days of sales exist.
+- **`inventory/delete_product.php`:**
+  - Rejects product deletion with clear HTTP 400 error when linked to existing sales records to preserve audit and financial integrity.
+- **Postman Collection (`StockSense_Postman_Collection.json`):**
+  - Added folder `"6. Sales Module"` with 9 copy-ready requests and test scripts.
+
+## [Token Authentication Release] - October 2026
+
+### Added
+- **Database Table (`tokens`):**
+  - Schema added to database and `stocksense.sql`:
+    - `id INT AUTO_INCREMENT PRIMARY KEY`
+    - `user_id INT UNSIGNED NOT NULL` (Foreign key to `owner_account(id)` on delete cascade)
+    - `token_hash CHAR(64) NOT NULL UNIQUE` (Stores SHA-256 hash of token)
+    - `expires_at DATETIME NOT NULL`
+    - `created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP`
+- **Automated Verification Script (`test_token_auth.php`):**
+  - Standalone CLI test suite validating 14 test cases covering token generation, SHA-256 hash persistence, non-expired verification, 401 rejections for raw user IDs and emails, and token revocation on logout.
+
+### Changed
+- **`auth/login.php`:**
+  - Now generates a cryptographically secure 64-character token via `bin2hex(random_bytes(32))`.
+  - Calculates its SHA-256 hash and inserts into `tokens` with a 7-day expiration date (`expires_at = NOW() + 7 days`).
+  - Returns `"token"` and `"expires_at"` in response JSON while preserving all user profile data.
+- **`inventory/auth_helper.php` (`authenticateShopOwner()`):**
+  - Completely replaced temporary user ID / email bypasses with token hash validation.
+  - Computes `hash('sha256', $token)` and queries `tokens` joined with `owner_account` where `expires_at > NOW()`.
+  - Passing `Bearer 2`, an email, an invalid token, or an expired token strictly triggers `HTTP 401 Unauthorized`.
+  - All existing endpoints across `inventory/`, `import/`, and `dashboard/` continue functioning without requiring any modifications to their individual controllers.
+- **`auth/logout.php`:**
+  - Extracts Bearer token from headers, hashes with SHA-256, and deletes the matching token row from `tokens`.
+- **Postman Collections (`StockSense_Postman_Collection.json` & `StockSense_Auth_Profile_Postman_Collection.json`):**
+  - Updated `Login` request with Postman test script to automatically parse `response.token` and store it into the `{{token}}` collection variable.
+  - Updated `Logout` request with `Authorization: Bearer {{token}}` and test assertions.
+  - Added dedicated test requests verifying that sending `Bearer 2` or `Bearer <email>` yields `401 Unauthorized`.
+
+## [Dashboard Module Release] - October 2026
+
+### Added
+- **Database Migration:**
+  - `dashboard/add_index_products_units.sql`: Added composite index `idx_shop_units` on `products(shop_owner_id, units)` to ensure rapid aggregation for inventory value and threshold checks.
+- **Dashboard APIs (`dashboard/`):**
+  - `dashboard/summary.php` (`GET`): Returns full store overview for the authenticated owner:
+    - Active product count and total inventory value (`SUM(units * price)`).
+    - Low-stock counter and items list (`units > 0 AND min_stock_threshold > 0 AND units <= min_stock_threshold`).
+    - Out-of-stock counter and items list (`units = 0`).
+    - Slow-moving items list filtered strictly on `status LIKE '%Slow moving%'`.
+    - AI Priorities: dynamic reorder recommendation with rule `"Rule: order up to 2x minimum"` and estimated purchase cost; slow-moving clearance recommendation.
+    - Category breakdown with product count, total units, value, and share percentage (empty categories labeled `"Uncategorised"`).
+    - Latest import history metadata.
+    - Optional date range validation (`from` and `to` formatted as `YYYY-MM-DD`, `from <= to`). Returns HTTP 400 on invalid format.
+    - Strictly plain numbers (all formatted strings omitted per spec).
+- **Postman Collection Update:**
+  - Added folder `"5. Dashboard Module"` with 4 copy-ready requests covering default date range, custom range, validation errors (400), and unauthorized checks (401).
+
 ## [Import Module Release] - October 2026
 
 ### Added

@@ -88,12 +88,24 @@ try {
         exit;
     }
 
+    // Generate random 64-char token (32 random bytes -> 64 hex chars)
+    $token = bin2hex(random_bytes(32));
+    $tokenHash = hash('sha256', $token);
+    $expiresAt = date('Y-m-d H:i:s', strtotime('+7 days'));
+
+    // Store only the SHA-256 hash in tokens table
+    $tokenStmt = $pdo->prepare("INSERT INTO tokens (user_id, token_hash, expires_at) VALUES (?, ?, ?)");
+    $tokenStmt->execute([(int)$user["id"], $tokenHash, $expiresAt]);
+
     // Login succeeded.
     http_response_code(200);
 
     echo json_encode([
         "success" => true,
+        "status" => true,
         "message" => "Login successful.",
+        "token" => $token,
+        "expires_at" => $expiresAt,
         "user" => [
             "id" => (int) $user["id"],
             "full_name" => $user["full_name"],

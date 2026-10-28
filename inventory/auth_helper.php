@@ -3,81 +3,79 @@
 require_once __DIR__ . "/../config/db.php";
 
 /**
- * Authenticates the request and returns the shop owner record.
- * Supports:
- *  1. Authorization: Bearer <token_or_id_or_email>
- *  2. Custom Header: X-User-Id or X-User-Email
- *  3. Query param: user_id or email
- *  4. JSON Body: user_id or email
+ * Authenticates the request using a secure Bearer token.
  *
- * Ensures all actions and data queries are strictly scoped to the authenticated owner.
+ * Workflow:
+ *  1. Extracts Bearer token from the Authorization header.
+ *  2. Computes the SHA-256 hash of the token.
+ *  3. Looks up a valid, non-expired entry in the `tokens` table.
+ *  4. Returns the associated store owner account record.
+ *
+ * Rejects invalid tokens, expired tokens, raw user IDs, or email addresses with HTTP 401.
+ *
+ * @param PDO $pdo
+ * @return array
  */
 function authenticateShopOwner(PDO $pdo): array {
-    $token = null;
+    $authHeader = '';
 
-    // 1. Check HTTP Authorization header
-    $headers = [];
+    // Check all possible header locations (Apache, Nginx, CLI, etc.)
     if (function_exists('getallheaders')) {
         $headers = getallheaders();
-    } else {
-        foreach ($_SERVER as $key => $value) {
-            if (substr($key, 0, 5) === 'HTTP_') {
-                $header = str_replace(' ', '-', ucwords(str_replace('_', ' ', strtolower(substr($key, 5)))));
-                $headers[$header] = $value;
-            }
+        $authHeader = $headers['Authorization'] ?? $headers['authorization'] ?? '';
+    }
+
+    if (empty($authHeader)) {
+        if (!empty($_SERVER['HTTP_AUTHORIZATION'])) {
+            $authHeader = $_SERVER['HTTP_AUTHORIZATION'];
+        } elseif (!empty($_SERVER['REDIRECT_HTTP_AUTHORIZATION'])) {
+            $authHeader = $_SERVER['REDIRECT_HTTP_AUTHORIZATION'];
         }
     }
 
-    $authHeader = $headers['Authorization'] ?? $headers['authorization'] ?? '';
+    $token = null;
     if (preg_match('/Bearer\s+(\S+)/i', $authHeader, $matches)) {
         $token = trim($matches[1]);
-    }
-
-    // 2. Custom headers
-    if (!$token) {
-        $token = $headers['X-User-Id'] ?? $headers['x-user-id'] ?? $headers['X-User-Email'] ?? $headers['x-user-email'] ?? null;
-    }
-
-    // 3. GET parameter
-    if (!$token) {
-        $token = $_GET['user_id'] ?? $_GET['id'] ?? $_GET['email'] ?? null;
-    }
-
-    // 4. POST JSON body
-    if (!$token && $_SERVER['REQUEST_METHOD'] === 'POST') {
-        $raw = file_get_contents("php://input");
-        $body = json_decode($raw, true);
-        if (is_array($body)) {
-            $token = $body['user_id'] ?? $body['id'] ?? $body['email'] ?? null;
-        }
     }
 
     if (!$token) {
         http_response_code(401);
         echo json_encode([
             "status" => false,
-            "message" => "Unauthorized: Authentication required. Provide Bearer token or user identifier.",
+            "message" => "Unauthorized: Authentication required. Provide a valid Bearer token.",
             "data" => (object)[]
         ]);
         exit;
     }
 
     try {
-        if (is_numeric($token)) {
-            $stmt = $pdo->prepare("SELECT id, full_name, shop_name, email FROM owner_account WHERE id = ? LIMIT 1");
-            $stmt->execute([(int)$token]);
-        } else {
-            $stmt = $pdo->prepare("SELECT id, full_name, shop_name, email FROM owner_account WHERE email = ? LIMIT 1");
-            $stmt->execute([strtolower(trim($token))]);
-        }
+        // Hash the incoming token using SHA-256
+        $tokenHash = hash('sha256', $token);
 
+        // Find non-expired token matching this hash
+        $stmt = $pdo->prepare("
+            SELECT 
+                o.id,
+                o.full_name,
+                o.shop_name,
+                o.location,
+                o.store_type,
+                o.currency,
+                o.email,
+                t.expires_at
+            FROM tokens t
+            INNER JOIN owner_account o ON t.user_id = o.id
+            WHERE t.token_hash = ? AND t.expires_at > NOW()
+            LIMIT 1
+        ");
+        $stmt->execute([$tokenHash]);
         $owner = $stmt->fetch(PDO::FETCH_ASSOC);
 
         if (!$owner) {
             http_response_code(401);
             echo json_encode([
                 "status" => false,
-                "message" => "Unauthorized: Invalid credentials or shop account not found.",
+                "message" => "Unauthorized: Invalid or expired token.",
                 "data" => (object)[]
             ]);
             exit;

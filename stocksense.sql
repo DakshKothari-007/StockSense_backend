@@ -104,6 +104,7 @@ CREATE TABLE `products` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `unique_shop_sku` (`shop_owner_id`, `sku`),
   KEY `idx_shop_owner` (`shop_owner_id`),
+  KEY `idx_shop_units` (`shop_owner_id`, `units`),
   CONSTRAINT `fk_products_shop_owner` FOREIGN KEY (`shop_owner_id`) REFERENCES `owner_account` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
@@ -140,9 +141,113 @@ CREATE TABLE `import_history` (
   CONSTRAINT `fk_import_shop_owner` FOREIGN KEY (`shop_owner_id`) REFERENCES `owner_account` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `tokens`
+--
+
+CREATE TABLE `tokens` (
+  `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `user_id` int(10) UNSIGNED NOT NULL,
+  `token_hash` char(64) NOT NULL,
+  `expires_at` datetime NOT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `idx_token_hash` (`token_hash`),
+  KEY `idx_token_user_id` (`user_id`),
+  CONSTRAINT `fk_tokens_user` FOREIGN KEY (`user_id`) REFERENCES `owner_account` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `sales`
+--
+
+CREATE TABLE `sales` (
+  `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `shop_owner_id` int(10) UNSIGNED NOT NULL,
+  `bill_no` varchar(50) NOT NULL,
+  `sale_date` datetime NOT NULL DEFAULT current_timestamp(),
+  `total_amount` decimal(10,2) NOT NULL DEFAULT 0.00,
+  `notes` varchar(255) DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `unique_shop_bill` (`shop_owner_id`, `bill_no`),
+  KEY `idx_sales_owner_date` (`shop_owner_id`, `sale_date`),
+  CONSTRAINT `fk_sales_shop_owner` FOREIGN KEY (`shop_owner_id`) REFERENCES `owner_account` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `sales_items`
+--
+
+CREATE TABLE `sales_items` (
+  `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `sale_id` int(10) UNSIGNED NOT NULL,
+  `product_id` int(10) UNSIGNED NOT NULL,
+  `quantity` int(11) NOT NULL,
+  `unit_price` decimal(10,2) NOT NULL DEFAULT 0.00,
+  `line_total` decimal(10,2) NOT NULL DEFAULT 0.00,
+  PRIMARY KEY (`id`),
+  KEY `idx_sales_items_sale` (`sale_id`),
+  KEY `idx_sales_items_product` (`product_id`),
+  CONSTRAINT `fk_sales_items_sale` FOREIGN KEY (`sale_id`) REFERENCES `sales` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_sales_items_product` FOREIGN KEY (`product_id`) REFERENCES `products` (`id`) ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `purchase_orders`
+--
+
+CREATE TABLE `purchase_orders` (
+  `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `shop_owner_id` int(10) UNSIGNED NOT NULL,
+  `order_no` varchar(50) NOT NULL,
+  `status` enum('placed','received','cancelled') NOT NULL DEFAULT 'placed',
+  `total_estimated_cost` decimal(10,2) DEFAULT NULL,
+  `total_items` int(11) NOT NULL DEFAULT 0,
+  `total_units` int(11) NOT NULL DEFAULT 0,
+  `received_at` datetime DEFAULT NULL,
+  `notes` varchar(255) DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `unique_shop_order` (`shop_owner_id`, `order_no`),
+  KEY `idx_orders_owner_status` (`shop_owner_id`, `status`),
+  CONSTRAINT `fk_po_shop_owner` FOREIGN KEY (`shop_owner_id`) REFERENCES `owner_account` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `purchase_order_items`
+--
+
+CREATE TABLE `purchase_order_items` (
+  `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `purchase_order_id` int(10) UNSIGNED NOT NULL,
+  `product_id` int(10) UNSIGNED NOT NULL,
+  `quantity` int(11) NOT NULL,
+  `cost_price` decimal(10,2) DEFAULT NULL,
+  `line_estimated_cost` decimal(10,2) DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `idx_poi_order` (`purchase_order_id`),
+  KEY `idx_poi_product` (`product_id`),
+  CONSTRAINT `fk_poi_order` FOREIGN KEY (`purchase_order_id`) REFERENCES `purchase_orders` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_poi_product` FOREIGN KEY (`product_id`) REFERENCES `products` (`id`) ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
 /*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
+
+
 

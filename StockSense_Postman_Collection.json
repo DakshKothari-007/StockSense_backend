@@ -23,8 +23,9 @@
         },
         {
             "key": "token",
-            "value": "ananya@greenbasket.in",
-            "type": "string"
+            "value": "",
+            "type": "string",
+            "description": "Auto-populated 64-char Bearer token from Login response"
         },
         {
             "key": "sample_sku",
@@ -53,7 +54,7 @@
                         ],
                         "body": {
                             "mode": "raw",
-                            "raw": "{\n  \"full_name\": \"Ananya Rao\",\n  \"shop_name\": \"Green Basket\",\n  \"location\": \"Indiranagar, Bengaluru\",\n  \"store_type\": \"Neighbourhood supermarket\",\n  \"currency\": \"\u20b9 INR / IST\",\n  \"email\": \"{{auth_email}}\",\n  \"password\": \"{{auth_password}}\"\n}"
+                            "raw": "{\n  \"full_name\": \"Ananya Rao\",\n  \"shop_name\": \"Green Basket\",\n  \"location\": \"Indiranagar, Bengaluru\",\n  \"store_type\": \"Neighbourhood supermarket\",\n  \"currency\": \"₹ INR / IST\",\n  \"email\": \"{{auth_email}}\",\n  \"password\": \"{{auth_password}}\"\n}"
                         },
                         "url": {
                             "raw": "{{base_url}}/auth/signup.php",
@@ -93,7 +94,33 @@
                             ]
                         },
                         "description": "Authenticates the store owner and returns account details (ID, full name, shop name, location, store type, currency, and email)."
-                    }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test(\"Status code is 200\", function () {",
+                                    "    pm.response.to.have.status(200);",
+                                    "});",
+                                    "",
+                                    "var jsonData = pm.response.json();",
+                                    "pm.test(\"Login returns valid 64-char token\", function () {",
+                                    "    pm.expect(jsonData.success).to.eql(true);",
+                                    "    pm.expect(jsonData.token).to.be.a(\"string\");",
+                                    "    pm.expect(jsonData.token.length).to.eql(64);",
+                                    "});",
+                                    "",
+                                    "if (jsonData.token) {",
+                                    "    pm.collectionVariables.set(\"token\", jsonData.token);",
+                                    "    console.log(\"Updated collection variable 'token': \" + jsonData.token);",
+                                    "}"
+                                ]
+                            }
+                        }
+                    ],
+                    "description": "Authenticates the store owner and returns account details along with a cryptographically secure 64-character token. Postman automatically sets the 'token' collection variable for subsequent requests."
                 },
                 {
                     "name": "Forgot Password - Verify Email",
@@ -157,6 +184,10 @@
                             {
                                 "key": "Content-Type",
                                 "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
                             }
                         ],
                         "body": {
@@ -174,7 +205,106 @@
                             ]
                         },
                         "description": "Logs out the user and clears server session if active."
-                    }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test(\"Status code is 200\", function () {",
+                                    "    pm.response.to.have.status(200);",
+                                    "});",
+                                    "",
+                                    "var jsonData = pm.response.json();",
+                                    "pm.test(\"Logout revokes token\", function () {",
+                                    "    pm.expect(jsonData.status).to.eql(true);",
+                                    "});"
+                                ]
+                            }
+                        }
+                    ],
+                    "description": "Revokes the active Bearer token in the database and terminates the session."
+                },
+                {
+                    "name": "Verify 401 on Raw User ID (Bearer 2)",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer 2"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/inventory/get_products.php",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "inventory",
+                                "get_products.php"
+                            ]
+                        },
+                        "description": "Verifies that sending a raw user ID (e.g. Bearer 2) is rejected with HTTP 401 Unauthorized."
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test(\"Status code is 401 Unauthorized\", function () {",
+                                    "    pm.response.to.have.status(401);",
+                                    "});",
+                                    "var jsonData = pm.response.json();",
+                                    "pm.test(\"Response status is false\", function () {",
+                                    "    pm.expect(jsonData.status).to.eql(false);",
+                                    "});"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "Verify 401 on Email Token (Bearer email)",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{auth_email}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/inventory/get_products.php",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "inventory",
+                                "get_products.php"
+                            ]
+                        },
+                        "description": "Verifies that sending an email as Bearer token is rejected with HTTP 401 Unauthorized."
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test(\"Status code is 401 Unauthorized\", function () {",
+                                    "    pm.response.to.have.status(401);",
+                                    "});",
+                                    "var jsonData = pm.response.json();",
+                                    "pm.test(\"Response status is false\", function () {",
+                                    "    pm.expect(jsonData.status).to.eql(false);",
+                                    "});"
+                                ]
+                            }
+                        }
+                    ]
                 }
             ]
         },
@@ -429,7 +559,7 @@
                         ],
                         "body": {
                             "mode": "raw",
-                            "raw": "{\n  \"name\": \"Fortune Sunflower Oil \u00b7 1 L\",\n  \"sku\": \"OIL-005\",\n  \"category\": \"Staples\",\n  \"description\": \"1 L pouch \u00b7 Refined oil\",\n  \"price\": 145.00,\n  \"cost_price\": 120.00,\n  \"units\": 50,\n  \"min_stock_threshold\": 15,\n  \"icon_type\": 2\n}"
+                            "raw": "{\n  \"name\": \"Fortune Sunflower Oil · 1 L\",\n  \"sku\": \"OIL-005\",\n  \"category\": \"Staples\",\n  \"description\": \"1 L pouch · Refined oil\",\n  \"price\": 145.00,\n  \"cost_price\": 120.00,\n  \"units\": 50,\n  \"min_stock_threshold\": 15,\n  \"icon_type\": 2\n}"
                         },
                         "url": {
                             "raw": "{{base_url}}/inventory/add_product.php",
@@ -701,6 +831,838 @@
                         },
                         "description": "Fetches historical import logs for the authenticated store owner with file name, file size, status, total rows, success/failed count, and summary details."
                     }
+                }
+            ]
+        },
+        {
+            "name": "5. Dashboard Module",
+            "item": [
+                {
+                    "name": "1. Get Dashboard Summary (Default Date Range)",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/dashboard/summary.php",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "dashboard",
+                                "summary.php"
+                            ]
+                        },
+                        "description": "Returns full dashboard overview for the authenticated store owner with default 30-day date range: active products count, total inventory value, low-stock count, out-of-stock count, slow-moving items, AI priorities, category breakdown, and last import metadata."
+                    }
+                },
+                {
+                    "name": "2. Get Dashboard Summary (Custom Date Range)",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/dashboard/summary.php?from=2026-10-01&to=2026-10-28",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "dashboard",
+                                "summary.php"
+                            ],
+                            "query": [
+                                {
+                                    "key": "from",
+                                    "value": "2026-10-01",
+                                    "description": "Start date (YYYY-MM-DD)"
+                                },
+                                {
+                                    "key": "to",
+                                    "value": "2026-10-28",
+                                    "description": "End date (YYYY-MM-DD)"
+                                }
+                            ]
+                        },
+                        "description": "Returns dashboard summary filtered by custom 'from' and 'to' date range. Validates date formats and ordering."
+                    }
+                },
+                {
+                    "name": "3. Dashboard Summary - Bad Date (Validation 400)",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/dashboard/summary.php?from=2026-10-28&to=2026-10-01",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "dashboard",
+                                "summary.php"
+                            ],
+                            "query": [
+                                {
+                                    "key": "from",
+                                    "value": "2026-10-28"
+                                },
+                                {
+                                    "key": "to",
+                                    "value": "2026-10-01"
+                                }
+                            ]
+                        },
+                        "description": "Tests date range validation error (from > to). Expects HTTP 400."
+                    }
+                },
+                {
+                    "name": "4. Dashboard Summary - No Token (Unauthorized 401)",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/dashboard/summary.php",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "dashboard",
+                                "summary.php"
+                            ]
+                        },
+                        "description": "Tests authentication requirement. Expects HTTP 401 Unauthorized when no token is supplied."
+                    }
+                }
+            ]
+        },
+        {
+            "name": "6. Sales Module",
+            "item": [
+                {
+                    "name": "1. Create Sale Bill (Valid)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"bill_no\": \"INV-TEST-001\",\n  \"sale_date\": \"2026-10-28 14:00:00\",\n  \"notes\": \"Counter POS cash sale\",\n  \"items\": [\n    {\n      \"product_id\": 1,\n      \"quantity\": 2\n    },\n    {\n      \"sku\": \"DAI-001\",\n      \"quantity\": 1\n    }\n  ]\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/sales/create.php",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "sales",
+                                "create.php"
+                            ]
+                        },
+                        "description": "Creates a sale bill, merges duplicate product lines, computes total from DB price, and atomically deducts stock."
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Status code is 201 Created', function () {",
+                                    "    pm.response.to.have.status(201);",
+                                    "});",
+                                    "var jsonData = pm.response.json();",
+                                    "pm.test('Sale bill created with total amount', function () {",
+                                    "    pm.expect(jsonData.status).to.eql(true);",
+                                    "    pm.expect(jsonData.data.total_amount).to.be.above(0);",
+                                    "});"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "2. Create Sale Bill - Insufficient Stock (400)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"bill_no\": \"INV-EXCESS-001\",\n  \"items\": [\n    {\n      \"product_id\": 1,\n      \"quantity\": 99999\n    }\n  ]\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/sales/create.php",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "sales",
+                                "create.php"
+                            ]
+                        },
+                        "description": "Tests atomic rollback and error payload when requested units exceed available stock."
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Status code is 400 Bad Request', function () {",
+                                    "    pm.response.to.have.status(400);",
+                                    "});",
+                                    "var jsonData = pm.response.json();",
+                                    "pm.test('Contains requested and available units', function () {",
+                                    "    pm.expect(jsonData.status).to.eql(false);",
+                                    "    pm.expect(jsonData.data.requested_quantity).to.eql(99999);",
+                                    "});"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "3. Create Sale Bill - Product From Another Shop (404)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"bill_no\": \"INV-OTHER-001\",\n  \"items\": [\n    {\n      \"product_id\": 9999,\n      \"quantity\": 1\n    }\n  ]\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/sales/create.php",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "sales",
+                                "create.php"
+                            ]
+                        },
+                        "description": "Tests that products belonging to another shop or non-existent IDs return 404 Not Found."
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Status code is 404 Not Found', function () {",
+                                    "    pm.response.to.have.status(404);",
+                                    "});"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "4. Create Sale Bill - Duplicate Bill No (400)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"bill_no\": \"INV-TEST-001\",\n  \"items\": [\n    {\n      \"product_id\": 1,\n      \"quantity\": 1\n    }\n  ]\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/sales/create.php",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "sales",
+                                "create.php"
+                            ]
+                        },
+                        "description": "Verifies duplicate bill_no is rejected with 400."
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Status code is 400 Bad Request', function () {",
+                                    "    pm.response.to.have.status(400);",
+                                    "});"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "5. Create Sale Bill - Future / Bad Date (400)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"bill_no\": \"INV-FUTURE-001\",\n  \"sale_date\": \"2099-12-31 23:59:59\",\n  \"items\": [\n    {\n      \"product_id\": 1,\n      \"quantity\": 1\n    }\n  ]\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/sales/create.php",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "sales",
+                                "create.php"
+                            ]
+                        },
+                        "description": "Verifies that future sale_date timestamps are rejected with 400."
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Status code is 400 Bad Request', function () {",
+                                    "    pm.response.to.have.status(400);",
+                                    "});"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "6. Create Sale Bill - No Token (401)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"bill_no\": \"INV-NOAUTH-001\",\n  \"items\": [\n    {\n      \"product_id\": 1,\n      \"quantity\": 1\n    }\n  ]\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/sales/create.php",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "sales",
+                                "create.php"
+                            ]
+                        },
+                        "description": "Verifies 401 Unauthorized when Bearer token is omitted."
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Status code is 401 Unauthorized', function () {",
+                                    "    pm.response.to.have.status(401);",
+                                    "});"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "7. List Sales Bills (Paginated & Single-Query Items)",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/sales/list.php?page=1&limit=20",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "sales",
+                                "list.php"
+                            ],
+                            "query": [
+                                {
+                                    "key": "page",
+                                    "value": "1"
+                                },
+                                {
+                                    "key": "limit",
+                                    "value": "20"
+                                }
+                            ]
+                        },
+                        "description": "Fetches paginated sales bills, sorted newest first with single-query items loader."
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Status code is 200 OK', function () {",
+                                    "    pm.response.to.have.status(200);",
+                                    "});"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "8. Sales Analytics Summary",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/sales/summary.php?from=2026-10-01&to=2026-10-31",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "sales",
+                                "summary.php"
+                            ],
+                            "query": [
+                                {
+                                    "key": "from",
+                                    "value": "2026-10-01"
+                                },
+                                {
+                                    "key": "to",
+                                    "value": "2026-10-31"
+                                }
+                            ]
+                        },
+                        "description": "Aggregates total sales, bills count, daily totals, category breakdown, top selling products, and hourly sales for today."
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Status code is 200 OK', function () {",
+                                    "    pm.response.to.have.status(200);",
+                                    "});"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "9. Import Sales (All-or-Nothing)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"deduct_stock\": false,\n  \"rows\": [\n    {\n      \"bill_no\": \"IMP-BATCH-01\",\n      \"sku\": \"DAI-001\",\n      \"quantity\": 2,\n      \"sale_date\": \"2026-10-28 11:30:00\"\n    },\n    {\n      \"bill_no\": \"IMP-BATCH-01\",\n      \"sku\": \"STP-003\",\n      \"quantity\": 1,\n      \"sale_date\": \"2026-10-28 11:30:00\"\n    }\n  ]\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/sales/import.php",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "sales",
+                                "import.php"
+                            ]
+                        },
+                        "description": "Imports historical or bulk sales with validation, grouping by bill_no, and writes import history."
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Status code is 201 Created', function () {",
+                                    "    pm.response.to.have.status(201);",
+                                    "});"
+                                ]
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "7. Reorder Module",
+            "item": [
+                {
+                    "name": "1. Get Reorder Recommendations",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/reorder/list.php",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "reorder",
+                                "list.php"
+                            ]
+                        },
+                        "description": "Retrieves explainable rule-based reorder recommendations with open orders subtracted, config parameters, and global totals."
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Status code is 200 OK', function () {",
+                                    "    pm.response.to.have.status(200);",
+                                    "});",
+                                    "var jsonData = pm.response.json();",
+                                    "pm.test('Response includes reorder_config and items', function () {",
+                                    "    pm.expect(jsonData.status).to.eql(true);",
+                                    "    pm.expect(jsonData.data.reorder_config).to.have.property('lead_time_days');",
+                                    "    pm.expect(jsonData.data.items).to.be.an('array');",
+                                    "});"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "2. Filter Reorder Recommendations by Priority (High)",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/reorder/list.php?priority=high",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "reorder",
+                                "list.php"
+                            ],
+                            "query": [
+                                {
+                                    "key": "priority",
+                                    "value": "high"
+                                }
+                            ]
+                        },
+                        "description": "Filters reorder recommendations strictly to high priority items."
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Status code is 200 OK', function () {",
+                                    "    pm.response.to.have.status(200);",
+                                    "});"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "3. Create Purchase Order (Placed Status)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"notes\": \"Replenishment for low stock dairy\",\n  \"items\": [\n    {\n      \"product_id\": 1,\n      \"quantity\": 20\n    }\n  ]\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/reorder/create_order.php",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "reorder",
+                                "create_order.php"
+                            ]
+                        },
+                        "description": "Creates a purchase order in 'placed' status with server-generated order_no (PO-YYYY-NNN)."
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Status code is 201 Created', function () {",
+                                    "    pm.response.to.have.status(201);",
+                                    "});",
+                                    "var jsonData = pm.response.json();",
+                                    "pm.test('Order created in placed status', function () {",
+                                    "    pm.expect(jsonData.status).to.eql(true);",
+                                    "    pm.expect(jsonData.data.status).to.eql('placed');",
+                                    "    pm.expect(jsonData.data.order_no).to.match(/^PO-\\d{4}-\\d{3}$/);",
+                                    "});"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "4. Create Purchase Order - Bad Quantity (400)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"items\": [\n    {\n      \"product_id\": 1,\n      \"quantity\": 0\n    }\n  ]\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/reorder/create_order.php",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "reorder",
+                                "create_order.php"
+                            ]
+                        },
+                        "description": "Verifies quantity 0 is rejected with 400."
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Status code is 400 Bad Request', function () {",
+                                    "    pm.response.to.have.status(400);",
+                                    "});"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "5. List Purchase Orders",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/reorder/orders.php",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "reorder",
+                                "orders.php"
+                            ]
+                        },
+                        "description": "Fetches saved purchase orders with single-query items loader."
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Status code is 200 OK', function () {",
+                                    "    pm.response.to.have.status(200);",
+                                    "});"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "6. Receive Purchase Order",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"order_id\": 1\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/reorder/receive.php",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "reorder",
+                                "receive.php"
+                            ]
+                        },
+                        "description": "Marks purchase order as received and adds ordered quantities to stock."
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Status code is 200 or 400 (if already received)', function () {",
+                                    "    pm.expect([200, 400]).to.include(pm.response.code);",
+                                    "});"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "7. Cancel Purchase Order",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"order_id\": 2\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/reorder/cancel.php",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "reorder",
+                                "cancel.php"
+                            ]
+                        },
+                        "description": "Cancels an open purchase order. Cancelled orders cannot be received."
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Status code is 200 or 400', function () {",
+                                    "    pm.expect([200, 400, 404]).to.include(pm.response.code);",
+                                    "});"
+                                ]
+                            }
+                        }
+                    ]
                 }
             ]
         }
