@@ -1,0 +1,708 @@
+{
+    "info": {
+        "_postman_id": "a93e5071-89e4-4d1a-b67f-9f79b3e1572c",
+        "name": "StockSense API - Complete Collection",
+        "description": "Comprehensive Postman collection for all StockSense backend endpoints running on XAMPP (Apache + MySQL).\n\nFeatures:\n- Authentication (Signup, Login, Logout, Forgot/Reset Password)\n- Profile & Shop Details Management\n- User Settings & Theme Preferences\n- Complete Inventory Management (CRUD, Search & Filter, Bulk Import)",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "variable": [
+        {
+            "key": "base_url",
+            "value": "http://localhost/StockSense_backend",
+            "type": "string"
+        },
+        {
+            "key": "auth_email",
+            "value": "ananya@greenbasket.in",
+            "type": "string"
+        },
+        {
+            "key": "auth_password",
+            "value": "password123",
+            "type": "string"
+        },
+        {
+            "key": "token",
+            "value": "ananya@greenbasket.in",
+            "type": "string"
+        },
+        {
+            "key": "sample_sku",
+            "value": "DAI-001",
+            "type": "string"
+        },
+        {
+            "key": "file_token",
+            "value": "",
+            "type": "string"
+        }
+    ],
+    "item": [
+        {
+            "name": "1. Authentication",
+            "item": [
+                {
+                    "name": "Signup (Create Account)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"full_name\": \"Ananya Rao\",\n  \"shop_name\": \"Green Basket\",\n  \"location\": \"Indiranagar, Bengaluru\",\n  \"store_type\": \"Neighbourhood supermarket\",\n  \"currency\": \"\u20b9 INR / IST\",\n  \"email\": \"{{auth_email}}\",\n  \"password\": \"{{auth_password}}\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/auth/signup.php",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "auth",
+                                "signup.php"
+                            ]
+                        },
+                        "description": "Registers a new store owner account, sets initial store details, and generates default settings automatically."
+                    }
+                },
+                {
+                    "name": "Login",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"email\": \"{{auth_email}}\",\n  \"password\": \"{{auth_password}}\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/auth/login.php",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "auth",
+                                "login.php"
+                            ]
+                        },
+                        "description": "Authenticates the store owner and returns account details (ID, full name, shop name, location, store type, currency, and email)."
+                    }
+                },
+                {
+                    "name": "Forgot Password - Verify Email",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"email\": \"{{auth_email}}\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/auth/forgot_password.php",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "auth",
+                                "forgot_password.php"
+                            ]
+                        },
+                        "description": "Step 1 of password recovery: Checks if the user email exists in the system."
+                    }
+                },
+                {
+                    "name": "Reset Password",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"email\": \"{{auth_email}}\",\n  \"new_password\": \"brandnewpass123\",\n  \"confirm_password\": \"brandnewpass123\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/auth/reset_password.php",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "auth",
+                                "reset_password.php"
+                            ]
+                        },
+                        "description": "Step 2 of password recovery matching ForgotPasswordScreen: sets the new password directly for the given email."
+                    }
+                },
+                {
+                    "name": "Logout / Sign Out",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"email\": \"{{auth_email}}\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/auth/logout.php",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "auth",
+                                "logout.php"
+                            ]
+                        },
+                        "description": "Logs out the user and clears server session if active."
+                    }
+                }
+            ]
+        },
+        {
+            "name": "2. Profile & Shop Management",
+            "item": [
+                {
+                    "name": "Get Profile",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/auth/profile.php?email={{auth_email}}",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "auth",
+                                "profile.php"
+                            ],
+                            "query": [
+                                {
+                                    "key": "email",
+                                    "value": "{{auth_email}}",
+                                    "description": "Lookup by email or pass ?id=1"
+                                }
+                            ]
+                        },
+                        "description": "Fetches complete profile details for the ProfileScreen. Supports query parameter ?email=... or ?id=... (or JSON POST)."
+                    }
+                },
+                {
+                    "name": "Update Profile Details (Name & Email)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"current_email\": \"{{auth_email}}\",\n  \"full_name\": \"Ananya Rao\",\n  \"new_email\": \"ananya@greenbasket.in\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/auth/update_profile.php",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "auth",
+                                "update_profile.php"
+                            ]
+                        },
+                        "description": "Updates the store owner's name and/or email address from the Edit Profile Details dialog."
+                    }
+                },
+                {
+                    "name": "Update Shop Details (Shop Name & Location)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"email\": \"{{auth_email}}\",\n  \"shop_name\": \"Green Basket Superstore\",\n  \"location\": \"Indiranagar 100ft Road, Bengaluru\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/auth/update_shop.php",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "auth",
+                                "update_shop.php"
+                            ]
+                        },
+                        "description": "Updates shop name and physical location from the Edit Shop dialog on ProfileScreen."
+                    }
+                },
+                {
+                    "name": "Change Password (Logged-in User)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"email\": \"{{auth_email}}\",\n  \"current_password\": \"{{auth_password}}\",\n  \"new_password\": \"newpassword123\",\n  \"confirm_password\": \"newpassword123\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/auth/change_password.php",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "auth",
+                                "change_password.php"
+                            ]
+                        },
+                        "description": "Verifies current password before updating to the new password from the Change Password dialog on ProfileScreen."
+                    }
+                }
+            ]
+        },
+        {
+            "name": "3. App Settings",
+            "item": [
+                {
+                    "name": "Get User Settings",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/auth/get_settings.php?email={{auth_email}}",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "auth",
+                                "get_settings.php"
+                            ],
+                            "query": [
+                                {
+                                    "key": "email",
+                                    "value": "{{auth_email}}"
+                                }
+                            ]
+                        },
+                        "description": "Retrieves notification toggle states (low-stock alerts, AI recommendations, daily summary, weekly digest) and theme mode for SettingsScreen."
+                    }
+                },
+                {
+                    "name": "Update User Settings",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"email\": \"{{auth_email}}\",\n  \"low_stock_alerts\": true,\n  \"ai_recommendations\": true,\n  \"daily_sales_summary\": true,\n  \"weekly_email_digest\": false,\n  \"theme_mode\": \"DARK\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/auth/update_settings.php",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "auth",
+                                "update_settings.php"
+                            ]
+                        },
+                        "description": "Updates alert switches and theme preference ('SYSTEM', 'LIGHT', or 'DARK') from SettingsScreen."
+                    }
+                }
+            ]
+        },
+        {
+            "name": "4. Inventory Management",
+            "item": [
+                {
+                    "name": "Get All Products (Filter & Live Search)",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/inventory/get_products.php?filter=all&search=",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "inventory",
+                                "get_products.php"
+                            ],
+                            "query": [
+                                {
+                                    "key": "filter",
+                                    "value": "all",
+                                    "description": "Options: all (0), low_stock (1), slow_moving (2)"
+                                },
+                                {
+                                    "key": "search",
+                                    "value": "",
+                                    "description": "Optional search string (matches name or SKU)"
+                                }
+                            ]
+                        },
+                        "description": "Retrieves the product list for InventoryScreen with filter tabs (All, Low Stock, Slow Moving) and live search query."
+                    }
+                },
+                {
+                    "name": "Get Single Product Detail",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/inventory/get_product_detail.php?sku={{sample_sku}}",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "inventory",
+                                "get_product_detail.php"
+                            ],
+                            "query": [
+                                {
+                                    "key": "sku",
+                                    "value": "{{sample_sku}}",
+                                    "description": "Look up by SKU or pass ?id=1"
+                                }
+                            ]
+                        },
+                        "description": "Fetches item details, current units, pricing, cost price, and calculated AI reorder insights for ProductDetailScreen."
+                    }
+                },
+                {
+                    "name": "Add New Product",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"name\": \"Fortune Sunflower Oil \u00b7 1 L\",\n  \"sku\": \"OIL-005\",\n  \"category\": \"Staples\",\n  \"description\": \"1 L pouch \u00b7 Refined oil\",\n  \"price\": 145.00,\n  \"cost_price\": 120.00,\n  \"units\": 50,\n  \"min_stock_threshold\": 15,\n  \"icon_type\": 2\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/inventory/add_product.php",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "inventory",
+                                "add_product.php"
+                            ]
+                        },
+                        "description": "Inserts a new product into the shop inventory with duplicate SKU prevention."
+                    }
+                },
+                {
+                    "name": "Update Product Details / Units",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"sku\": \"{{sample_sku}}\",\n  \"units\": 68,\n  \"price\": 32.00,\n  \"cost_price\": 27.00,\n  \"min_stock_threshold\": 24\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/inventory/update_product.php",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "inventory",
+                                "update_product.php"
+                            ]
+                        },
+                        "description": "Updates stock quantity (units), selling price, cost price, or threshold for an existing product."
+                    }
+                },
+                {
+                    "name": "Bulk Import Inventory Data",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"mode\": \"add_units\",\n  \"items\": [\n    {\n      \"name\": \"Surf Excel - 500 g\",\n      \"sku\": \"HOM-021\",\n      \"category\": \"Home care\",\n      \"price\": 65.00,\n      \"cost_price\": 58.00,\n      \"units\": 20\n    },\n    {\n      \"name\": \"Amul Milk - 500 ml\",\n      \"sku\": \"DAI-001\",\n      \"units\": 60,\n      \"price\": 30.00,\n      \"cost_price\": 27.00\n    }\n  ]\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/inventory/import_inventory.php",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "inventory",
+                                "import_inventory.php"
+                            ]
+                        },
+                        "description": "Imports batch product data. Mode can be 'add_units' (increments existing units) or 'set_units' (overwrites stock count)."
+                    }
+                },
+                {
+                    "name": "Delete Product",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"sku\": \"OIL-005\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/inventory/delete_product.php",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "inventory",
+                                "delete_product.php"
+                            ]
+                        },
+                        "description": "Deletes a product by SKU or ID, scoped strictly to the authenticated shop owner."
+                    }
+                }
+            ]
+        },
+        {
+            "name": "4. Import Module (Spreadsheet & Stock Receipt)",
+            "item": [
+                {
+                    "name": "1. Upload Spreadsheet File (CSV/XLSX)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "formdata",
+                            "formdata": [
+                                {
+                                    "key": "file",
+                                    "type": "file",
+                                    "src": "sample_valid_import.csv",
+                                    "description": "Select a .csv or .xlsx stock spreadsheet file (up to 5 MB)"
+                                }
+                            ]
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/import/upload.php",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "import",
+                                "upload.php"
+                            ]
+                        },
+                        "description": "Uploads a CSV or Excel (.xlsx) stock spreadsheet (up to 5 MB). Detects headers, generates initial 5-row preview, suggests 5-column mappings, and generates a session file_token."
+                    }
+                },
+                {
+                    "name": "2. Preview Column Mapping & Table Rows",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"file_token\": \"{{file_token}}\",\n  \"column_mapping\": {\n    \"sku\": \"SKU\",\n    \"name\": \"Product\",\n    \"units\": \"Quantity\",\n    \"cost_price\": \"Cost\",\n    \"price\": \"Price\"\n  }\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/import/preview.php",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "import",
+                                "preview.php"
+                            ]
+                        },
+                        "description": "Previews all mapped rows with current store stock levels, calculated selling price string, unit costs, and highlight indicators for potential errors before validation."
+                    }
+                },
+                {
+                    "name": "3. Validate Rows & Flag Errors",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"file_token\": \"{{file_token}}\",\n  \"column_mapping\": {\n    \"sku\": \"SKU\",\n    \"name\": \"Product\",\n    \"units\": \"Quantity\",\n    \"cost_price\": \"Cost\",\n    \"price\": \"Price\"\n  },\n  \"corrections\": [\n    {\n      \"row_number\": 4,\n      \"field\": \"units\",\n      \"value\": 18\n    }\n  ]\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/import/validate.php",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "import",
+                                "validate.php"
+                            ]
+                        },
+                        "description": "Validates every spreadsheet row. Detects stray letters (e.g. '18O' instead of 18), missing SKUs, or negative values. Returns detailed error badges, reasons, and suggested corrections. When all rows are valid, returns stock preview calculation (current + add = new stock) and inventory value to add."
+                    }
+                },
+                {
+                    "name": "4. Execute Import (Atomic Transaction)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"file_token\": \"{{file_token}}\",\n  \"file_name\": \"stock_oct15.xlsx\",\n  \"allow_partial\": false,\n  \"corrections\": [\n    {\n      \"row_number\": 4,\n      \"field\": \"units\",\n      \"value\": 18\n    }\n  ]\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/import/execute.php",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "import",
+                                "execute.php"
+                            ]
+                        },
+                        "description": "Executes database transaction. Existing SKUs have their units incremented (stock receipt), new SKUs create new products. If any invalid rows remain and allow_partial is false, transaction rolls back completely (HTTP 422). Logs completed/failed import to import_history."
+                    }
+                },
+                {
+                    "name": "5. Get Import History Logs",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/import/get_history.php?limit=20&offset=0",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "import",
+                                "get_history.php"
+                            ],
+                            "query": [
+                                {
+                                    "key": "limit",
+                                    "value": "20"
+                                },
+                                {
+                                    "key": "offset",
+                                    "value": "0"
+                                }
+                            ]
+                        },
+                        "description": "Fetches historical import logs for the authenticated store owner with file name, file size, status, total rows, success/failed count, and summary details."
+                    }
+                }
+            ]
+        }
+    ]
+}

@@ -118,8 +118,31 @@ INSERT INTO `products` (`id`, `shop_owner_id`, `name`, `sku`, `category`, `descr
 (4, 2, 'Tata Tea - 250 g', 'BEV-008', 'Beverages', '250 g · Premium leaf tea', 120.00, 100.00, 42, 20, NULL, 3),
 (5, 2, 'Parle-G · 80 g', 'SNK-002', 'Snacks', '80 g · Glucose biscuits', 10.00, 8.00, 120, 40, NULL, 1);
 
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `import_history`
+--
+
+CREATE TABLE `import_history` (
+  `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `shop_owner_id` int(10) UNSIGNED NOT NULL,
+  `file_name` varchar(255) NOT NULL,
+  `file_size` int(10) UNSIGNED NOT NULL DEFAULT 0,
+  `total_rows` int(11) NOT NULL DEFAULT 0,
+  `success_count` int(11) NOT NULL DEFAULT 0,
+  `failed_count` int(11) NOT NULL DEFAULT 0,
+  `status` enum('completed', 'failed', 'partial') NOT NULL DEFAULT 'completed',
+  `details` text DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`),
+  KEY `idx_import_owner` (`shop_owner_id`),
+  CONSTRAINT `fk_import_shop_owner` FOREIGN KEY (`shop_owner_id`) REFERENCES `owner_account` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
 /*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
+

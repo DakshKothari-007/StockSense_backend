@@ -1,421 +1,688 @@
 {
-  "info": {
-    "name": "StockSense - Auth & Profile APIs",
-    "description": "Complete collection of Authentication, Profile, and Settings endpoints for StockSense backend tested on local XAMPP.",
-    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
-  },
-  "item": [
-    {
-      "name": "1. Signup (Create Account)",
-      "request": {
-        "method": "POST",
-        "header": [
-          {
-            "key": "Content-Type",
-            "value": "application/json"
-          }
-        ],
-        "body": {
-          "mode": "raw",
-          "raw": "{\n  \"full_name\": \"Ananya Rao\",\n  \"shop_name\": \"Green Basket\",\n  \"location\": \"Indiranagar, Bengaluru\",\n  \"store_type\": \"Neighbourhood supermarket\",\n  \"currency\": \"₹ INR / IST\",\n  \"email\": \"ananya@greenbasket.in\",\n  \"password\": \"password123\"\n}"
-        },
-        "url": {
-          "raw": "http://localhost/StockSense_backend/auth/signup.php",
-          "protocol": "http",
-          "host": ["localhost"],
-          "path": ["StockSense_backend", "auth", "signup.php"]
-        },
-        "description": "Registers a new store owner account, sets default store information, and automatically creates their default settings record."
-      }
+    "info": {
+        "name": "StockSense - Auth & Profile APIs",
+        "description": "Complete collection of Authentication, Profile, and Settings endpoints for StockSense backend tested on local XAMPP.",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
     },
-    {
-      "name": "2. Login",
-      "request": {
-        "method": "POST",
-        "header": [
-          {
-            "key": "Content-Type",
-            "value": "application/json"
-          }
-        ],
-        "body": {
-          "mode": "raw",
-          "raw": "{\n  \"email\": \"ananya@greenbasket.in\",\n  \"password\": \"password123\"\n}"
-        },
-        "url": {
-          "raw": "http://localhost/StockSense_backend/auth/login.php",
-          "protocol": "http",
-          "host": ["localhost"],
-          "path": ["StockSense_backend", "auth", "login.php"]
-        },
-        "description": "Authenticates the store owner and returns account details (ID, name, shop name, location, store type, currency, email)."
-      }
-    },
-    {
-      "name": "3. Get Profile (By Email or ID)",
-      "request": {
-        "method": "GET",
-        "header": [],
-        "url": {
-          "raw": "http://localhost/StockSense_backend/auth/profile.php?email=ananya@greenbasket.in",
-          "protocol": "http",
-          "host": ["localhost"],
-          "path": ["StockSense_backend", "auth", "profile.php"],
-          "query": [
-            {
-              "key": "email",
-              "value": "ananya@greenbasket.in"
+    "item": [
+        {
+            "name": "1. Signup (Create Account)",
+            "request": {
+                "method": "POST",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n  \"full_name\": \"Ananya Rao\",\n  \"shop_name\": \"Green Basket\",\n  \"location\": \"Indiranagar, Bengaluru\",\n  \"store_type\": \"Neighbourhood supermarket\",\n  \"currency\": \"\u20b9 INR / IST\",\n  \"email\": \"ananya@greenbasket.in\",\n  \"password\": \"password123\"\n}"
+                },
+                "url": {
+                    "raw": "http://localhost/StockSense_backend/auth/signup.php",
+                    "protocol": "http",
+                    "host": [
+                        "localhost"
+                    ],
+                    "path": [
+                        "StockSense_backend",
+                        "auth",
+                        "signup.php"
+                    ]
+                },
+                "description": "Registers a new store owner account, sets default store information, and automatically creates their default settings record."
             }
-          ]
         },
-        "description": "Fetches the full profile for the ProfileScreen. Supports ?email=... or ?id=... (or JSON POST)."
-      }
-    },
-    {
-      "name": "4. Update Profile Details (Full Name & Email)",
-      "request": {
-        "method": "POST",
-        "header": [
-          {
-            "key": "Content-Type",
-            "value": "application/json"
-          }
-        ],
-        "body": {
-          "mode": "raw",
-          "raw": "{\n  \"current_email\": \"ananya@greenbasket.in\",\n  \"full_name\": \"Ananya Rao\",\n  \"new_email\": \"ananya.rao@greenbasket.in\"\n}"
-        },
-        "url": {
-          "raw": "http://localhost/StockSense_backend/auth/update_profile.php",
-          "protocol": "http",
-          "host": ["localhost"],
-          "path": ["StockSense_backend", "auth", "update_profile.php"]
-        },
-        "description": "Updates full name and/or email address from the Edit Profile Details dialog on ProfileScreen."
-      }
-    },
-    {
-      "name": "5. Update Shop Details (Shop Name & Location)",
-      "request": {
-        "method": "POST",
-        "header": [
-          {
-            "key": "Content-Type",
-            "value": "application/json"
-          }
-        ],
-        "body": {
-          "mode": "raw",
-          "raw": "{\n  \"email\": \"ananya@greenbasket.in\",\n  \"shop_name\": \"Green Basket Superstore\",\n  \"location\": \"Indiranagar 100ft Road, Bengaluru\"\n}"
-        },
-        "url": {
-          "raw": "http://localhost/StockSense_backend/auth/update_shop.php",
-          "protocol": "http",
-          "host": ["localhost"],
-          "path": ["StockSense_backend", "auth", "update_shop.php"]
-        },
-        "description": "Updates the shop name and store location from the Edit Shop dialog on ProfileScreen."
-      }
-    },
-    {
-      "name": "6. Change Password (Logged-in User)",
-      "request": {
-        "method": "POST",
-        "header": [
-          {
-            "key": "Content-Type",
-            "value": "application/json"
-          }
-        ],
-        "body": {
-          "mode": "raw",
-          "raw": "{\n  \"email\": \"ananya@greenbasket.in\",\n  \"current_password\": \"password123\",\n  \"new_password\": \"newpassword123\",\n  \"confirm_password\": \"newpassword123\"\n}"
-        },
-        "url": {
-          "raw": "http://localhost/StockSense_backend/auth/change_password.php",
-          "protocol": "http",
-          "host": ["localhost"],
-          "path": ["StockSense_backend", "auth", "change_password.php"]
-        },
-        "description": "Verifies current password and updates to the new password from the Change Password dialog on ProfileScreen."
-      }
-    },
-    {
-      "name": "7. Forgot Password (Check Email)",
-      "request": {
-        "method": "POST",
-        "header": [
-          {
-            "key": "Content-Type",
-            "value": "application/json"
-          }
-        ],
-        "body": {
-          "mode": "raw",
-          "raw": "{\n  \"email\": \"ananya@greenbasket.in\"\n}"
-        },
-        "url": {
-          "raw": "http://localhost/StockSense_backend/auth/forgot_password.php",
-          "protocol": "http",
-          "host": ["localhost"],
-          "path": ["StockSense_backend", "auth", "forgot_password.php"]
-        },
-        "description": "Step 1 of password recovery: verifies if the email address exists in the database."
-      }
-    },
-    {
-      "name": "8. Reset Password (New Password)",
-      "request": {
-        "method": "POST",
-        "header": [
-          {
-            "key": "Content-Type",
-            "value": "application/json"
-          }
-        ],
-        "body": {
-          "mode": "raw",
-          "raw": "{\n  \"email\": \"ananya@greenbasket.in\",\n  \"new_password\": \"brandnewpass123\",\n  \"confirm_password\": \"brandnewpass123\"\n}"
-        },
-        "url": {
-          "raw": "http://localhost/StockSense_backend/auth/reset_password.php",
-          "protocol": "http",
-          "host": ["localhost"],
-          "path": ["StockSense_backend", "auth", "reset_password.php"]
-        },
-        "description": "Step 2 of password recovery matching ForgotPasswordScreen.kt: sets the new password directly for the given email."
-      }
-    },
-    {
-      "name": "9. Get User Settings & Preferences",
-      "request": {
-        "method": "GET",
-        "header": [],
-        "url": {
-          "raw": "http://localhost/StockSense_backend/auth/get_settings.php?email=ananya@greenbasket.in",
-          "protocol": "http",
-          "host": ["localhost"],
-          "path": ["StockSense_backend", "auth", "get_settings.php"],
-          "query": [
-            {
-              "key": "email",
-              "value": "ananya@greenbasket.in"
+        {
+            "name": "2. Login",
+            "request": {
+                "method": "POST",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n  \"email\": \"ananya@greenbasket.in\",\n  \"password\": \"password123\"\n}"
+                },
+                "url": {
+                    "raw": "http://localhost/StockSense_backend/auth/login.php",
+                    "protocol": "http",
+                    "host": [
+                        "localhost"
+                    ],
+                    "path": [
+                        "StockSense_backend",
+                        "auth",
+                        "login.php"
+                    ]
+                },
+                "description": "Authenticates the store owner and returns account details (ID, name, shop name, location, store type, currency, email)."
             }
-          ]
         },
-        "description": "Retrieves notification preferences (low-stock alerts, AI recommendations, sales summary, digest) and theme mode for SettingsScreen.kt."
-      }
-    },
-    {
-      "name": "10. Update User Settings & Preferences",
-      "request": {
-        "method": "POST",
-        "header": [
-          {
-            "key": "Content-Type",
-            "value": "application/json"
-          }
-        ],
-        "body": {
-          "mode": "raw",
-          "raw": "{\n  \"email\": \"ananya@greenbasket.in\",\n  \"low_stock_alerts\": true,\n  \"ai_recommendations\": true,\n  \"daily_sales_summary\": true,\n  \"weekly_email_digest\": false,\n  \"theme_mode\": \"DARK\"\n}"
-        },
-        "url": {
-          "raw": "http://localhost/StockSense_backend/auth/update_settings.php",
-          "protocol": "http",
-          "host": ["localhost"],
-          "path": ["StockSense_backend", "auth", "update_settings.php"]
-        },
-        "description": "Updates toggle switches and theme mode from SettingsScreen.kt."
-      }
-    },
-    {
-      "name": "11. Sign Out (Logout)",
-      "request": {
-        "method": "POST",
-        "header": [
-          {
-            "key": "Content-Type",
-            "value": "application/json"
-          }
-        ],
-        "body": {
-          "mode": "raw",
-          "raw": "{\n  \"email\": \"ananya@greenbasket.in\"\n}"
-        },
-        "url": {
-          "raw": "http://localhost/StockSense_backend/auth/logout.php",
-          "protocol": "http",
-          "host": ["localhost"],
-          "path": ["StockSense_backend", "auth", "logout.php"]
-        },
-        "description": "Confirms user sign-out corresponding to SignOutScreen.kt."
-      }
-    },
-    {
-      "name": "12. Inventory - Get All Products (with Search & Filter)",
-      "request": {
-        "method": "GET",
-        "header": [
-          {
-            "key": "Authorization",
-            "value": "Bearer ananya@example.com"
-          }
-        ],
-        "url": {
-          "raw": "http://localhost/StockSense_backend/inventory/get_products.php?filter=all",
-          "protocol": "http",
-          "host": ["localhost"],
-          "path": ["StockSense_backend", "inventory", "get_products.php"],
-          "query": [
-            {
-              "key": "filter",
-              "value": "all",
-              "description": "Options: all (0), low_stock (1), slow_moving (2)"
-            },
-            {
-              "key": "search",
-              "value": "",
-              "description": "Optional search by product name or SKU"
+        {
+            "name": "3. Get Profile (By Email or ID)",
+            "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                    "raw": "http://localhost/StockSense_backend/auth/profile.php?email=ananya@greenbasket.in",
+                    "protocol": "http",
+                    "host": [
+                        "localhost"
+                    ],
+                    "path": [
+                        "StockSense_backend",
+                        "auth",
+                        "profile.php"
+                    ],
+                    "query": [
+                        {
+                            "key": "email",
+                            "value": "ananya@greenbasket.in"
+                        }
+                    ]
+                },
+                "description": "Fetches the full profile for the ProfileScreen. Supports ?email=... or ?id=... (or JSON POST)."
             }
-          ]
         },
-        "description": "Fetches the shop's product list for InventoryScreen.kt. Supports filters (All, Low Stock, Slow Moving) and live search query."
-      }
-    },
-    {
-      "name": "13. Inventory - Get Single Product Detail",
-      "request": {
-        "method": "GET",
-        "header": [
-          {
-            "key": "Authorization",
-            "value": "Bearer ananya@example.com"
-          }
-        ],
-        "url": {
-          "raw": "http://localhost/StockSense_backend/inventory/get_product_detail.php?sku=DAI-001",
-          "protocol": "http",
-          "host": ["localhost"],
-          "path": ["StockSense_backend", "inventory", "get_product_detail.php"],
-          "query": [
-            {
-              "key": "sku",
-              "value": "DAI-001",
-              "description": "Look up by SKU or pass ?id=1"
+        {
+            "name": "4. Update Profile Details (Full Name & Email)",
+            "request": {
+                "method": "POST",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n  \"current_email\": \"ananya@greenbasket.in\",\n  \"full_name\": \"Ananya Rao\",\n  \"new_email\": \"ananya.rao@greenbasket.in\"\n}"
+                },
+                "url": {
+                    "raw": "http://localhost/StockSense_backend/auth/update_profile.php",
+                    "protocol": "http",
+                    "host": [
+                        "localhost"
+                    ],
+                    "path": [
+                        "StockSense_backend",
+                        "auth",
+                        "update_profile.php"
+                    ]
+                },
+                "description": "Updates full name and/or email address from the Edit Profile Details dialog on ProfileScreen."
             }
-          ]
         },
-        "description": "Fetches product details, available stock, selling price, purchase cost, and AI reorder recommendations for ProductDetailScreen.kt."
-      }
-    },
-    {
-      "name": "14. Inventory - Add New Product",
-      "request": {
-        "method": "POST",
-        "header": [
-          {
-            "key": "Content-Type",
-            "value": "application/json"
-          },
-          {
-            "key": "Authorization",
-            "value": "Bearer ananya@example.com"
-          }
-        ],
-        "body": {
-          "mode": "raw",
-          "raw": "{\n  \"name\": \"Fortune Sunflower Oil · 1 L\",\n  \"sku\": \"OIL-005\",\n  \"category\": \"Staples\",\n  \"description\": \"1 L pouch · Refined oil\",\n  \"price\": 145.00,\n  \"cost_price\": 120.00,\n  \"units\": 50,\n  \"min_stock_threshold\": 15,\n  \"icon_type\": 2\n}"
+        {
+            "name": "5. Update Shop Details (Shop Name & Location)",
+            "request": {
+                "method": "POST",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n  \"email\": \"ananya@greenbasket.in\",\n  \"shop_name\": \"Green Basket Superstore\",\n  \"location\": \"Indiranagar 100ft Road, Bengaluru\"\n}"
+                },
+                "url": {
+                    "raw": "http://localhost/StockSense_backend/auth/update_shop.php",
+                    "protocol": "http",
+                    "host": [
+                        "localhost"
+                    ],
+                    "path": [
+                        "StockSense_backend",
+                        "auth",
+                        "update_shop.php"
+                    ]
+                },
+                "description": "Updates the shop name and store location from the Edit Shop dialog on ProfileScreen."
+            }
         },
-        "url": {
-          "raw": "http://localhost/StockSense_backend/inventory/add_product.php",
-          "protocol": "http",
-          "host": ["localhost"],
-          "path": ["StockSense_backend", "inventory", "add_product.php"]
+        {
+            "name": "6. Change Password (Logged-in User)",
+            "request": {
+                "method": "POST",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n  \"email\": \"ananya@greenbasket.in\",\n  \"current_password\": \"password123\",\n  \"new_password\": \"newpassword123\",\n  \"confirm_password\": \"newpassword123\"\n}"
+                },
+                "url": {
+                    "raw": "http://localhost/StockSense_backend/auth/change_password.php",
+                    "protocol": "http",
+                    "host": [
+                        "localhost"
+                    ],
+                    "path": [
+                        "StockSense_backend",
+                        "auth",
+                        "change_password.php"
+                    ]
+                },
+                "description": "Verifies current password and updates to the new password from the Change Password dialog on ProfileScreen."
+            }
         },
-        "description": "Adds a new product to the shop inventory with prepared statements and SKU uniqueness validation."
-      }
-    },
-    {
-      "name": "15. Inventory - Update Product",
-      "request": {
-        "method": "POST",
-        "header": [
-          {
-            "key": "Content-Type",
-            "value": "application/json"
-          },
-          {
-            "key": "Authorization",
-            "value": "Bearer ananya@example.com"
-          }
-        ],
-        "body": {
-          "mode": "raw",
-          "raw": "{\n  \"sku\": \"DAI-001\",\n  \"units\": 68,\n  \"price\": 32.00,\n  \"cost_price\": 27.00,\n  \"min_stock_threshold\": 24\n}"
+        {
+            "name": "7. Forgot Password (Check Email)",
+            "request": {
+                "method": "POST",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n  \"email\": \"ananya@greenbasket.in\"\n}"
+                },
+                "url": {
+                    "raw": "http://localhost/StockSense_backend/auth/forgot_password.php",
+                    "protocol": "http",
+                    "host": [
+                        "localhost"
+                    ],
+                    "path": [
+                        "StockSense_backend",
+                        "auth",
+                        "forgot_password.php"
+                    ]
+                },
+                "description": "Step 1 of password recovery: verifies if the email address exists in the database."
+            }
         },
-        "url": {
-          "raw": "http://localhost/StockSense_backend/inventory/update_product.php",
-          "protocol": "http",
-          "host": ["localhost"],
-          "path": ["StockSense_backend", "inventory", "update_product.php"]
+        {
+            "name": "8. Reset Password (New Password)",
+            "request": {
+                "method": "POST",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n  \"email\": \"ananya@greenbasket.in\",\n  \"new_password\": \"brandnewpass123\",\n  \"confirm_password\": \"brandnewpass123\"\n}"
+                },
+                "url": {
+                    "raw": "http://localhost/StockSense_backend/auth/reset_password.php",
+                    "protocol": "http",
+                    "host": [
+                        "localhost"
+                    ],
+                    "path": [
+                        "StockSense_backend",
+                        "auth",
+                        "reset_password.php"
+                    ]
+                },
+                "description": "Step 2 of password recovery matching ForgotPasswordScreen.kt: sets the new password directly for the given email."
+            }
         },
-        "description": "Updates product units (stock levels), pricing, threshold, or details. Strictly scoped to the authenticated shop."
-      }
-    },
-    {
-      "name": "16. Inventory - Bulk Import (Import Data Button)",
-      "request": {
-        "method": "POST",
-        "header": [
-          {
-            "key": "Content-Type",
-            "value": "application/json"
-          },
-          {
-            "key": "Authorization",
-            "value": "Bearer ananya@example.com"
-          }
-        ],
-        "body": {
-          "mode": "raw",
-          "raw": "{\n  \"mode\": \"add_units\",\n  \"items\": [\n    {\n      \"name\": \"Surf Excel - 500 g\",\n      \"sku\": \"HOM-021\",\n      \"category\": \"Home care\",\n      \"price\": 65.00,\n      \"cost_price\": 58.00,\n      \"units\": 20\n    },\n    {\n      \"name\": \"Amul Milk - 500 ml\",\n      \"sku\": \"DAI-001\",\n      \"units\": 60,\n      \"price\": 30.00,\n      \"cost_price\": 27.00\n    }\n  ]\n}"
+        {
+            "name": "9. Get User Settings & Preferences",
+            "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                    "raw": "http://localhost/StockSense_backend/auth/get_settings.php?email=ananya@greenbasket.in",
+                    "protocol": "http",
+                    "host": [
+                        "localhost"
+                    ],
+                    "path": [
+                        "StockSense_backend",
+                        "auth",
+                        "get_settings.php"
+                    ],
+                    "query": [
+                        {
+                            "key": "email",
+                            "value": "ananya@greenbasket.in"
+                        }
+                    ]
+                },
+                "description": "Retrieves notification preferences (low-stock alerts, AI recommendations, sales summary, digest) and theme mode for SettingsScreen.kt."
+            }
         },
-        "url": {
-          "raw": "http://localhost/StockSense_backend/inventory/import_inventory.php",
-          "protocol": "http",
-          "host": ["localhost"],
-          "path": ["StockSense_backend", "inventory", "import_inventory.php"]
+        {
+            "name": "10. Update User Settings & Preferences",
+            "request": {
+                "method": "POST",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n  \"email\": \"ananya@greenbasket.in\",\n  \"low_stock_alerts\": true,\n  \"ai_recommendations\": true,\n  \"daily_sales_summary\": true,\n  \"weekly_email_digest\": false,\n  \"theme_mode\": \"DARK\"\n}"
+                },
+                "url": {
+                    "raw": "http://localhost/StockSense_backend/auth/update_settings.php",
+                    "protocol": "http",
+                    "host": [
+                        "localhost"
+                    ],
+                    "path": [
+                        "StockSense_backend",
+                        "auth",
+                        "update_settings.php"
+                    ]
+                },
+                "description": "Updates toggle switches and theme mode from SettingsScreen.kt."
+            }
         },
-        "description": "Processes batch product imports from the 'Import Data' button on InventoryScreen. Supports adding received stock to existing items or inserting new catalog products."
-      }
-    },
-    {
-      "name": "17. Inventory - Delete Product",
-      "request": {
-        "method": "POST",
-        "header": [
-          {
-            "key": "Content-Type",
-            "value": "application/json"
-          },
-          {
-            "key": "Authorization",
-            "value": "Bearer ananya@example.com"
-          }
-        ],
-        "body": {
-          "mode": "raw",
-          "raw": "{\n  \"sku\": \"OIL-005\"\n}"
+        {
+            "name": "11. Sign Out (Logout)",
+            "request": {
+                "method": "POST",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n  \"email\": \"ananya@greenbasket.in\"\n}"
+                },
+                "url": {
+                    "raw": "http://localhost/StockSense_backend/auth/logout.php",
+                    "protocol": "http",
+                    "host": [
+                        "localhost"
+                    ],
+                    "path": [
+                        "StockSense_backend",
+                        "auth",
+                        "logout.php"
+                    ]
+                },
+                "description": "Confirms user sign-out corresponding to SignOutScreen.kt."
+            }
         },
-        "url": {
-          "raw": "http://localhost/StockSense_backend/inventory/delete_product.php",
-          "protocol": "http",
-          "host": ["localhost"],
-          "path": ["StockSense_backend", "inventory", "delete_product.php"]
+        {
+            "name": "12. Inventory - Get All Products (with Search & Filter)",
+            "request": {
+                "method": "GET",
+                "header": [
+                    {
+                        "key": "Authorization",
+                        "value": "Bearer ananya@example.com"
+                    }
+                ],
+                "url": {
+                    "raw": "http://localhost/StockSense_backend/inventory/get_products.php?filter=all",
+                    "protocol": "http",
+                    "host": [
+                        "localhost"
+                    ],
+                    "path": [
+                        "StockSense_backend",
+                        "inventory",
+                        "get_products.php"
+                    ],
+                    "query": [
+                        {
+                            "key": "filter",
+                            "value": "all",
+                            "description": "Options: all (0), low_stock (1), slow_moving (2)"
+                        },
+                        {
+                            "key": "search",
+                            "value": "",
+                            "description": "Optional search by product name or SKU"
+                        }
+                    ]
+                },
+                "description": "Fetches the shop's product list for InventoryScreen.kt. Supports filters (All, Low Stock, Slow Moving) and live search query."
+            }
         },
-        "description": "Deletes a product from the shop inventory. Validates ownership before deletion."
-      }
-    }
-  ]
+        {
+            "name": "13. Inventory - Get Single Product Detail",
+            "request": {
+                "method": "GET",
+                "header": [
+                    {
+                        "key": "Authorization",
+                        "value": "Bearer ananya@example.com"
+                    }
+                ],
+                "url": {
+                    "raw": "http://localhost/StockSense_backend/inventory/get_product_detail.php?sku=DAI-001",
+                    "protocol": "http",
+                    "host": [
+                        "localhost"
+                    ],
+                    "path": [
+                        "StockSense_backend",
+                        "inventory",
+                        "get_product_detail.php"
+                    ],
+                    "query": [
+                        {
+                            "key": "sku",
+                            "value": "DAI-001",
+                            "description": "Look up by SKU or pass ?id=1"
+                        }
+                    ]
+                },
+                "description": "Fetches product details, available stock, selling price, purchase cost, and AI reorder recommendations for ProductDetailScreen.kt."
+            }
+        },
+        {
+            "name": "14. Inventory - Add New Product",
+            "request": {
+                "method": "POST",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    },
+                    {
+                        "key": "Authorization",
+                        "value": "Bearer ananya@example.com"
+                    }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n  \"name\": \"Fortune Sunflower Oil \u00b7 1 L\",\n  \"sku\": \"OIL-005\",\n  \"category\": \"Staples\",\n  \"description\": \"1 L pouch \u00b7 Refined oil\",\n  \"price\": 145.00,\n  \"cost_price\": 120.00,\n  \"units\": 50,\n  \"min_stock_threshold\": 15,\n  \"icon_type\": 2\n}"
+                },
+                "url": {
+                    "raw": "http://localhost/StockSense_backend/inventory/add_product.php",
+                    "protocol": "http",
+                    "host": [
+                        "localhost"
+                    ],
+                    "path": [
+                        "StockSense_backend",
+                        "inventory",
+                        "add_product.php"
+                    ]
+                },
+                "description": "Adds a new product to the shop inventory with prepared statements and SKU uniqueness validation."
+            }
+        },
+        {
+            "name": "15. Inventory - Update Product",
+            "request": {
+                "method": "POST",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    },
+                    {
+                        "key": "Authorization",
+                        "value": "Bearer ananya@example.com"
+                    }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n  \"sku\": \"DAI-001\",\n  \"units\": 68,\n  \"price\": 32.00,\n  \"cost_price\": 27.00,\n  \"min_stock_threshold\": 24\n}"
+                },
+                "url": {
+                    "raw": "http://localhost/StockSense_backend/inventory/update_product.php",
+                    "protocol": "http",
+                    "host": [
+                        "localhost"
+                    ],
+                    "path": [
+                        "StockSense_backend",
+                        "inventory",
+                        "update_product.php"
+                    ]
+                },
+                "description": "Updates product units (stock levels), pricing, threshold, or details. Strictly scoped to the authenticated shop."
+            }
+        },
+        {
+            "name": "16. Inventory - Bulk Import (Import Data Button)",
+            "request": {
+                "method": "POST",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    },
+                    {
+                        "key": "Authorization",
+                        "value": "Bearer ananya@example.com"
+                    }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n  \"mode\": \"add_units\",\n  \"items\": [\n    {\n      \"name\": \"Surf Excel - 500 g\",\n      \"sku\": \"HOM-021\",\n      \"category\": \"Home care\",\n      \"price\": 65.00,\n      \"cost_price\": 58.00,\n      \"units\": 20\n    },\n    {\n      \"name\": \"Amul Milk - 500 ml\",\n      \"sku\": \"DAI-001\",\n      \"units\": 60,\n      \"price\": 30.00,\n      \"cost_price\": 27.00\n    }\n  ]\n}"
+                },
+                "url": {
+                    "raw": "http://localhost/StockSense_backend/inventory/import_inventory.php",
+                    "protocol": "http",
+                    "host": [
+                        "localhost"
+                    ],
+                    "path": [
+                        "StockSense_backend",
+                        "inventory",
+                        "import_inventory.php"
+                    ]
+                },
+                "description": "Processes batch product imports from the 'Import Data' button on InventoryScreen. Supports adding received stock to existing items or inserting new catalog products."
+            }
+        },
+        {
+            "name": "17. Inventory - Delete Product",
+            "request": {
+                "method": "POST",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    },
+                    {
+                        "key": "Authorization",
+                        "value": "Bearer ananya@example.com"
+                    }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n  \"sku\": \"OIL-005\"\n}"
+                },
+                "url": {
+                    "raw": "http://localhost/StockSense_backend/inventory/delete_product.php",
+                    "protocol": "http",
+                    "host": [
+                        "localhost"
+                    ],
+                    "path": [
+                        "StockSense_backend",
+                        "inventory",
+                        "delete_product.php"
+                    ]
+                },
+                "description": "Deletes a product from the shop inventory. Validates ownership before deletion."
+            }
+        },
+        {
+            "name": "4. Import Module (Spreadsheet & Stock Receipt)",
+            "item": [
+                {
+                    "name": "1. Upload Spreadsheet File (CSV/XLSX)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "formdata",
+                            "formdata": [
+                                {
+                                    "key": "file",
+                                    "type": "file",
+                                    "src": "sample_valid_import.csv",
+                                    "description": "Select a .csv or .xlsx stock spreadsheet file (up to 5 MB)"
+                                }
+                            ]
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/import/upload.php",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "import",
+                                "upload.php"
+                            ]
+                        },
+                        "description": "Uploads a CSV or Excel (.xlsx) stock spreadsheet (up to 5 MB). Detects headers, generates initial 5-row preview, suggests 5-column mappings, and generates a session file_token."
+                    }
+                },
+                {
+                    "name": "2. Preview Column Mapping & Table Rows",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"file_token\": \"{{file_token}}\",\n  \"column_mapping\": {\n    \"sku\": \"SKU\",\n    \"name\": \"Product\",\n    \"units\": \"Quantity\",\n    \"cost_price\": \"Cost\",\n    \"price\": \"Price\"\n  }\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/import/preview.php",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "import",
+                                "preview.php"
+                            ]
+                        },
+                        "description": "Previews all mapped rows with current store stock levels, calculated selling price string, unit costs, and highlight indicators for potential errors before validation."
+                    }
+                },
+                {
+                    "name": "3. Validate Rows & Flag Errors",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"file_token\": \"{{file_token}}\",\n  \"column_mapping\": {\n    \"sku\": \"SKU\",\n    \"name\": \"Product\",\n    \"units\": \"Quantity\",\n    \"cost_price\": \"Cost\",\n    \"price\": \"Price\"\n  },\n  \"corrections\": [\n    {\n      \"row_number\": 4,\n      \"field\": \"units\",\n      \"value\": 18\n    }\n  ]\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/import/validate.php",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "import",
+                                "validate.php"
+                            ]
+                        },
+                        "description": "Validates every spreadsheet row. Detects stray letters (e.g. '18O' instead of 18), missing SKUs, or negative values. Returns detailed error badges, reasons, and suggested corrections. When all rows are valid, returns stock preview calculation (current + add = new stock) and inventory value to add."
+                    }
+                },
+                {
+                    "name": "4. Execute Import (Atomic Transaction)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"file_token\": \"{{file_token}}\",\n  \"file_name\": \"stock_oct15.xlsx\",\n  \"allow_partial\": false,\n  \"corrections\": [\n    {\n      \"row_number\": 4,\n      \"field\": \"units\",\n      \"value\": 18\n    }\n  ]\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/import/execute.php",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "import",
+                                "execute.php"
+                            ]
+                        },
+                        "description": "Executes database transaction. Existing SKUs have their units incremented (stock receipt), new SKUs create new products. If any invalid rows remain and allow_partial is false, transaction rolls back completely (HTTP 422). Logs completed/failed import to import_history."
+                    }
+                },
+                {
+                    "name": "5. Get Import History Logs",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/import/get_history.php?limit=20&offset=0",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "import",
+                                "get_history.php"
+                            ],
+                            "query": [
+                                {
+                                    "key": "limit",
+                                    "value": "20"
+                                },
+                                {
+                                    "key": "offset",
+                                    "value": "0"
+                                }
+                            ]
+                        },
+                        "description": "Fetches historical import logs for the authenticated store owner with file name, file size, status, total rows, success/failed count, and summary details."
+                    }
+                }
+            ]
+        }
+    ]
 }
