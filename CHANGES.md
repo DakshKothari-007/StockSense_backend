@@ -1,5 +1,28 @@
 # Changelog - StockSense Backend
 
+## [Insights Module & Reorder Fix] - October 2026
+
+### Added
+- **Database Tables & Indexes (`recommendation_responses`, `idx_sale_product`):**
+  - Added migration script `insights/add_insights_tables.sql` and updated `stocksense.sql`:
+    - `recommendation_responses`: `id`, `shop_owner_id`, `recommendation_type` (`slow_moving`, `product_pair`, `reorder`), `product_id_1`, `product_id_2` (`INT UNSIGNED NOT NULL DEFAULT 0` to enable non-null unique indexing), `action` (`accepted`, `dismissed`), `notes`, `created_at`, `updated_at`. Unique key on `(shop_owner_id, recommendation_type, product_id_1, product_id_2)`.
+    - Added index on `sales_items(sale_id, product_id)` for high-performance co-occurrence pair queries.
+- **Insights Endpoints (`insights/`):**
+  - `insights/slow_moving.php` (`GET`): Identifies products with `units > 0 AND (stock_cover_days >= 60 OR units_sold_30_days = 0)`. Excludes products currently on the reorder list. Returns named configuration (`single_discount_pct = 10`, `bundle_discount_pct = 15`), clearance suggested price, margin status (`above cost`, `below cost`, or `cost unknown`), and response status. Supports `?include_dismissed=1`.
+  - `insights/product_pairs.php` (`GET`): Analyzes frequent co-purchases over a 90-day window (`min_total_bills = 30`, `min_bills_together = 3`). Uses a single grouped query for individual bill counts and pairwise co-occurrence. Computes Support, Confidence, and Lift. Filters for `lift > 1.0` and validated `min_support` ($0 \le \text{min\_support} \le 1$). Uses neutral template `"Often bought together: {A} + {B}"` and smaller-ID-first convention (`pair_min_max`).
+  - `insights/respond.php` (`POST`): Records or updates shop recommendation action (`accepted` or `dismissed`). Validates product ownership per shop. Automatically orders pair IDs smaller first. Upserts with `ON DUPLICATE KEY UPDATE` so latest response wins.
+  - `insights/history.php` (`GET`): Paginated audit history of recommendation responses, newest first, with optional type and action filters.
+- **Automated Test Runner (`test_insights_backend.php`):**
+  - 38 automated test cases covering authentication, methods, slow-moving clearance rules, below/above cost warnings, 90-day pair lift calculations, neutral headline templates, smaller-ID-first ordering, cross-shop isolation, response upserts, and dismissal filtering.
+
+### Changed
+- **`reorder/list.php`:**
+  - Zero-demand fix: If the shop HAS $\ge 30$ days of sales history and a product sold 0 in 30 days, returns `suggested_quantity = null`, `estimated_cost = null`, and `reason = "No sales in 30 days. Review before reordering."`. The 2x-minimum fallback applies only when the entire shop lacks $\ge 30$ days history.
+- **`test_reorder_backend.php`:**
+  - Added data setup seeding a historical bill 35 days ago for Shop 2 to test $\ge 30$ days shop history, and ensured Shop 3 has a test product for testing $< 30$ days fallback. Assertions expanded from 26 to 29 tests (all 29 passing).
+- **Postman Collection (`StockSense_Postman_Collection.json`):**
+  - Added folder `"8. Insights Module"` with 6 ready-to-run requests for slow-moving, product pairs, responding to recommendations, and response history.
+
 ## [Reorder Module Release] - October 2026
 
 ### Added

@@ -1665,6 +1665,211 @@
                     ]
                 }
             ]
+        },
+        {
+            "name": "8. Insights Module",
+            "item": [
+                {
+                    "name": "Slow-Moving Recommendations",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/insights/slow_moving.php",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "insights",
+                                "slow_moving.php"
+                            ]
+                        },
+                        "description": "Identifies slow-moving products (stock cover >= 60 days or 0 sales in 30 days) and provides clearance markdown recommendations."
+                    }
+                },
+                {
+                    "name": "Slow-Moving Recommendations (Include Dismissed)",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/insights/slow_moving.php?include_dismissed=1",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "insights",
+                                "slow_moving.php"
+                            ],
+                            "query": [
+                                {
+                                    "key": "include_dismissed",
+                                    "value": "1"
+                                }
+                            ]
+                        },
+                        "description": "Includes previously dismissed recommendations."
+                    }
+                },
+                {
+                    "name": "Product Pair Recommendations (Frequent Itemsets)",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/insights/product_pairs.php?min_support=0.05",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "insights",
+                                "product_pairs.php"
+                            ],
+                            "query": [
+                                {
+                                    "key": "min_support",
+                                    "value": "0.05"
+                                }
+                            ]
+                        },
+                        "description": "Analyzes co-occurrence in sales bills over a 90-day window, computing Support, Confidence, and Lift > 1.0."
+                    }
+                },
+                {
+                    "name": "Respond to Recommendation (Accept/Dismiss)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"recommendation_type\": \"slow_moving\",\n  \"product_id_1\": 1,\n  \"action\": \"accepted\",\n  \"notes\": \"Applied 10% discount on shelf label\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/insights/respond.php",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "insights",
+                                "respond.php"
+                            ]
+                        },
+                        "description": "Records an accepted or dismissed decision for a recommendation. Upserts into recommendation_responses (latest response wins)."
+                    }
+                },
+                {
+                    "name": "Respond to Product Pair Recommendation",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"recommendation_type\": \"product_pair\",\n  \"product_id_1\": 1,\n  \"product_id_2\": 4,\n  \"action\": \"accepted\",\n  \"notes\": \"Created bundle deal display at aisle entrance\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/insights/respond.php",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "insights",
+                                "respond.php"
+                            ]
+                        },
+                        "description": "Accepts or dismisses a product pair recommendation. Always stores smaller ID first."
+                    }
+                },
+                {
+                    "name": "Recommendation Response History",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/insights/history.php?page=1&limit=20",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "insights",
+                                "history.php"
+                            ],
+                            "query": [
+                                {
+                                    "key": "page",
+                                    "value": "1"
+                                },
+                                {
+                                    "key": "limit",
+                                    "value": "20"
+                                }
+                            ]
+                        },
+                        "description": "Lists all recorded recommendation responses for this shop, newest first."
+                    }
+                }
+            ]
         }
     ]
 }

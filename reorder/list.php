@@ -152,33 +152,37 @@ try {
             continue;
         }
 
-        // Suggested Quantity & Reason (Rule 8: explain 2x-min fallback)
-        $grossSuggested = 0;
+        // Suggested Quantity & Reason (Rule: 2x-min fallback ONLY when shop lacks enough history)
+        $grossSuggested = null;
+        $suggestedQuantity = null;
+        $estimatedCost = null;
         $reason = "";
 
-        if ($isUsingFallback || $dailySalesRate <= 0) {
+        if ($historyWarning) {
+            // Whole shop lacks enough history (< 30 days) -> use 2x-minimum fallback
             $targetFallback = $minThreshold * 2;
-            $grossSuggested = max(1, $targetFallback - $currentStock);
-            if ($historyDays < 7) {
-                $reason = "Insufficient sales history (" . round($historyDays, 1) . " days available). Reorder suggested using 2x-minimum threshold fallback (target {$targetFallback} units).";
-            } else {
-                $reason = "Zero demand detected in last 30 days. Fallback rule: order up to 2x minimum threshold (target {$targetFallback} units).";
-            }
+            $grossSuggested = max(0, $targetFallback - $currentStock);
+            $suggestedQuantity = max(0, $grossSuggested - $onOrderUnits);
+            $estimatedCost = ($costPrice !== null) ? round($suggestedQuantity * $costPrice, 2) : null;
+            $reason = "Insufficient sales history (" . round($historyDays, 1) . " days available). Reorder suggested using 2x-minimum threshold fallback (target {$targetFallback} units).";
+        } elseif ($sold30Days === 0 || $dailySalesRate <= 0) {
+            // Shop HAS enough history (>= 30 days) and product sold 0 in last 30 days -> do NOT suggest quantity
+            $grossSuggested = null;
+            $suggestedQuantity = null;
+            $estimatedCost = null;
+            $reason = "No sales in 30 days. Review before reordering.";
         } else {
+            // Normal dynamic velocity replenishment
             $targetCoverageUnits = (int)ceil($dailySalesRate * $leadSafetyCover);
             $grossSuggested = max(0, $targetCoverageUnits - $currentStock);
+            $suggestedQuantity = max(0, $grossSuggested - $onOrderUnits);
+            $estimatedCost = ($costPrice !== null) ? round($suggestedQuantity * $costPrice, 2) : null;
             $reason = "Stock will run out in {$daysOfStockLeft} days at current demand rate of {$dailySalesRate} units/day (target {$leadSafetyCover} days cover).";
         }
 
-        // Subtract On-Order Units (Rule 3)
-        $suggestedQuantity = max(0, $grossSuggested - $onOrderUnits);
-
-        // Estimated Cost (null if cost_price is null or 0)
-        $estimatedCost = ($costPrice !== null) ? round($suggestedQuantity * $costPrice, 2) : null;
-
         // Stock Cover After Reorder
         $stockCoverAfterDays = null;
-        if ($dailySalesRate > 0) {
+        if ($dailySalesRate > 0 && $suggestedQuantity !== null) {
             $totalProjectedStock = $currentStock + $suggestedQuantity + $onOrderUnits;
             $stockCoverAfterDays = round($totalProjectedStock / $dailySalesRate, 1);
         }

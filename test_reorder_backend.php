@@ -76,6 +76,14 @@ $pdo->prepare("UPDATE products SET units = 8, min_stock_threshold = 24, cost_pri
 // Product 4: cost_price = null, units = 0 (out of stock)
 $pdo->prepare("UPDATE products SET units = 0, min_stock_threshold = 20, cost_price = NULL, status = 'Active' WHERE id = 4 AND shop_owner_id = 2")->execute();
 
+// Ensure Shop 2 has >= 30 days of sales history
+$oldBillNo = "BILL-HIST-35DAYS";
+$checkOld = $pdo->prepare("SELECT id FROM sales WHERE shop_owner_id = 2 AND bill_no = ?");
+$checkOld->execute([$oldBillNo]);
+if (!$checkOld->fetch()) {
+    $pdo->prepare("INSERT INTO sales (shop_owner_id, bill_no, sale_date, total_amount) VALUES (2, ?, NOW() - INTERVAL 35 DAY, 100.00)")->execute([$oldBillNo]);
+}
+
 // 2. Test: reorder/list.php with explainable rule-based calculations
 $resList = apiCall("$baseUrl/reorder/list.php", 'GET', null, ["Authorization: Bearer $token2"]);
 assertCheck("2a. reorder/list.php returns 200", $resList['code'] === 200, "Body: {$resList['body']}");
@@ -89,7 +97,7 @@ assertCheck("2b. reorder_config returned with lead_time, safety, cover days",
 $items = $resList['json']['data']['items'] ?? [];
 assertCheck("2c. Items list returned", !empty($items));
 
-// Find Product 4 in list (Out of stock with cost_price null)
+// Find Product 4 in list (Out of stock with cost_price null, and 0 sales in last 30 days)
 $prod4Item = null;
 $prod1Item = null;
 foreach ($items as $it) {
@@ -110,10 +118,28 @@ assertCheck("4. Zero demand product returns days_of_stock_left = null",
     $prod4Item !== null && $prod4Item['days_of_stock_left'] === null
 );
 
+// 4b. Test (NEW FIX): Shop HAS >= 30 days history, product sold 0 in 30 days -> suggested_quantity = null & reason
+assertCheck("4b. Product with 0 sales in 30 days has suggested_quantity = null", 
+    $prod4Item !== null && $prod4Item['suggested_quantity'] === null
+);
+assertCheck("4c. Reason matches 'No sales in 30 days. Review before reordering.'", 
+    $prod4Item !== null && $prod4Item['reason'] === 'No sales in 30 days. Review before reordering.'
+);
+
 // 5. Test: Shop 3 has no sales history -> history_warning = true and 2x-min fallback
+$checkShop3Prod = $pdo->prepare("SELECT id FROM products WHERE shop_owner_id = 3 LIMIT 1");
+$checkShop3Prod->execute();
+if (!$checkShop3Prod->fetch()) {
+    $pdo->prepare("INSERT INTO products (shop_owner_id, name, sku, category, price, cost_price, units, min_stock_threshold, status) VALUES (3, 'Shop3 Milk', 'S3-DAI-01', 'Dairy', 30.00, 25.00, 5, 20, 'Active')")->execute();
+}
+
 $resList3 = apiCall("$baseUrl/reorder/list.php", 'GET', null, ["Authorization: Bearer $token3"]);
 assertCheck("5a. Shop with no sales returns history_warning = true", 
     $resList3['code'] === 200 && $resList3['json']['data']['history_warning'] === true
+);
+assertCheck("5b. Shop with no sales uses 2x-min fallback in reason", 
+    !empty($resList3['json']['data']['items']) && 
+    strpos($resList3['json']['data']['items'][0]['reason'], '2x-minimum threshold fallback') !== false
 );
 
 // 6. Test: create_order.php validates products, limits, and auto-generates order_no

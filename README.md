@@ -48,15 +48,22 @@ StockSense_backend
 │   ├── orders.php                      # List saved purchase orders with items
 │   ├── receive.php                     # Mark received and atomically increment stock
 │   └── cancel.php                      # Cancel open purchase orders
+├── insights/                           # AI Recommendations & Market Basket Insights Module
+│   ├── add_insights_tables.sql         # Migration: recommendation_responses and idx_sale_product
+│   ├── slow_moving.php                 # Slow-moving clearance recommendations with cost checks
+│   ├── product_pairs.php               # Basket analysis (90-day window, lift > 1.0, paired items)
+│   ├── respond.php                     # Upsert recommendation decision (accepted/dismissed)
+│   └── history.php                     # Audit trail of recommendation decisions
 ├── uploads/
 │   └── temp/                           # Temporary spreadsheet storage during import
 ├── sample_valid_import.csv             # Sample valid CSV file
 ├── sample_error_import.csv             # Sample CSV containing validation errors
 ├── sample_stock_oct15.xlsx             # Sample Excel XLSX file
-├── test_reorder_backend.php            # Automated test runner for reorder module (26 tests)
+├── test_insights_backend.php           # Automated test runner for insights module (38 tests)
+├── test_reorder_backend.php            # Automated test runner for reorder module (29 tests)
 ├── test_sales_backend.php              # Automated test runner for sales module (37 tests)
 ├── test_token_auth.php                 # Automated test runner for token authentication
-├── stocksense.sql                      # Complete DB schema (owner_account, products, user_settings, import_history, tokens, sales, sales_items, purchase_orders, purchase_order_items)
+├── stocksense.sql                      # Complete DB schema (including recommendation_responses)
 ├── StockSense_Postman_Collection.json  # Complete Postman Collection
 ├── CHANGES.md                          # Changelog of additions and fixes
 └── README.md
