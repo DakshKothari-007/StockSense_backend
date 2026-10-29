@@ -24,16 +24,18 @@ date_default_timezone_set('Asia/Kolkata');
 
 require_once __DIR__ . "/../config/db.php";
 require_once __DIR__ . "/../inventory/auth_helper.php";
+require_once __DIR__ . "/../settings/settings_helper.php";
 
 $pdo->exec("SET time_zone = '+05:30'");
 $owner = authenticateShopOwner($pdo);
 $ownerId = (int)$owner['id'];
 
-// Named Constants for Slow-Moving Inventory (Rule 7)
-const SLOW_MOVING_MIN_DAYS_HISTORY = 30;
-const SLOW_MOVING_MAX_SOLD_30_DAYS = 10;
-const SLOW_MOVING_MIN_STOCK_COVER_DAYS = 60;
-const SLOW_MOVING_RULE_DESC = "units > 0 AND (units_sold_30_days <= 10 OR stock_cover_days >= 60)";
+// Load Shop Settings (Dashboard Integration)
+$shopSettings = get_shop_settings($pdo, $ownerId);
+$slowMovingMinDaysHistory = $shopSettings['min_history_days'];
+$slowMovingMaxSold30Days = 10;
+$slowMovingMinStockCoverDays = $shopSettings['slow_moving_threshold_days'];
+$slowMovingRuleDesc = "units > 0 AND (units_sold_30_days <= 10 OR stock_cover_days >= {$slowMovingMinStockCoverDays})";
 
 // 1. Validate Optional Date Range (from, to). Default: last 30 days
 $todayDateStr = date('Y-m-d');
@@ -157,14 +159,14 @@ try {
     $historyDays = 0;
     if ($firstSaleDate) {
         $historyDays = (time() - strtotime($firstSaleDate)) / 86400.0;
-        $hasEnoughSalesHistory = ($historyDays >= SLOW_MOVING_MIN_DAYS_HISTORY);
+        $hasEnoughSalesHistory = ($historyDays >= $slowMovingMinDaysHistory);
     }
 
     $slowMovingItems = [];
     $slowMovingStatusMessage = "";
 
     if (!$hasEnoughSalesHistory) {
-        $slowMovingStatusMessage = "Not enough sales history (minimum 30 days required to accurately evaluate slow-moving inventory).";
+        $slowMovingStatusMessage = "Not enough sales history (minimum {$slowMovingMinDaysHistory} days required to accurately evaluate slow-moving inventory).";
     } else {
         // Query products with units > 0 and calculate their units sold in the last 30 days
         $thirtyDaysAgo = date('Y-m-d H:i:s', strtotime('-30 days'));
@@ -194,8 +196,8 @@ try {
             // stock_cover_days = null when sold is 0 (Rule 7)
             $stockCoverDays = ($sold30 > 0) ? (int)round($units / ($sold30 / 30.0)) : null;
 
-            // Check slow-moving criteria: sold <= 10 or cover >= 60 days
-            $isSlow = ($sold30 <= SLOW_MOVING_MAX_SOLD_30_DAYS) || ($stockCoverDays !== null && $stockCoverDays >= SLOW_MOVING_MIN_STOCK_COVER_DAYS);
+            // Check slow-moving criteria: sold <= 10 or cover >= threshold
+            $isSlow = ($sold30 <= $slowMovingMaxSold30Days) || ($stockCoverDays !== null && $stockCoverDays >= $slowMovingMinStockCoverDays);
 
             if ($isSlow) {
                 $cashTiedUp = round($units * ($costPrice > 0 ? $costPrice : $price), 2);
@@ -450,7 +452,7 @@ try {
                 "slow_moving_metadata" => [
                     "has_enough_sales_history" => $hasEnoughSalesHistory,
                     "history_days_available" => round($historyDays, 1),
-                    "rule" => SLOW_MOVING_RULE_DESC,
+                    "rule" => $slowMovingRuleDesc,
                     "message" => $slowMovingStatusMessage ?: "Calculated from real sales velocity over past 30 days."
                 ]
             ],
@@ -465,7 +467,7 @@ try {
     http_response_code(500);
     echo json_encode([
         "status" => false,
-        "message" => "Internal server error while generating dashboard summary: " . $e->getMessage(),
+        "message" => "An internal server error occurred while generating dashboard summary.",
         "data" => (object)[]
     ]);
 }

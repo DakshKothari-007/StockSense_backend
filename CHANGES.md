@@ -1,5 +1,43 @@
 # Changelog - StockSense Backend
 
+## [Settings Module Release] - October 2026
+
+### Added
+- **Database Schema Additions (`settings/add_settings_columns.sql`):**
+  - Idempotent migration adding configuration, calculation, and security columns to `user_settings`:
+    - `lead_time_days INT UNSIGNED NOT NULL DEFAULT 2`
+    - `safety_days INT UNSIGNED NOT NULL DEFAULT 3`
+    - `cover_days INT UNSIGNED NOT NULL DEFAULT 7`
+    - `min_history_days INT UNSIGNED NOT NULL DEFAULT 30`
+    - `slow_moving_threshold_days INT UNSIGNED NOT NULL DEFAULT 60`
+    - `import_mode ENUM('ADD','REPLACE') NOT NULL DEFAULT 'ADD'`
+    - `timezone VARCHAR(50) NOT NULL DEFAULT 'Asia/Kolkata'` (read-only)
+    - `failed_password_attempts INT UNSIGNED NOT NULL DEFAULT 0`
+    - `password_locked_until DATETIME DEFAULT NULL`
+- **Centralized Settings Helper (`settings/settings_helper.php`):**
+  - `get_shop_settings(PDO $pdo, int $shopId): array`: Single centralized helper used by `reorder/`, `insights/`, `dashboard/`, and `import/`. Performs read-only lookups and returns strictly typed default settings when unconfigured without writing to the database.
+- **Settings Endpoints (`settings/`):**
+  - `settings/get.php` (`GET`): Read-only endpoint returning all account, appearance, notification, and inventory parameters. Returns defaults if no row exists in DB without performing any write operation.
+  - `settings/update.php` (`POST`): Partial preference update endpoint with strict type checking (ints as ints, booleans as booleans), range validation (lead: 0-60, safety: 0-60, cover: 1-90, min_history: 7-180, slow_moving: 14-365), unknown key rejections, read-only timezone enforcement (400), profile field redirection (400), and email update with current password verification and uniqueness check. Upserts into `user_settings` on first update.
+  - `settings/change_password.php` (`POST`): Verifies current password against database hash, locks account for 15 minutes after 5 consecutive failures, enforces min 8 characters, enforces that the new password differs from current, updates hash, and atomically revokes all other active session tokens from `tokens` table while preserving the current active session.
+  - `settings/reset_defaults.php` (`POST`): Restores default system values for all configurable settings in a transaction.
+- **Automated Test Runner (`test_settings_backend.php`):**
+  - 65 automated tests covering authentication, method checks, read-only get defaults without writing, strict type validation, range checking, unknown key rejection, read-only timezone rejection, dynamic reorder and insights integration, multi-shop isolation, REPLACE import safety confirmation, password changes, token revocation, failed attempt locking, and backward-compatible thin wrappers.
+
+### Changed
+- **`auth/` Backward Compatibility Wrappers:**
+  - `auth/get_settings.php`, `auth/update_settings.php`, and `auth/change_password.php` now act as thin wrappers delegating to the unified `settings/` implementations.
+- **`reorder/list.php`:**
+  - Dynamically reads `lead_time_days`, `safety_days`, `cover_days`, and `min_history_days` from `get_shop_settings()`.
+- **`insights/slow_moving.php`:**
+  - Dynamically reads `slow_moving_threshold_days`, `min_history_days`, and reorder thresholds from `get_shop_settings()`.
+- **`dashboard/summary.php`:**
+  - Dynamically reads `min_history_days` and `slow_moving_threshold_days` from `get_shop_settings()`.
+- **`import/execute.php`:**
+  - Dynamically reads `import_mode` from `get_shop_settings()`. When `import_mode` is `'REPLACE'`, requires explicit `confirm_replace: true` in the request body before overwriting stock quantities; uses standard additive updates when set to `'ADD'`.
+- **Postman Collection (`StockSense_Postman_Collection.json`):**
+  - Replaced `"3. App Settings"` with `"3. Settings Module"` containing 7 requests with Bearer token authentication, input validations, error tests, password changes, and defaults reset.
+
 ## [Insights Module & Reorder Fix] - October 2026
 
 ### Added

@@ -54,7 +54,7 @@
                         ],
                         "body": {
                             "mode": "raw",
-                            "raw": "{\n  \"full_name\": \"Ananya Rao\",\n  \"shop_name\": \"Green Basket\",\n  \"location\": \"Indiranagar, Bengaluru\",\n  \"store_type\": \"Neighbourhood supermarket\",\n  \"currency\": \"₹ INR / IST\",\n  \"email\": \"{{auth_email}}\",\n  \"password\": \"{{auth_password}}\"\n}"
+                            "raw": "{\n  \"full_name\": \"Ananya Rao\",\n  \"shop_name\": \"Green Basket\",\n  \"location\": \"Indiranagar, Bengaluru\",\n  \"store_type\": \"Neighbourhood supermarket\",\n  \"currency\": \"\u20b9 INR / IST\",\n  \"email\": \"{{auth_email}}\",\n  \"password\": \"{{auth_password}}\"\n}"
                         },
                         "url": {
                             "raw": "{{base_url}}/auth/signup.php",
@@ -123,7 +123,7 @@
                     "description": "Authenticates the store owner and returns account details along with a cryptographically secure 64-character token. Postman automatically sets the 'token' collection variable for subsequent requests."
                 },
                 {
-                    "name": "Forgot Password - Verify Email",
+                    "name": "Forgot Password (Direct)",
                     "request": {
                         "method": "POST",
                         "header": [
@@ -150,7 +150,7 @@
                     }
                 },
                 {
-                    "name": "Reset Password",
+                    "name": "Reset Password (Direct)",
                     "request": {
                         "method": "POST",
                         "header": [
@@ -161,7 +161,7 @@
                         ],
                         "body": {
                             "mode": "raw",
-                            "raw": "{\n  \"email\": \"{{auth_email}}\",\n  \"new_password\": \"brandnewpass123\",\n  \"confirm_password\": \"brandnewpass123\"\n}"
+                            "raw": "{\n  \"email\": \"{{auth_email}}\",\n  \"new_password\": \"newpassword123\",\n  \"confirm_password\": \"newpassword123\"\n}"
                         },
                         "url": {
                             "raw": "{{base_url}}/auth/reset_password.php",
@@ -305,6 +305,38 @@
                             }
                         }
                     ]
+                },
+                {
+                    "name": "Delete Account",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"current_password\": \"{{auth_password}}\",\n  \"confirm_text\": \"DELETE\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/auth/delete_account.php",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "auth",
+                                "delete_account.php"
+                            ]
+                        },
+                        "description": "Permanently deletes account and cascades to all store tables atomically after verifying current password and confirm_text = 'DELETE'."
+                    },
+                    "response": []
                 }
             ]
         },
@@ -420,57 +452,235 @@
             ]
         },
         {
-            "name": "3. App Settings",
+            "name": "3. Settings Module",
             "item": [
                 {
-                    "name": "Get User Settings",
+                    "name": "Get Shop Settings",
                     "request": {
                         "method": "GET",
-                        "header": [],
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
                         "url": {
-                            "raw": "{{base_url}}/auth/get_settings.php?email={{auth_email}}",
+                            "raw": "{{base_url}}/settings/get.php",
                             "host": [
                                 "{{base_url}}"
                             ],
                             "path": [
-                                "auth",
-                                "get_settings.php"
-                            ],
-                            "query": [
-                                {
-                                    "key": "email",
-                                    "value": "{{auth_email}}"
-                                }
+                                "settings",
+                                "get.php"
                             ]
                         },
-                        "description": "Retrieves notification toggle states (low-stock alerts, AI recommendations, daily summary, weekly digest) and theme mode for SettingsScreen."
+                        "description": "Retrieves all settings for the shop. Does not write to DB; returns defaults when unconfigured."
                     }
                 },
                 {
-                    "name": "Update User Settings",
+                    "name": "Update Shop Settings",
                     "request": {
                         "method": "POST",
                         "header": [
                             {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            },
+                            {
                                 "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Accept",
                                 "value": "application/json"
                             }
                         ],
                         "body": {
                             "mode": "raw",
-                            "raw": "{\n  \"email\": \"{{auth_email}}\",\n  \"low_stock_alerts\": true,\n  \"ai_recommendations\": true,\n  \"daily_sales_summary\": true,\n  \"weekly_email_digest\": false,\n  \"theme_mode\": \"DARK\"\n}"
+                            "raw": "{\n  \"theme_mode\": \"DARK\",\n  \"low_stock_alerts\": false,\n  \"ai_recommendations\": true,\n  \"daily_sales_summary\": true,\n  \"weekly_email_digest\": false,\n  \"lead_time_days\": 4,\n  \"safety_days\": 5,\n  \"cover_days\": 10,\n  \"min_history_days\": 45,\n  \"slow_moving_threshold_days\": 90,\n  \"import_mode\": \"ADD\"\n}"
                         },
                         "url": {
-                            "raw": "{{base_url}}/auth/update_settings.php",
+                            "raw": "{{base_url}}/settings/update.php",
                             "host": [
                                 "{{base_url}}"
                             ],
                             "path": [
-                                "auth",
-                                "update_settings.php"
+                                "settings",
+                                "update.php"
                             ]
                         },
-                        "description": "Updates alert switches and theme preference ('SYSTEM', 'LIGHT', or 'DARK') from SettingsScreen."
+                        "description": "Partial updates with strict type checking and range validation."
+                    }
+                },
+                {
+                    "name": "Update Settings - Out of Range Error (400)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"lead_time_days\": 75\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/settings/update.php",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "settings",
+                                "update.php"
+                            ]
+                        },
+                        "description": "Validates range bounds (lead_time_days must be between 0 and 60)."
+                    }
+                },
+                {
+                    "name": "Update Settings - Unknown Key Error (400)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"unknown_parameter\": \"not_allowed\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/settings/update.php",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "settings",
+                                "update.php"
+                            ]
+                        },
+                        "description": "Rejects unrecognized keys with 400 Bad Request."
+                    }
+                },
+                {
+                    "name": "Change Password",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"current_password\": \"password123\",\n  \"new_password\": \"NewSecretPassword456!\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/settings/change_password.php",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "settings",
+                                "change_password.php"
+                            ]
+                        },
+                        "description": "Validates current password, enforces min 8 chars, updates hash and revokes all other active sessions."
+                    }
+                },
+                {
+                    "name": "Change Password - Wrong Current Password (400)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"current_password\": \"wrong_pass_test\",\n  \"new_password\": \"NewSecretPassword456!\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/settings/change_password.php",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "settings",
+                                "change_password.php"
+                            ]
+                        },
+                        "description": "Rejects wrong current password and increments failed attempts counter."
+                    }
+                },
+                {
+                    "name": "Reset Settings to Defaults",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/settings/reset_defaults.php",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "settings",
+                                "reset_defaults.php"
+                            ]
+                        },
+                        "description": "Restores factory defaults (lead 2d, safety 3d, cover 7d, etc.)."
                     }
                 }
             ]
@@ -559,7 +769,7 @@
                         ],
                         "body": {
                             "mode": "raw",
-                            "raw": "{\n  \"name\": \"Fortune Sunflower Oil · 1 L\",\n  \"sku\": \"OIL-005\",\n  \"category\": \"Staples\",\n  \"description\": \"1 L pouch · Refined oil\",\n  \"price\": 145.00,\n  \"cost_price\": 120.00,\n  \"units\": 50,\n  \"min_stock_threshold\": 15,\n  \"icon_type\": 2\n}"
+                            "raw": "{\n  \"name\": \"Fortune Sunflower Oil \u00b7 1 L\",\n  \"sku\": \"OIL-005\",\n  \"category\": \"Staples\",\n  \"description\": \"1 L pouch \u00b7 Refined oil\",\n  \"price\": 145.00,\n  \"cost_price\": 120.00,\n  \"units\": 50,\n  \"min_stock_threshold\": 15,\n  \"icon_type\": 2\n}"
                         },
                         "url": {
                             "raw": "{{base_url}}/inventory/add_product.php",
@@ -1868,6 +2078,175 @@
                         },
                         "description": "Lists all recorded recommendation responses for this shop, newest first."
                     }
+                }
+            ]
+        },
+        {
+            "name": "9. Notifications Module",
+            "item": [
+                {
+                    "name": "List Notifications",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/notifications/list.php?limit=50&page=1",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "notifications",
+                                "list.php"
+                            ],
+                            "query": [
+                                {
+                                    "key": "limit",
+                                    "value": "50"
+                                },
+                                {
+                                    "key": "page",
+                                    "value": "1"
+                                },
+                                {
+                                    "key": "type",
+                                    "value": "",
+                                    "disabled": true
+                                },
+                                {
+                                    "key": "unread_only",
+                                    "value": "true",
+                                    "disabled": true
+                                }
+                            ]
+                        },
+                        "description": "Returns dynamically generated notifications (low-stock, slow-moving, sales performance so far today, import status) combined with user read/dismiss states."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get Unread Notification Count",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/notifications/unread_count.php",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "notifications",
+                                "unread_count.php"
+                            ]
+                        },
+                        "description": "Returns total active unread notification count for the bell badge on dashboard header."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Mark Single Notification Read",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"key\": \"low_stock:1\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/notifications/mark_read.php",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "notifications",
+                                "mark_read.php"
+                            ]
+                        },
+                        "description": "Marks a specific notification read by key (e.g. low_stock:1, slow_moving:2, sales:2026-10-29)."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Mark All Notifications Read",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/notifications/mark_all_read.php",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "notifications",
+                                "mark_all_read.php"
+                            ]
+                        },
+                        "description": "Marks all currently active notifications as read in bulk."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Dismiss Notification",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"key\": \"slow_moving:2\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/notifications/dismiss.php",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "notifications",
+                                "dismiss.php"
+                            ]
+                        },
+                        "description": "Permanently dismisses a notification so it is omitted from subsequent list responses."
+                    },
+                    "response": []
                 }
             ]
         }

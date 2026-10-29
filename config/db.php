@@ -1,6 +1,12 @@
 
 <?php
 
+// Security: Prevent leaking PHP warnings/errors to API clients
+ini_set('display_errors', '0');
+ini_set('display_startup_errors', '0');
+error_reporting(E_ALL);
+ini_set('log_errors', '1');
+
 $host = "localhost";
 $dbname = "stocksense";
 $username = "root";
@@ -18,14 +24,17 @@ try {
         ]
     );
 } catch (PDOException $e) {
-    error_log($e->getMessage());
+    error_log("Database connection failure: " . $e->getMessage());
 
     http_response_code(500);
-    header("Content-Type: application/json");
+    header("Content-Type: application/json; charset=UTF-8");
 
     echo json_encode([
+        "status" => false,
         "success" => false,
-        "message" => "Database connection failed."
+        "message" => "An internal database error occurred.",
+        "data" => null
     ]);
     exit;
 }
+

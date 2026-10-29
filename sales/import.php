@@ -433,7 +433,7 @@ try {
     http_response_code(500);
     echo json_encode([
         "status" => false,
-        "message" => "Internal error while executing sales import: " . $e->getMessage(),
+        "message" => "An internal server error occurred while executing sales import.",
         "data" => (object)[]
     ]);
 }

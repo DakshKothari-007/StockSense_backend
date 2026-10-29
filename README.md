@@ -54,16 +54,24 @@ StockSense_backend
 │   ├── product_pairs.php               # Basket analysis (90-day window, lift > 1.0, paired items)
 │   ├── respond.php                     # Upsert recommendation decision (accepted/dismissed)
 │   └── history.php                     # Audit trail of recommendation decisions
+├── settings/                           # Store & System Settings Module
+│   ├── add_settings_columns.sql        # Migration: safe additive columns for user_settings
+│   ├── settings_helper.php             # Centralized get_shop_settings() helper
+│   ├── get.php                         # Read-only settings getter with dynamic defaults
+│   ├── update.php                      # Strict-type settings upsert with range checks
+│   ├── change_password.php             # Password change with failed attempt rate limit
+│   └── reset_defaults.php              # Reset store settings back to default values
 ├── uploads/
 │   └── temp/                           # Temporary spreadsheet storage during import
 ├── sample_valid_import.csv             # Sample valid CSV file
 ├── sample_error_import.csv             # Sample CSV containing validation errors
 ├── sample_stock_oct15.xlsx             # Sample Excel XLSX file
+├── test_settings_backend.php           # Automated test runner for settings module (65 tests)
 ├── test_insights_backend.php           # Automated test runner for insights module (38 tests)
 ├── test_reorder_backend.php            # Automated test runner for reorder module (29 tests)
 ├── test_sales_backend.php              # Automated test runner for sales module (37 tests)
-├── test_token_auth.php                 # Automated test runner for token authentication
-├── stocksense.sql                      # Complete DB schema (including recommendation_responses)
+├── test_token_auth.php                 # Automated test runner for token authentication (14 tests)
+├── stocksense.sql                      # Complete DB schema (including recommendation_responses & settings)
 ├── StockSense_Postman_Collection.json  # Complete Postman Collection
 ├── CHANGES.md                          # Changelog of additions and fixes
 └── README.md

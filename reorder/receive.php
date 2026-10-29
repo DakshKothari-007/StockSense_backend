@@ -173,7 +173,7 @@ try {
     http_response_code(500);
     echo json_encode([
         "status" => false,
-        "message" => "Internal error processing order receipt: " . $e->getMessage(),
+        "message" => "An internal server error occurred while processing order receipt.",
         "data" => (object)[]
     ]);
 }

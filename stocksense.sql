@@ -65,20 +65,20 @@ CREATE TABLE `user_settings` (
   `daily_sales_summary` tinyint(1) NOT NULL DEFAULT 1,
   `weekly_email_digest` tinyint(1) NOT NULL DEFAULT 0,
   `theme_mode` varchar(20) NOT NULL DEFAULT 'SYSTEM',
+  `lead_time_days` int(10) UNSIGNED NOT NULL DEFAULT 2,
+  `safety_days` int(10) UNSIGNED NOT NULL DEFAULT 3,
+  `cover_days` int(10) UNSIGNED NOT NULL DEFAULT 7,
+  `min_history_days` int(10) UNSIGNED NOT NULL DEFAULT 30,
+  `slow_moving_threshold_days` int(10) UNSIGNED NOT NULL DEFAULT 60,
+  `import_mode` enum('ADD','REPLACE') NOT NULL DEFAULT 'ADD',
+  `timezone` varchar(50) NOT NULL DEFAULT 'Asia/Kolkata',
+  `failed_password_attempts` int(10) UNSIGNED NOT NULL DEFAULT 0,
+  `password_locked_until` datetime DEFAULT NULL,
   `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
   PRIMARY KEY (`id`),
   UNIQUE KEY `user_id` (`user_id`),
   CONSTRAINT `fk_user_settings_owner` FOREIGN KEY (`user_id`) REFERENCES `owner_account` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
---
--- Dumping data for table `user_settings`
---
-
-INSERT INTO `user_settings` (`id`, `user_id`, `low_stock_alerts`, `ai_recommendations`, `daily_sales_summary`, `weekly_email_digest`, `theme_mode`) VALUES
-(1, 2, 1, 1, 1, 0, 'SYSTEM'),
-(2, 3, 1, 1, 1, 0, 'SYSTEM'),
-(3, 4, 1, 1, 1, 0, 'SYSTEM');
 
 -- --------------------------------------------------------
 
@@ -264,6 +264,60 @@ CREATE TABLE `recommendation_responses` (
   UNIQUE KEY `unique_owner_rec` (`shop_owner_id`, `recommendation_type`, `product_id_1`, `product_id_2`),
   KEY `idx_rec_owner_type` (`shop_owner_id`, `recommendation_type`),
   CONSTRAINT `fk_rec_owner` FOREIGN KEY (`shop_owner_id`) REFERENCES `owner_account` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `login_attempts`
+--
+
+CREATE TABLE `login_attempts` (
+  `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `identifier` varchar(191) NOT NULL,
+  `ip_address` varchar(45) NOT NULL DEFAULT '',
+  `attempted_at` datetime NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `idx_identifier_time` (`identifier`, `attempted_at`),
+  KEY `idx_ip_time` (`ip_address`, `attempted_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `rate_limits`
+--
+
+CREATE TABLE `rate_limits` (
+  `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `action` varchar(50) NOT NULL,
+  `identifier` varchar(191) NOT NULL,
+  `ip_address` varchar(45) NOT NULL DEFAULT '',
+  `attempted_at` datetime NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `idx_action_id_time` (`action`, `identifier`, `attempted_at`),
+  KEY `idx_action_ip_time` (`action`, `ip_address`, `attempted_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `notification_states`
+--
+
+CREATE TABLE `notification_states` (
+  `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `shop_owner_id` int(10) UNSIGNED NOT NULL,
+  `notification_key` varchar(100) NOT NULL,
+  `read_at` datetime DEFAULT NULL,
+  `dismissed_at` datetime DEFAULT NULL,
+  `created_at` datetime NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_owner_notif` (`shop_owner_id`, `notification_key`),
+  KEY `idx_owner_read` (`shop_owner_id`, `read_at`),
+  CONSTRAINT `fk_notif_owner` FOREIGN KEY (`shop_owner_id`) REFERENCES `owner_account` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 COMMIT;

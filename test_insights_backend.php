@@ -69,10 +69,12 @@ $otherOwnerId = 3;
 
 // Clean previous responses for shop 2 & 3
 $pdo->exec("DELETE FROM recommendation_responses WHERE shop_owner_id IN (2, 3)");
+$pdo->exec("DELETE FROM rate_limits");
+$pdo->exec("DELETE FROM login_attempts");
 
 // Clean test sales items and sales for clean state
-$pdo->exec("DELETE FROM sales_items WHERE sale_id IN (SELECT id FROM sales WHERE bill_no LIKE 'TEST-INS%')");
-$pdo->exec("DELETE FROM sales WHERE bill_no LIKE 'TEST-INS%'");
+$pdo->exec("DELETE si FROM sales_items si JOIN sales s ON si.sale_id = s.id WHERE s.shop_owner_id = 2");
+$pdo->exec("DELETE FROM sales WHERE shop_owner_id = 2");
 
 // Ensure Shop 2 has distinct products for testing
 // P1: units=50, min=10, price=100, cost=60 (normal cost)

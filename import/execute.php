@@ -13,8 +13,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 require_once __DIR__ . "/../config/db.php";
 require_once __DIR__ . "/../inventory/auth_helper.php";
 require_once __DIR__ . "/SpreadsheetReader.php";
+require_once __DIR__ . "/../settings/settings_helper.php";
 
 $owner = authenticateShopOwner($pdo);
+$ownerId = (int)$owner['id'];
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
@@ -28,6 +30,23 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 
 $input = json_decode(file_get_contents("php://input"), true) ?? $_POST;
 
+// Rule 2: Check shop import_mode setting
+$shopSettings = get_shop_settings($pdo, $ownerId);
+$shopImportMode = $shopSettings['import_mode'] ?? 'ADD';
+
+if ($shopImportMode === 'REPLACE') {
+    $confirmReplace = !empty($input['confirm_replace']) && ($input['confirm_replace'] === true || $input['confirm_replace'] === 'true' || $input['confirm_replace'] === 1 || $input['confirm_replace'] === '1');
+    if (!$confirmReplace) {
+        http_response_code(400);
+        echo json_encode([
+            "status" => false,
+            "message" => "Shop import mode is set to REPLACE (overwrite existing inventory stock). Overwriting stock requires explicit 'confirm_replace: true' in request.",
+            "data" => (object)[]
+        ]);
+        exit;
+    }
+}
+
 $fileToken = trim($input['file_token'] ?? '');
 if (empty($fileToken)) {
     http_response_code(400);
@@ -39,7 +58,6 @@ if (empty($fileToken)) {
     exit;
 }
 
-$ownerId = (int)$owner['id'];
 if (!preg_match('/^imp_' . $ownerId . '_[a-zA-Z0-9_]+\.(csv|xlsx)$/', $fileToken)) {
     http_response_code(403);
     echo json_encode([
@@ -255,9 +273,10 @@ try {
     $stockAdded = 0;
 
     $checkStmt = $pdo->prepare("SELECT id, name, units, cost_price, price FROM products WHERE shop_owner_id = ? AND sku = ? LIMIT 1 FOR UPDATE");
+    $unitsUpdateExpr = ($shopImportMode === 'REPLACE') ? ":units" : "units + :units";
     $updateStmt = $pdo->prepare("
         UPDATE products
-        SET units = units + :units,
+        SET units = {$unitsUpdateExpr},
             cost_price = :cost_price,
             price = :price,
             name = :name,

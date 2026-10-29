@@ -60,6 +60,31 @@ if (
 }
 
 try {
+    $ipAddress = $_SERVER['HTTP_X_FORWARDED_FOR'] ?? $_SERVER['REMOTE_ADDR'] ?? '';
+    if (strpos($ipAddress, ',') !== false) {
+        $parts = explode(',', $ipAddress);
+        $ipAddress = trim($parts[0]);
+    }
+
+    // Check recent failed attempts for this email or IP in the last 15 minutes (Max: 5 attempts)
+    $checkRateStmt = $pdo->prepare(
+        "SELECT COUNT(*) FROM login_attempts 
+         WHERE (identifier = ? OR (ip_address != '' AND ip_address = ?))
+           AND attempted_at > DATE_SUB(NOW(), INTERVAL 15 MINUTE)"
+    );
+    $checkRateStmt->execute([$email, $ipAddress]);
+    $failedCount = (int) $checkRateStmt->fetchColumn();
+
+    if ($failedCount >= 5) {
+        http_response_code(429);
+        echo json_encode([
+            "status" => false,
+            "success" => false,
+            "message" => "Too many failed login attempts. Please try again after 15 minutes.",
+            "data" => null
+        ]);
+        exit;
+    }
 
     // Find the account using the email address.
     $stmt = $pdo->prepare(
@@ -79,14 +104,32 @@ try {
         !$user ||
         !password_verify($password, $user["password"])
     ) {
+        // Record failed attempt
+        $logAttemptStmt = $pdo->prepare("INSERT INTO login_attempts (identifier, ip_address, attempted_at) VALUES (?, ?, NOW())");
+        $logAttemptStmt->execute([$email, $ipAddress]);
+
+        $remaining = max(0, 5 - ($failedCount + 1));
+        $msg = "Invalid email or password.";
+        if ($remaining > 0) {
+            $msg .= " $remaining attempts remaining before temporary account lock.";
+        } else {
+            $msg .= " Account locked for 15 minutes.";
+        }
+
         http_response_code(401);
 
         echo json_encode([
+            "status" => false,
             "success" => false,
-            "message" => "Invalid email or password."
+            "message" => $msg,
+            "data" => null
         ]);
         exit;
     }
+
+    // Clear failed attempts upon successful authentication
+    $clearAttemptsStmt = $pdo->prepare("DELETE FROM login_attempts WHERE identifier = ? OR (ip_address != '' AND ip_address = ?)");
+    $clearAttemptsStmt->execute([$email, $ipAddress]);
 
     // Generate random 64-char token (32 random bytes -> 64 hex chars)
     $token = bin2hex(random_bytes(32));

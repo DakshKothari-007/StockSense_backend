@@ -24,6 +24,10 @@ if ($_SERVER["REQUEST_METHOD"] !== "POST") {
 
 // Connect to the database.
 require_once __DIR__ . "/../config/db.php";
+require_once __DIR__ . "/../config/rate_limiter.php";
+
+// Rate limiting: Max 5 signup attempts per IP per 15 minutes
+enforce_rate_limit($pdo, 'signup', get_client_ip(), 5, 15);
 
 // Read the JSON request from Android or Postman.
 $data = json_decode(file_get_contents("php://input"), true);
@@ -134,6 +138,9 @@ try {
     } catch (Throwable $ignore) {
         // Non-blocking
     }
+
+    // Record rate limit attempt
+    record_rate_limit_attempt($pdo, 'signup', get_client_ip());
 
     // Send a successful response.
     http_response_code(201);

@@ -175,10 +175,11 @@ try {
     ]);
 
 } catch (Exception $e) {
+    error_log("Insights respond error: " . $e->getMessage());
     http_response_code(500);
     echo json_encode([
         "status" => false,
-        "message" => "An error occurred while saving response: " . $e->getMessage(),
+        "message" => "An internal server error occurred while saving recommendation response.",
         "data" => (object)[]
     ]);
 }

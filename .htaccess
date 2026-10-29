@@ -1,0 +1,24 @@
+# ========================================================
+# StockSense Backend Security Configuration (.htaccess)
+# ========================================================
+
+# Disable directory browsing
+Options -Indexes
+
+# Global Security Headers
+<IfModule mod_headers.c>
+    Header set X-Content-Type-Options "nosniff"
+    Header set X-Frame-Options "DENY"
+    Header set X-XSS-Protection "1; mode=block"
+    Header set Referrer-Policy "strict-origin-when-cross-origin"
+</IfModule>
+
+# Block access to test scripts, check scripts, scratch files, schemas, and docs from the browser
+<FilesMatch "^(test_.*\.php|check_.*\.php|.*\.sql|.*\.md|.*\.json|.*\.csv|.*\.xlsx)$">
+    Require all denied
+</FilesMatch>
+
+# Block access to hidden files and directories (like .git)
+<FilesMatch "^\.">
+    Require all denied
+</FilesMatch>

@@ -306,10 +306,11 @@ try {
     ]);
 
 } catch (Exception $e) {
+    error_log("Insights product_pairs error: " . $e->getMessage());
     http_response_code(500);
     echo json_encode([
         "status" => false,
-        "message" => "An error occurred while fetching product pairs: " . $e->getMessage(),
+        "message" => "An internal server error occurred while fetching product pairs.",
         "data" => (object)[]
     ]);
 }

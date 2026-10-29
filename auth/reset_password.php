@@ -1,4 +1,3 @@
-
 <?php
 
 header("Content-Type: application/json; charset=UTF-8");
@@ -16,13 +15,16 @@ if ($_SERVER["REQUEST_METHOD"] !== "POST") {
     http_response_code(405);
 
     echo json_encode([
+        "status" => false,
         "success" => false,
-        "message" => "Only POST requests are allowed."
+        "message" => "Only POST requests are allowed.",
+        "data" => null
     ]);
     exit;
 }
 
 require_once __DIR__ . "/../config/db.php";
+require_once __DIR__ . "/../config/rate_limiter.php";
 
 $data = json_decode(file_get_contents("php://input"), true);
 
@@ -30,8 +32,10 @@ if (!is_array($data)) {
     http_response_code(400);
 
     echo json_encode([
+        "status" => false,
         "success" => false,
-        "message" => "Invalid JSON request."
+        "message" => "Invalid JSON request.",
+        "data" => null
     ]);
     exit;
 }
@@ -40,32 +44,44 @@ $email = strtolower(trim($data["email"] ?? ""));
 $newPassword = $data["new_password"] ?? "";
 $confirmPassword = $data["confirm_password"] ?? "";
 
+// Rate limiting: Max 5 reset attempts per email/IP per 15 minutes
+enforce_rate_limit($pdo, 'reset_password', $email, 5, 15);
+
 if (!filter_var($email, FILTER_VALIDATE_EMAIL) || strlen($email) > 150) {
+    record_rate_limit_attempt($pdo, 'reset_password', $email);
     http_response_code(422);
 
     echo json_encode([
+        "status" => false,
         "success" => false,
-        "message" => "Please enter a valid email address."
+        "message" => "Please enter a valid email address.",
+        "data" => null
     ]);
     exit;
 }
 
 if (!is_string($newPassword) || strlen($newPassword) < 8) {
+    record_rate_limit_attempt($pdo, 'reset_password', $email);
     http_response_code(422);
 
     echo json_encode([
+        "status" => false,
         "success" => false,
-        "message" => "Password must be at least 8 characters long."
+        "message" => "Password must be at least 8 characters long.",
+        "data" => null
     ]);
     exit;
 }
 
 if (!is_string($confirmPassword) || $newPassword !== $confirmPassword) {
+    record_rate_limit_attempt($pdo, 'reset_password', $email);
     http_response_code(422);
 
     echo json_encode([
+        "status" => false,
         "success" => false,
-        "message" => "Passwords do not match."
+        "message" => "Passwords do not match.",
+        "data" => null
     ]);
     exit;
 }
@@ -79,35 +95,55 @@ try {
     $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
     if (!$user) {
+        record_rate_limit_attempt($pdo, 'reset_password', $email);
         http_response_code(404);
 
         echo json_encode([
+            "status" => false,
             "success" => false,
-            "message" => "No account found with this email address."
+            "message" => "No account found with this email address.",
+            "data" => null
         ]);
         exit;
     }
 
+    $userId = (int)$user["id"];
     $passwordHash = password_hash($newPassword, PASSWORD_DEFAULT);
 
-    $update = $pdo->prepare(
-        "UPDATE owner_account SET password = ? WHERE id = ?"
-    );
+    // Atomic transaction: Update password and revoke all active sessions
+    $pdo->beginTransaction();
 
-    $update->execute([$passwordHash, $user["id"]]);
+    $updateStmt = $pdo->prepare("UPDATE owner_account SET password = ? WHERE id = ?");
+    $updateStmt->execute([$passwordHash, $userId]);
 
+    $revokeStmt = $pdo->prepare("DELETE FROM tokens WHERE user_id = ?");
+    $revokeStmt->execute([$userId]);
+
+    $pdo->commit();
+
+    // Clear rate limit attempts on successful reset
+    clear_rate_limit_attempts($pdo, 'reset_password', $email);
+
+    http_response_code(200);
     echo json_encode([
+        "status" => true,
         "success" => true,
-        "message" => "Password updated successfully. Please log in with your new password."
+        "message" => "Password updated successfully. All active sessions have been logged out. Please log in with your new password.",
+        "data" => null
     ]);
 
 } catch (Throwable $e) {
-    error_log($e->getMessage());
+    if ($pdo->inTransaction()) {
+        $pdo->rollBack();
+    }
+    error_log("Password reset error: " . $e->getMessage());
     http_response_code(500);
 
     echo json_encode([
+        "status" => false,
         "success" => false,
-        "message" => "Unable to reset password right now."
+        "message" => "Unable to reset password right now.",
+        "data" => null
     ]);
 }
 ?>

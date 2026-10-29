@@ -24,20 +24,22 @@ date_default_timezone_set('Asia/Kolkata');
 
 require_once __DIR__ . "/../config/db.php";
 require_once __DIR__ . "/../inventory/auth_helper.php";
+require_once __DIR__ . "/../settings/settings_helper.php";
 
 $pdo->exec("SET time_zone = '+05:30'");
 $owner = authenticateShopOwner($pdo);
 $shopOwnerId = (int)$owner["id"];
 
-// Named Configuration
-const INSIGHTS_CONFIG = [
-    "slow_moving_stock_cover_threshold" => 60,
+// Load Shop Settings (Insights Integration)
+$shopSettings = get_shop_settings($pdo, $shopOwnerId);
+$insightsConfig = [
+    "slow_moving_stock_cover_threshold" => $shopSettings["slow_moving_threshold_days"],
     "single_discount_pct" => 10,
     "bundle_discount_pct" => 15,
-    "min_sales_history_days" => 30,
-    "reorder_lead_time_days" => 2,
-    "reorder_safety_days" => 3,
-    "reorder_cover_days" => 7
+    "min_sales_history_days" => $shopSettings["min_history_days"],
+    "reorder_lead_time_days" => $shopSettings["lead_time_days"],
+    "reorder_safety_days" => $shopSettings["safety_days"],
+    "reorder_cover_days" => $shopSettings["cover_days"]
 ];
 
 $includeDismissed = isset($_GET["include_dismissed"]) && ($_GET["include_dismissed"] === "1" || strtolower($_GET["include_dismissed"]) === "true");
@@ -59,7 +61,7 @@ try {
         $earliestTime = strtotime($hist["earliest_sale"]);
         $diffSeconds = time() - $earliestTime;
         $salesHistoryDays = max(1, (int)floor($diffSeconds / 86400));
-        $hasEnoughHistory = ($salesHistoryDays >= INSIGHTS_CONFIG["min_sales_history_days"]);
+        $hasEnoughHistory = ($salesHistoryDays >= $insightsConfig["min_sales_history_days"]);
     }
 
     if (!$hasEnoughHistory) {
@@ -73,9 +75,9 @@ try {
                 "total_slow_moving_count" => 0,
                 "total_tied_up_capital" => 0.00,
                 "config" => [
-                    "stock_cover_days_threshold" => INSIGHTS_CONFIG["slow_moving_stock_cover_threshold"],
-                    "single_discount_pct" => INSIGHTS_CONFIG["single_discount_pct"],
-                    "bundle_discount_pct" => INSIGHTS_CONFIG["bundle_discount_pct"]
+                    "stock_cover_days_threshold" => $insightsConfig["slow_moving_stock_cover_threshold"],
+                    "single_discount_pct" => $insightsConfig["single_discount_pct"],
+                    "bundle_discount_pct" => $insightsConfig["bundle_discount_pct"]
                 ],
                 "items" => []
             ]
@@ -116,9 +118,9 @@ try {
     ");
     $prodStmt->execute([$shopOwnerId, $thirtyDaysAgo, $nowDatetime, $shopOwnerId]);
 
-    $reorderThresholdDays = INSIGHTS_CONFIG["reorder_lead_time_days"] 
-        + INSIGHTS_CONFIG["reorder_safety_days"] 
-        + INSIGHTS_CONFIG["reorder_cover_days"]; // 12 days
+    $reorderThresholdDays = $insightsConfig["reorder_lead_time_days"] 
+        + $insightsConfig["reorder_safety_days"] 
+        + $insightsConfig["reorder_cover_days"]; // 12 days
 
     $items = [];
     $totalTiedUpCapital = 0.00;
@@ -159,9 +161,9 @@ try {
         if ($sold30Days === 0) {
             $isSlowMoving = true;
             $ruleTriggered = "units_sold_30_days = 0";
-        } elseif ($stockCoverDays !== null && $stockCoverDays >= INSIGHTS_CONFIG["slow_moving_stock_cover_threshold"]) {
+        } elseif ($stockCoverDays !== null && $stockCoverDays >= $insightsConfig["slow_moving_stock_cover_threshold"]) {
             $isSlowMoving = true;
-            $ruleTriggered = "stock_cover_days >= " . INSIGHTS_CONFIG["slow_moving_stock_cover_threshold"];
+            $ruleTriggered = "stock_cover_days >= " . $insightsConfig["slow_moving_stock_cover_threshold"];
         }
 
         if (!$isSlowMoving) {
@@ -184,10 +186,10 @@ try {
         $totalTiedUpCapital += $tiedCapital;
 
         // Rule 4: Clearance suggestions with discount percent and cost price verification
-        $singleDiscPct = INSIGHTS_CONFIG["single_discount_pct"];
+        $singleDiscPct = $insightsConfig["single_discount_pct"];
         $singlePrice = round($sellingPrice * (1.0 - ($singleDiscPct / 100.0)), 2);
 
-        $bundleDiscPct = INSIGHTS_CONFIG["bundle_discount_pct"];
+        $bundleDiscPct = $insightsConfig["bundle_discount_pct"];
         $bundlePrice = round($sellingPrice * (1.0 - ($bundleDiscPct / 100.0)), 2);
 
         // Cost verification helper
@@ -259,19 +261,20 @@ try {
             "total_slow_moving_count" => count($items),
             "total_tied_up_capital" => round($totalTiedUpCapital, 2),
             "config" => [
-                "stock_cover_days_threshold" => INSIGHTS_CONFIG["slow_moving_stock_cover_threshold"],
-                "single_discount_pct" => INSIGHTS_CONFIG["single_discount_pct"],
-                "bundle_discount_pct" => INSIGHTS_CONFIG["bundle_discount_pct"]
+                "stock_cover_days_threshold" => $insightsConfig["slow_moving_stock_cover_threshold"],
+                "single_discount_pct" => $insightsConfig["single_discount_pct"],
+                "bundle_discount_pct" => $insightsConfig["bundle_discount_pct"]
             ],
             "items" => $items
         ]
     ]);
 
 } catch (Exception $e) {
+    error_log("Insights slow_moving error: " . $e->getMessage());
     http_response_code(500);
     echo json_encode([
         "status" => false,
-        "message" => "An error occurred while fetching slow-moving recommendations: " . $e->getMessage(),
+        "message" => "An internal server error occurred while fetching slow-moving recommendations.",
         "data" => (object)[]
     ]);
 }

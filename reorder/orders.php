@@ -151,7 +151,7 @@ try {
     http_response_code(500);
     echo json_encode([
         "status" => false,
-        "message" => "Internal error fetching purchase orders: " . $e->getMessage(),
+        "message" => "An internal server error occurred while fetching purchase orders.",
         "data" => (object)[]
     ]);
 }

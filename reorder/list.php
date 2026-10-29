@@ -24,17 +24,19 @@ date_default_timezone_set('Asia/Kolkata');
 
 require_once __DIR__ . "/../config/db.php";
 require_once __DIR__ . "/../inventory/auth_helper.php";
+require_once __DIR__ . "/../settings/settings_helper.php";
 
 $pdo->exec("SET time_zone = '+05:30'");
 $owner = authenticateShopOwner($pdo);
 $shopOwnerId = (int)$owner["id"];
 
-// Named Configuration Constants
-const REORDER_CONFIG = [
-    "lead_time_days" => 2,
-    "safety_days" => 3,
-    "cover_days" => 7,
-    "min_history_days" => 30
+// Load Shop Settings (Reorder Integration)
+$shopSettings = get_shop_settings($pdo, $shopOwnerId);
+$reorderConfig = [
+    "lead_time_days" => $shopSettings["lead_time_days"],
+    "safety_days" => $shopSettings["safety_days"],
+    "cover_days" => $shopSettings["cover_days"],
+    "min_history_days" => $shopSettings["min_history_days"]
 ];
 
 // Query Parameters
@@ -53,7 +55,7 @@ try {
     $historyWarning = true;
     if ($firstSaleDate) {
         $historyDays = max(0, (time() - strtotime($firstSaleDate)) / 86400.0);
-        $historyWarning = ($historyDays < REORDER_CONFIG["min_history_days"]);
+        $historyWarning = ($historyDays < $reorderConfig["min_history_days"]);
     }
 
     $divisor = ($historyDays >= 7) ? min(30.0, $historyDays) : 0;
@@ -96,9 +98,9 @@ try {
     $lowCount = 0;
     $totalEstimatedCost = 0.00;
 
-    $lead = REORDER_CONFIG["lead_time_days"];
-    $safety = REORDER_CONFIG["safety_days"];
-    $cover = REORDER_CONFIG["cover_days"];
+    $lead = $reorderConfig["lead_time_days"];
+    $safety = $reorderConfig["safety_days"];
+    $cover = $reorderConfig["cover_days"];
     $leadSafety = $lead + $safety;
     $leadSafetyCover = $lead + $safety + $cover; // 12 days
 
@@ -259,7 +261,7 @@ try {
         "status" => true,
         "message" => "Reorder recommendations retrieved successfully.",
         "data" => [
-            "reorder_config" => REORDER_CONFIG,
+            "reorder_config" => $reorderConfig,
             "history_warning" => $historyWarning,
             "history_days_available" => round($historyDays, 1),
             "summary" => [
@@ -284,7 +286,7 @@ try {
     http_response_code(500);
     echo json_encode([
         "status" => false,
-        "message" => "Internal error compiling reorder recommendations: " . $e->getMessage(),
+        "message" => "An internal server error occurred while compiling reorder recommendations.",
         "data" => (object)[]
     ]);
 }

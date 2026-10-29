@@ -118,7 +118,7 @@ try {
     http_response_code(500);
     echo json_encode([
         "status" => false,
-        "message" => "Internal error cancelling order: " . $e->getMessage(),
+        "message" => "An internal server error occurred while cancelling the order.",
         "data" => (object)[]
     ]);
 }
