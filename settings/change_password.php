@@ -226,6 +226,7 @@ try {
     http_response_code(200);
     echo json_encode([
         "status" => true,
+        "success" => true,
         "message" => "Password changed successfully. All other active sessions have been revoked.",
         "data" => [
             "user_id" => $shopOwnerId,

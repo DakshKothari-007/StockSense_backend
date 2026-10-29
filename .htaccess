@@ -5,6 +5,14 @@
 # Disable directory browsing
 Options -Indexes
 
+# Pass Authorization header to PHP across Apache CGI / FastCGI / DevTunnels
+SetEnvIf Authorization "(.*)" HTTP_AUTHORIZATION=$1
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteCond %{HTTP:Authorization} ^(.*)
+    RewriteRule .* - [e=HTTP_AUTHORIZATION:%1]
+</IfModule>
+
 # Global Security Headers
 <IfModule mod_headers.c>
     Header set X-Content-Type-Options "nosniff"

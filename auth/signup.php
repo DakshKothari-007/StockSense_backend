@@ -16,6 +16,7 @@ if ($_SERVER["REQUEST_METHOD"] !== "POST") {
     http_response_code(405);
 
     echo json_encode([
+        "status" => false,
         "success" => false,
         "message" => "Only POST requests are allowed."
     ]);
@@ -26,7 +27,6 @@ if ($_SERVER["REQUEST_METHOD"] !== "POST") {
 require_once __DIR__ . "/../config/db.php";
 require_once __DIR__ . "/../config/rate_limiter.php";
 
-// Rate limiting: Max 5 signup attempts per IP per 15 minutes
 enforce_rate_limit($pdo, 'signup', get_client_ip(), 5, 15);
 
 // Read the JSON request from Android or Postman.
@@ -37,6 +37,7 @@ if (!is_array($data)) {
     http_response_code(400);
 
     echo json_encode([
+        "status" => false,
         "success" => false,
         "message" => "Invalid JSON request."
     ]);
@@ -48,9 +49,9 @@ $fullName = trim($data["full_name"] ?? "");
 $shopName = trim($data["shop_name"] ?? "");
 $email = strtolower(trim($data["email"] ?? ""));
 $password = $data["password"] ?? "";
-$location = trim($data["location"] ?? "Indiranagar, Bengaluru");
-$storeType = trim($data["store_type"] ?? "Neighbourhood supermarket");
-$currency = trim($data["currency"] ?? "₹ INR / IST");
+$location = trim($data["location"] ?? "");
+$storeType = trim($data["store_type"] ?? "");
+$currency = trim($data["currency"] ?? "");
 
 // Validate the required fields.
 if (
@@ -63,6 +64,7 @@ if (
     http_response_code(422);
 
     echo json_encode([
+        "status" => false,
         "success" => false,
         "message" => "All four fields (full_name, shop_name, email, password) are required."
     ]);
@@ -81,6 +83,7 @@ if (
     http_response_code(422);
 
     echo json_encode([
+        "status" => false,
         "success" => false,
         "message" => "Check your details. Password must be 8–72 characters and email must be valid."
     ]);
@@ -103,6 +106,7 @@ try {
         http_response_code(409);
 
         echo json_encode([
+            "status" => false,
             "success" => false,
             "message" => "Email is already registered."
         ]);
@@ -139,6 +143,15 @@ try {
         // Non-blocking
     }
 
+    // Generate random 64-char session token (32 random bytes -> 64 hex chars)
+    $token = bin2hex(random_bytes(32));
+    $tokenHash = hash('sha256', $token);
+    $expiresAt = date('Y-m-d H:i:s', strtotime('+7 days'));
+
+    // Store token hash in tokens table
+    $tokenStmt = $pdo->prepare("INSERT INTO tokens (user_id, token_hash, expires_at) VALUES (?, ?, ?)");
+    $tokenStmt->execute([$newUserId, $tokenHash, $expiresAt]);
+
     // Record rate limit attempt
     record_rate_limit_attempt($pdo, 'signup', get_client_ip());
 
@@ -149,6 +162,8 @@ try {
         "status" => true,
         "success" => true,
         "message" => "StockSense account created successfully.",
+        "token" => $token,
+        "expires_at" => $expiresAt,
         "data" => [
             "user_id" => $newUserId,
             "full_name" => $fullName,
@@ -176,6 +191,7 @@ try {
         http_response_code(409);
 
         echo json_encode([
+            "status" => false,
             "success" => false,
             "message" => "This email is already registered or the account data violates a database constraint."
         ]);
@@ -183,6 +199,7 @@ try {
         http_response_code(500);
 
         echo json_encode([
+            "status" => false,
             "success" => false,
             "message" => "Unable to create account."
         ]);
