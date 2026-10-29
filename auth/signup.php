@@ -146,8 +146,15 @@ try {
     http_response_code(201);
 
     echo json_encode([
+        "status" => true,
         "success" => true,
         "message" => "StockSense account created successfully.",
+        "data" => [
+            "user_id" => $newUserId,
+            "full_name" => $fullName,
+            "shop_name" => $shopName,
+            "email" => $email
+        ],
         "user" => [
             "id" => $newUserId,
             "full_name" => $fullName,
