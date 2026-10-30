@@ -27,6 +27,9 @@ $shopOwnerId = (int)$owner["id"];
 // Parse search and filter parameters
 $search = trim($_GET["search"] ?? $_GET["q"] ?? "");
 $filter = strtolower(trim($_GET["filter"] ?? "0"));
+$category = trim($_GET["category"] ?? "");
+$page = max(1, (int)($_GET["page"] ?? 1));
+$limit = isset($_GET["limit"]) ? max(0, min(100, (int)$_GET["limit"])) : 0;
 
 $whereClauses = ["shop_owner_id = ?"];
 $params = [$shopOwnerId];
@@ -46,12 +49,29 @@ if ($filter === "1" || $filter === "low_stock" || $filter === "lowstock") {
     $whereClauses[] = "(status LIKE '%Slow moving%')";
 }
 
-$sql = "SELECT id, shop_owner_id, name, sku, category, description, price, cost_price, units, min_stock_threshold, status, icon_type, created_at, updated_at
-        FROM products
-        WHERE " . implode(" AND ", $whereClauses) . "
-        ORDER BY id ASC";
+// 3. Category Filter
+if ($category !== "" && strtolower($category) !== "all") {
+    $whereClauses[] = "category = ?";
+    $params[] = $category;
+}
 
 try {
+    // Total count for pagination
+    $countSql = "SELECT COUNT(*) FROM products WHERE " . implode(" AND ", $whereClauses);
+    $countStmt = $pdo->prepare($countSql);
+    $countStmt->execute($params);
+    $totalCount = (int)$countStmt->fetchColumn();
+
+    $sql = "SELECT id, shop_owner_id, name, sku, category, description, price, cost_price, units, min_stock_threshold, status, icon_type, created_at, updated_at
+            FROM products
+            WHERE " . implode(" AND ", $whereClauses) . "
+            ORDER BY id ASC";
+
+    if ($limit > 0) {
+        $offset = ($page - 1) * $limit;
+        $sql .= " LIMIT {$limit} OFFSET {$offset}";
+    }
+
     $stmt = $pdo->prepare($sql);
     $stmt->execute($params);
     $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -97,9 +117,13 @@ try {
         "status" => true,
         "message" => "Inventory products retrieved successfully.",
         "data" => [
-            "shop_name" => $owner["shop_name"],
-            "total_products" => count($formattedProducts),
+            "shop_name" => $owner["shop_name"] ?? "",
+            "total_products" => $totalCount,
+            "total_count" => $totalCount,
+            "page" => $page,
+            "limit" => $limit,
             "filter" => $filter,
+            "category" => $category,
             "search" => $search,
             "products" => $formattedProducts
         ]

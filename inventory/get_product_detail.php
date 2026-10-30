@@ -73,6 +73,18 @@ try {
     $costPrice = (float)$product["cost_price"];
     $sellPrice = (float)$product["price"];
 
+    // Calculate 30-day sales velocity and stock cover
+    $thirtyDaysAgo = date('Y-m-d H:i:s', strtotime('-30 days'));
+    $salesStmt = $pdo->prepare("
+        SELECT COALESCE(SUM(si.quantity), 0) 
+        FROM sales_items si 
+        INNER JOIN sales s ON si.sale_id = s.id 
+        WHERE si.product_id = ? AND s.shop_owner_id = ? AND s.sale_date >= ?
+    ");
+    $salesStmt->execute([(int)$product['id'], $shopOwnerId, $thirtyDaysAgo]);
+    $sold30 = (int)$salesStmt->fetchColumn();
+    $stockCoverDays = ($sold30 > 0) ? round($units / ($sold30 / 30.0), 1) : null;
+
     // Suggested reorder computation
     $unitsToReorder = max(10, ($threshold * 2) - $units);
     if ($units > $threshold * 2) {
@@ -85,29 +97,34 @@ try {
         $status = "Low stock · Minimum " . $threshold;
     }
 
-    $data = [
-        "product" => [
-            "id" => (string)$product["id"],
-            "name" => $product["name"],
-            "sku" => $product["sku"],
-            "categoryName" => $product["category"],
-            "description" => $product["description"] ?: "Fresh stock",
-            "price" => "₹" . rtrim(rtrim(number_format($sellPrice, 2), '0'), '.'),
-            "raw_price" => $sellPrice,
-            "cost_price" => "₹" . rtrim(rtrim(number_format($costPrice, 2), '0'), '.'),
-            "raw_cost_price" => $costPrice,
-            "units" => (string)$units,
-            "raw_units" => $units,
-            "status" => $status,
-            "statusColorHex" => 0xFF98621A,
-            "iconType" => (int)$product["icon_type"],
-            "minimumStockThreshold" => $threshold,
-            "unitsToReorder" => $unitsToReorder,
-            "estimatedCost" => "₹" . number_format($estimatedCost),
-            "created_at" => $product["created_at"],
-            "updated_at" => $product["updated_at"]
-        ]
+    $productData = [
+        "id" => (string)$product["id"],
+        "name" => $product["name"],
+        "sku" => $product["sku"],
+        "category" => $product["category"],
+        "categoryName" => $product["category"],
+        "description" => $product["description"] ?: "Fresh stock",
+        "price" => "₹" . rtrim(rtrim(number_format($sellPrice, 2), '0'), '.'),
+        "raw_price" => (float)$sellPrice,
+        "cost_price" => "₹" . rtrim(rtrim(number_format($costPrice, 2), '0'), '.'),
+        "raw_cost_price" => (float)$costPrice,
+        "units" => (string)$units,
+        "raw_units" => $units,
+        "status" => $status,
+        "statusColorHex" => 0xFF98621A,
+        "iconType" => (int)$product["icon_type"],
+        "minimumStockThreshold" => $threshold,
+        "min_stock_threshold" => $threshold,
+        "stock_cover_days" => $stockCoverDays,
+        "unitsToReorder" => $unitsToReorder,
+        "estimatedCost" => "₹" . number_format($estimatedCost),
+        "created_at" => $product["created_at"],
+        "updated_at" => $product["updated_at"]
     ];
+
+    $data = array_merge($productData, [
+        "product" => $productData
+    ]);
 
     http_response_code(200);
     echo json_encode([
