@@ -228,6 +228,7 @@ All responses adhere to the standard JSON envelope:
 - **Method & Path**: `GET /auth/profile.php`
 - **Token Required**: Yes
 - **App Screen**: `ProfileScreen.kt`
+- **Behavior**: Retrieves real store and owner profile information for the authenticated user session. Never uses demo or hardcoded values.
 - **Success Response (`200 OK`)**:
   ```json
   {
@@ -241,52 +242,106 @@ All responses adhere to the standard JSON envelope:
       "location": "Indiranagar, Bengaluru",
       "store_type": "Neighbourhood supermarket",
       "currency": "₹ INR / IST",
-      "email": "ananya@example.com"
+      "email": "ananya@example.com",
+      "store_id": "GB-BLR-002",
+      "role": "Owner",
+      "plan": "StockSense Starter",
+      "data_snapshot": "2026-10-30 08:00:00"
     }
   }
   ```
+- **Error Responses**:
+  - `401 Unauthorized`: Missing or expired Bearer token.
+  - `404 Not Found`: Account record not found.
 
 #### 2.2 Update Profile
 - **Method & Path**: `POST /auth/update_profile.php`
 - **Token Required**: Yes
-- **App Screen**: `ProfileScreen.kt`
-- **Request Body**:
+- **App Screen**: `ProfileScreen.kt` (Edit Profile Info Dialog)
+- **Request Body** (`application/json`):
   ```json
   {
-    "full_name": "string (optional)",
-    "phone": "string (optional)"
+    "full_name": "string (required, max 100)",
+    "email": "string (required, valid email, max 150)"
   }
   ```
+- **Validation Rules**:
+  - `full_name` cannot be blank and max length is 100 characters.
+  - `email` must be a valid email format.
+  - `email` must be unique across `owner_account` (excluding the current user).
 - **Success Response (`200 OK`)**:
   ```json
   {
     "status": true,
     "success": true,
-    "message": "Profile updated successfully."
+    "message": "Profile updated successfully.",
+    "user": {
+      "id": 2,
+      "full_name": "Ananya Sharma",
+      "shop_name": "Fresh Mart",
+      "location": "Indiranagar, Bengaluru",
+      "store_type": "Neighbourhood supermarket",
+      "currency": "₹ INR / IST",
+      "email": "ananya.new@example.com",
+      "store_id": "GB-BLR-002",
+      "role": "Owner",
+      "plan": "StockSense Starter",
+      "data_snapshot": "2026-10-30 08:15:00"
+    }
   }
   ```
+- **Error Responses**:
+  - `400 Bad Request`: Empty name or invalid JSON.
+  - `401 Unauthorized`: Missing or invalid Bearer token.
+  - `409 Conflict`: Email is already in use by another account (`"Email is already in use by another account."`).
+  - `422 Unprocessable Entity`: Invalid email format.
 
 #### 2.3 Update Shop Details
 - **Method & Path**: `POST /auth/update_shop.php`
 - **Token Required**: Yes
-- **App Screen**: `ProfileScreen.kt`
-- **Request Body**:
+- **App Screen**: `ProfileScreen.kt` (Edit Shop Dialog)
+- **Request Body** (`application/json`):
   ```json
   {
     "shop_name": "string (required, max 150)",
-    "location": "string (optional)",
-    "store_type": "string (optional)",
-    "currency": "string (optional)"
+    "location": "string (optional, max 255)",
+    "store_type": "string (required, enum: 'Neighbourhood supermarket' | 'Medium supermarket' | 'Grocery / Kirana store' | 'Other')"
   }
   ```
+- **Validation Rules**:
+  - `shop_name` cannot be blank and max length is 150 characters.
+  - `location` max length is 255 characters.
+  - `store_type` must match one of the exact allowed values:
+    1. `"Neighbourhood supermarket"`
+    2. `"Medium supermarket"`
+    3. `"Grocery / Kirana store"`
+    4. `"Other"`
+  - Note: `currency` is read-only text in the app and cannot be altered via this endpoint.
 - **Success Response (`200 OK`)**:
   ```json
   {
     "status": true,
     "success": true,
-    "message": "Store details updated successfully."
+    "message": "Store details updated successfully.",
+    "user": {
+      "id": 2,
+      "full_name": "Ananya Sharma",
+      "shop_name": "Fresh Mart Superstore",
+      "location": "Indiranagar, Bengaluru",
+      "store_type": "Medium supermarket",
+      "currency": "₹ INR / IST",
+      "email": "ananya.new@example.com",
+      "store_id": "GB-BLR-002",
+      "role": "Owner",
+      "plan": "StockSense Starter",
+      "data_snapshot": "2026-10-30 08:20:00"
+    }
   }
   ```
+- **Error Responses**:
+  - `400 Bad Request`: Blank `shop_name` or invalid JSON.
+  - `401 Unauthorized`: Missing or invalid Bearer token.
+  - `422 Unprocessable Entity`: Location exceeds 255 characters or `store_type` is not in the allowed list (`"Invalid store type. Allowed: Neighbourhood supermarket, Medium supermarket, Grocery / Kirana store, Other"`).
 
 ---
 

@@ -347,25 +347,23 @@
                     "name": "Get Profile",
                     "request": {
                         "method": "GET",
-                        "header": [],
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
                         "url": {
-                            "raw": "{{base_url}}/auth/profile.php?email={{auth_email}}",
+                            "raw": "{{base_url}}/auth/profile.php",
                             "host": [
                                 "{{base_url}}"
                             ],
                             "path": [
                                 "auth",
                                 "profile.php"
-                            ],
-                            "query": [
-                                {
-                                    "key": "email",
-                                    "value": "{{auth_email}}",
-                                    "description": "Lookup by email or pass ?id=1"
-                                }
                             ]
                         },
-                        "description": "Fetches complete profile details for the ProfileScreen. Supports query parameter ?email=... or ?id=... (or JSON POST)."
+                        "description": "Fetches complete profile details for the ProfileScreen for the authenticated session."
                     }
                 },
                 {
@@ -374,13 +372,17 @@
                         "method": "POST",
                         "header": [
                             {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            },
+                            {
                                 "key": "Content-Type",
                                 "value": "application/json"
                             }
                         ],
                         "body": {
                             "mode": "raw",
-                            "raw": "{\n  \"current_email\": \"{{auth_email}}\",\n  \"full_name\": \"Ananya Rao\",\n  \"new_email\": \"ananya@greenbasket.in\"\n}"
+                            "raw": "{\n  \"full_name\": \"Ananya Sharma\",\n  \"email\": \"ananya.updated@greenbasket.in\"\n}"
                         },
                         "url": {
                             "raw": "{{base_url}}/auth/update_profile.php",
@@ -392,14 +394,18 @@
                                 "update_profile.php"
                             ]
                         },
-                        "description": "Updates the store owner's name and/or email address from the Edit Profile Details dialog."
+                        "description": "Updates full_name and email for the authenticated owner account from the Edit Profile Details dialog."
                     }
                 },
                 {
-                    "name": "Update Shop Details (Shop Name & Location)",
+                    "name": "Update Shop Details (Shop Name, Location & Store Type)",
                     "request": {
                         "method": "POST",
                         "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            },
                             {
                                 "key": "Content-Type",
                                 "value": "application/json"
@@ -407,7 +413,7 @@
                         ],
                         "body": {
                             "mode": "raw",
-                            "raw": "{\n  \"email\": \"{{auth_email}}\",\n  \"shop_name\": \"Green Basket Superstore\",\n  \"location\": \"Indiranagar 100ft Road, Bengaluru\"\n}"
+                            "raw": "{\n  \"shop_name\": \"Green Basket Superstore\",\n  \"location\": \"Indiranagar 100ft Road, Bengaluru\",\n  \"store_type\": \"Medium supermarket\"\n}"
                         },
                         "url": {
                             "raw": "{{base_url}}/auth/update_shop.php",
@@ -419,7 +425,7 @@
                                 "update_shop.php"
                             ]
                         },
-                        "description": "Updates shop name and physical location from the Edit Shop dialog on ProfileScreen."
+                        "description": "Updates shop_name, location, and store_type from the Edit Shop dialog on ProfileScreen."
                     }
                 },
                 {

@@ -153,9 +153,13 @@ try {
             "id" => (int) $user["id"],
             "full_name" => $user["full_name"],
             "shop_name" => $user["shop_name"],
-            "location" => $user["location"] ?? "Indiranagar, Bengaluru",
-            "store_type" => $user["store_type"] ?? "Neighbourhood supermarket",
-            "currency" => $user["currency"] ?? "₹ INR / IST",
+            "store_id" => "GB-BLR-00" . $user["id"],
+            "location" => $user["location"] ?? "",
+            "store_type" => $user["store_type"] ?? "",
+            "currency" => $user["currency"] ?? "",
+            "role" => "Owner",
+            "plan" => "StockSense Starter",
+            "data_snapshot" => $user["updated_at"] ?? $user["created_at"] ?? "",
             "email" => $user["email"]
         ]
     ]);

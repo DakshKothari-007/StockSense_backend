@@ -107,6 +107,33 @@ if (strlen($shopName) > 150) {
     exit;
 }
 
+if ($location !== null && strlen($location) > 255) {
+    http_response_code(422);
+    echo json_encode([
+        "status" => false,
+        "success" => false,
+        "message" => "Location cannot exceed 255 characters."
+    ]);
+    exit;
+}
+
+$allowedStoreTypes = [
+    "Neighbourhood supermarket",
+    "Medium supermarket",
+    "Grocery / Kirana store",
+    "Other"
+];
+
+if ($storeType !== null && $storeType !== "" && !in_array($storeType, $allowedStoreTypes, true)) {
+    http_response_code(422);
+    echo json_encode([
+        "status" => false,
+        "success" => false,
+        "message" => "Invalid store type. Allowed values are: " . implode(", ", $allowedStoreTypes)
+    ]);
+    exit;
+}
+
 try {
     if ($userId > 0) {
         $stmt = $pdo->prepare("SELECT id, shop_name, location, store_type, currency, email FROM owner_account WHERE id = ? LIMIT 1");
@@ -133,7 +160,7 @@ try {
     $fields = ["shop_name = ?"];
     $params = [$shopName];
 
-    if ($location !== null && $location !== "") {
+    if ($location !== null) {
         $fields[] = "location = ?";
         $params[] = $location;
     }
@@ -152,18 +179,34 @@ try {
     $updateStmt = $pdo->prepare($updateSql);
     $updateStmt->execute($params);
 
-    $fetchStmt = $pdo->prepare("SELECT id, full_name, shop_name, location, store_type, currency, email, updated_at FROM owner_account WHERE id = ?");
+    $fetchStmt = $pdo->prepare("SELECT id, full_name, shop_name, location, store_type, currency, email, created_at, updated_at FROM owner_account WHERE id = ?");
     $fetchStmt->execute([$targetId]);
     $shop = $fetchStmt->fetch(PDO::FETCH_ASSOC);
+
+    $formattedShop = [
+        "id" => (int) $shop["id"],
+        "store_id" => "GB-BLR-00" . $shop["id"],
+        "full_name" => $shop["full_name"],
+        "shop_name" => $shop["shop_name"],
+        "location" => $shop["location"] ?? "",
+        "store_type" => $shop["store_type"] ?? "",
+        "currency" => $shop["currency"] ?? "",
+        "email" => $shop["email"],
+        "role" => "Owner",
+        "plan" => "StockSense Starter",
+        "data_snapshot" => $shop["updated_at"] ?? $shop["created_at"] ?? "",
+        "created_at" => $shop["created_at"],
+        "updated_at" => $shop["updated_at"]
+    ];
 
     echo json_encode([
         "status" => true,
         "success" => true,
         "message" => "Shop details updated successfully.",
-        "shop" => $shop,
-        "profile" => $shop,
-        "user" => $shop,
-        "data" => $shop
+        "shop" => $formattedShop,
+        "profile" => $formattedShop,
+        "user" => $formattedShop,
+        "data" => $formattedShop
     ]);
 
 } catch (PDOException $e) {

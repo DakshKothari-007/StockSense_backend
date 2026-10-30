@@ -89,12 +89,17 @@
             ]
         },
         {
-            "name": "3. Get Profile (By Email or ID)",
+            "name": "3. Get Profile (Session Token)",
             "request": {
                 "method": "GET",
-                "header": [],
+                "header": [
+                    {
+                        "key": "Authorization",
+                        "value": "Bearer {{token}}"
+                    }
+                ],
                 "url": {
-                    "raw": "http://localhost/StockSense_backend/auth/profile.php?email=ananya@greenbasket.in",
+                    "raw": "http://localhost/StockSense_backend/auth/profile.php",
                     "protocol": "http",
                     "host": [
                         "localhost"
@@ -103,15 +108,9 @@
                         "StockSense_backend",
                         "auth",
                         "profile.php"
-                    ],
-                    "query": [
-                        {
-                            "key": "email",
-                            "value": "ananya@greenbasket.in"
-                        }
                     ]
                 },
-                "description": "Fetches the full profile for the ProfileScreen. Supports ?email=... or ?id=... (or JSON POST)."
+                "description": "Fetches the full profile for the ProfileScreen for the authenticated session."
             }
         },
         {
@@ -120,13 +119,17 @@
                 "method": "POST",
                 "header": [
                     {
+                        "key": "Authorization",
+                        "value": "Bearer {{token}}"
+                    },
+                    {
                         "key": "Content-Type",
                         "value": "application/json"
                     }
                 ],
                 "body": {
                     "mode": "raw",
-                    "raw": "{\n  \"current_email\": \"ananya@greenbasket.in\",\n  \"full_name\": \"Ananya Rao\",\n  \"new_email\": \"ananya.rao@greenbasket.in\"\n}"
+                    "raw": "{\n  \"full_name\": \"Ananya Sharma\",\n  \"email\": \"ananya.rao@greenbasket.in\"\n}"
                 },
                 "url": {
                     "raw": "http://localhost/StockSense_backend/auth/update_profile.php",
@@ -144,10 +147,14 @@
             }
         },
         {
-            "name": "5. Update Shop Details (Shop Name & Location)",
+            "name": "5. Update Shop Details (Shop Name, Location & Store Type)",
             "request": {
                 "method": "POST",
                 "header": [
+                    {
+                        "key": "Authorization",
+                        "value": "Bearer {{token}}"
+                    },
                     {
                         "key": "Content-Type",
                         "value": "application/json"
@@ -155,7 +162,7 @@
                 ],
                 "body": {
                     "mode": "raw",
-                    "raw": "{\n  \"email\": \"ananya@greenbasket.in\",\n  \"shop_name\": \"Green Basket Superstore\",\n  \"location\": \"Indiranagar 100ft Road, Bengaluru\"\n}"
+                    "raw": "{\n  \"shop_name\": \"Green Basket Superstore\",\n  \"location\": \"Indiranagar 100ft Road, Bengaluru\",\n  \"store_type\": \"Medium supermarket\"\n}"
                 },
                 "url": {
                     "raw": "http://localhost/StockSense_backend/auth/update_shop.php",
@@ -169,7 +176,7 @@
                         "update_shop.php"
                     ]
                 },
-                "description": "Updates the shop name and store location from the Edit Shop dialog on ProfileScreen."
+                "description": "Updates the shop name, location, and store type from the Edit Shop dialog on ProfileScreen."
             }
         },
         {
