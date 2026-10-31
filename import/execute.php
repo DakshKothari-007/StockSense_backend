@@ -3,7 +3,7 @@
 header("Content-Type: application/json; charset=UTF-8");
 header("Access-Control-Allow-Origin: *");
 header("Access-Control-Allow-Methods: POST, OPTIONS");
-header("Access-Control-Allow-Headers: Content-Type, Authorization, X-User-Id, X-User-Email");
+header("Access-Control-Allow-Headers: Content-Type, Authorization, X-User-Id, X-User-Email, Idempotency-Key");
 
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     http_response_code(200);
@@ -30,6 +30,64 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 }
 
 $input = json_decode(file_get_contents("php://input"), true) ?? $_POST;
+$idempotencyKey = trim($_SERVER['HTTP_IDEMPOTENCY_KEY'] ?? ($input['idempotency_key'] ?? ''));
+
+// Idempotency guard: ignore repeated execute calls with identical key and return existing result
+if (!empty($idempotencyKey)) {
+    $idemStmt = $pdo->prepare("
+        SELECT id, file_name, total_rows, success_count, failed_count, status, details, created_at
+        FROM import_history
+        WHERE shop_owner_id = ? AND idempotency_key = ? AND status IN ('completed', 'partial')
+        ORDER BY id DESC
+        LIMIT 1
+    ");
+    $idemStmt->execute([$ownerId, $idempotencyKey]);
+    $cached = $idemStmt->fetch(PDO::FETCH_ASSOC);
+
+    if ($cached) {
+        $details = json_decode($cached['details'] ?? '{}', true) ?: [];
+        $totalRows = (int)$cached['total_rows'];
+        $successCount = (int)$cached['success_count'];
+        $failedCount = (int)$cached['failed_count'];
+        $productsUpdated = (int)($details['products_updated'] ?? 0);
+        $productsAdded = (int)($details['products_added'] ?? 0);
+        $stockAdded = (int)($details['stock_added'] ?? 0);
+        $correctedRowsCount = (int)($details['corrected_rows'] ?? 0);
+        $totalActiveProducts = (int)($details['total_active_products'] ?? 0);
+        $newInventoryValue = (float)($details['new_inventory_value'] ?? 0.0);
+
+        if ($totalActiveProducts === 0 && $newInventoryValue === 0.0) {
+            $statsStmt = $pdo->prepare("SELECT COUNT(*) AS total_count, COALESCE(SUM(units * price), 0) AS total_val FROM products WHERE shop_owner_id = ?");
+            $statsStmt->execute([$ownerId]);
+            $stats = $statsStmt->fetch(PDO::FETCH_ASSOC);
+            $totalActiveProducts = (int)($stats['total_count'] ?? 0);
+            $newInventoryValue = (float)($stats['total_val'] ?? 0.0);
+        }
+
+        http_response_code(200);
+        echo json_encode([
+            "status" => true,
+            "message" => "Your shelves are up to date. Import complete.",
+            "data" => [
+                "import_id" => (int)$cached['id'],
+                "file_name" => $cached['file_name'],
+                "products_updated" => $productsUpdated,
+                "products_added" => $productsAdded,
+                "data_rows_imported" => "{$successCount} of {$totalRows}",
+                "data_rows_imported_count" => $successCount,
+                "stock_added" => "{$stockAdded} units",
+                "stock_added_count" => $stockAdded,
+                "corrected_rows" => $correctedRowsCount,
+                "skipped_rows" => $failedCount,
+                "corrected_skipped_text" => "{$correctedRowsCount} / {$failedCount} rows",
+                "total_active_products" => $totalActiveProducts,
+                "new_inventory_value" => "₹" . number_format($newInventoryValue, 0),
+                "new_inventory_value_raw" => round($newInventoryValue, 2)
+            ]
+        ]);
+        exit;
+    }
+}
 
 // Rule 2: Check shop import_mode setting
 $shopSettings = get_shop_settings($pdo, $ownerId);
@@ -261,8 +319,8 @@ if (!empty($errors) && !$allowPartial) {
     // Record failed import in history
     try {
         $histStmt = $pdo->prepare("
-            INSERT INTO import_history (shop_owner_id, file_name, file_size, total_rows, success_count, failed_count, status, details)
-            VALUES (?, ?, ?, ?, ?, ?, 'failed', ?)
+            INSERT INTO import_history (shop_owner_id, file_name, file_size, total_rows, success_count, failed_count, status, details, idempotency_key)
+            VALUES (?, ?, ?, ?, ?, ?, 'failed', ?, ?)
         ");
         $histStmt->execute([
             $ownerId,
@@ -271,7 +329,8 @@ if (!empty($errors) && !$allowPartial) {
             $totalRows,
             0,
             count($errors),
-            json_encode(["errors" => $errors])
+            json_encode(["errors" => $errors]),
+            !empty($idempotencyKey) ? $idempotencyKey : null
         ]);
     } catch (Throwable $e) {
         error_log("Failed to log failed import: " . $e->getMessage());
@@ -388,8 +447,8 @@ try {
 
     // Save import history
     $histStmt = $pdo->prepare("
-        INSERT INTO import_history (shop_owner_id, file_name, file_size, total_rows, success_count, failed_count, status, details)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO import_history (shop_owner_id, file_name, file_size, total_rows, success_count, failed_count, status, details, idempotency_key)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     ");
     $histStmt->execute([
         $ownerId,
@@ -399,7 +458,8 @@ try {
         $successCount,
         $failedCount,
         $importStatus,
-        $detailsPayload
+        $detailsPayload,
+        !empty($idempotencyKey) ? $idempotencyKey : null
     ]);
     $importId = (int)$pdo->lastInsertId();
 

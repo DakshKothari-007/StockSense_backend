@@ -22,3 +22,4 @@ try {
     echo "[ERROR] Failed to run migration: " . $e->getMessage() . "\n";
     exit(1);
 }
+

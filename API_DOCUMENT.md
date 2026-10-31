@@ -573,11 +573,15 @@ Validation Rule: Only `name` and `units` (quantity) are strictly required to be 
 - **Method & Path**: `POST /import/execute.php`
 - **Token Required**: Yes
 - **App Screen**: `ImportInventoryReadyScreen.kt`, `InventoryImportedScreen.kt`
+- **Headers**:
+  - `Authorization: Bearer <token>`
+  - `Idempotency-Key: <unique_attempt_id>` *(Optional but recommended to prevent double-import on network retries)*
 - **Request Body**:
   ```json
   {
     "file_token": "imp_2_abc123_1793164882.csv",
     "file_name": "stock_oct.xlsx",
+    "idempotency_key": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d",
     "column_mapping": {
       "name": "Product Name",
       "sku": "SKU",
@@ -590,7 +594,7 @@ Validation Rule: Only `name` and `units` (quantity) are strictly required to be 
     "confirm_replace": false
   }
   ```
-  *(Note: If the store's `import_mode` is set to `REPLACE`, `confirm_replace: true` is strictly required).*
+  *(Note: If the store's `import_mode` is set to `REPLACE`, `confirm_replace: true` is strictly required. If an `idempotency_key` has already been executed for this store, the server replays the previous 200 OK response without adding stock again).*
 - **Success Response (`200 OK`)**:
   ```json
   {
