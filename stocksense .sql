@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Oct 30, 2026 at 10:28 AM
+-- Generation Time: Oct 31, 2026 at 10:19 AM
 -- Server version: 10.4.24-MariaDB
 -- PHP Version: 8.1.6
 
@@ -30,6 +30,7 @@ SET time_zone = "+00:00";
 CREATE TABLE `import_history` (
   `id` int(10) UNSIGNED NOT NULL,
   `shop_owner_id` int(10) UNSIGNED NOT NULL,
+  `idempotency_key` varchar(64) DEFAULT NULL,
   `file_name` varchar(255) NOT NULL,
   `file_size` int(10) UNSIGNED NOT NULL DEFAULT 0,
   `total_rows` int(11) NOT NULL DEFAULT 0,
@@ -44,50 +45,89 @@ CREATE TABLE `import_history` (
 -- Dumping data for table `import_history`
 --
 
-INSERT INTO `import_history` (`id`, `shop_owner_id`, `file_name`, `file_size`, `total_rows`, `success_count`, `failed_count`, `status`, `details`, `created_at`) VALUES
-(1, 2, 'sample_error_import.csv', 207, 5, 0, 2, 'failed', '{\"errors\":[{\"row_number\":4,\"field\":\"units\",\"reason\":\"Invalid quantity: \'18O\'\"},{\"row_number\":6,\"field\":\"sku\",\"reason\":\"Invalid SKU\"}]}', '2026-10-28 05:14:58'),
-(2, 2, 'sample_error_import.csv', 207, 5, 0, 2, 'failed', '{\"errors\":[{\"row_number\":4,\"field\":\"units\",\"reason\":\"Invalid quantity: \'18O\'\"},{\"row_number\":6,\"field\":\"sku\",\"reason\":\"Invalid SKU\"}]}', '2026-10-28 05:16:30'),
-(3, 2, 'sample_valid_import.csv', 213, 5, 5, 0, 'completed', '{\"products_updated\":4,\"products_added\":1,\"stock_added\":134,\"corrected_rows\":0,\"skipped_rows\":0,\"total_active_products\":7,\"new_inventory_value\":27070}', '2026-10-28 05:16:30'),
-(4, 2, 'sample_error_import.csv', 207, 5, 0, 2, 'failed', '{\"errors\":[{\"row_number\":4,\"field\":\"units\",\"reason\":\"Invalid quantity: \'18O\'\"},{\"row_number\":6,\"field\":\"sku\",\"reason\":\"Invalid SKU\"}]}', '2026-10-28 05:20:51'),
-(5, 2, 'sample_valid_import.csv', 213, 5, 5, 0, 'completed', '{\"products_updated\":5,\"products_added\":0,\"stock_added\":134,\"corrected_rows\":0,\"skipped_rows\":0,\"total_active_products\":7,\"new_inventory_value\":35690}', '2026-10-28 05:20:52'),
-(6, 2, 'sample_error_import.csv', 207, 5, 0, 2, 'failed', '{\"errors\":[{\"row_number\":4,\"field\":\"units\",\"reason\":\"Invalid quantity: \'18O\'\"},{\"row_number\":6,\"field\":\"sku\",\"reason\":\"Invalid SKU\"}]}', '2026-10-28 05:21:23'),
-(7, 2, 'sample_valid_import.csv', 213, 5, 5, 0, 'completed', '{\"products_updated\":4,\"products_added\":1,\"stock_added\":134,\"corrected_rows\":0,\"skipped_rows\":0,\"total_active_products\":7,\"new_inventory_value\":41710}', '2026-10-28 05:21:23'),
-(8, 6, 'stock_oct15.xlsx', 213, 5, 5, 0, 'completed', '{\"products_updated\":0,\"products_added\":5,\"stock_added\":134,\"corrected_rows\":1,\"skipped_rows\":0,\"total_active_products\":6,\"new_inventory_value\":15870}', '2026-10-28 06:39:13'),
-(9, 2, 'sales_import_20261028_135348', 121, 2, 0, 1, 'failed', '{\"errors\":[{\"row\":2,\"field\":\"sku\",\"reason\":\"Product \'NON-EXISTENT-SKU\' does not exist in your store inventory.\"}]}', '2026-10-28 08:23:48'),
-(10, 2, 'sales_import_20261028_135348', 128, 1, 1, 0, 'completed', '{\"bills_created\":1,\"items_created\":1,\"total_sales_amount\":150,\"deduct_stock\":false}', '2026-10-28 08:23:48'),
-(11, 2, 'sales_import_20261028_140104', 121, 2, 0, 1, 'failed', '{\"errors\":[{\"row\":2,\"field\":\"sku\",\"reason\":\"Product \'NON-EXISTENT-SKU\' does not exist in your store inventory.\"}]}', '2026-10-28 08:31:04'),
-(12, 2, 'sales_import_20261028_140104', 128, 1, 1, 0, 'completed', '{\"bills_created\":1,\"items_created\":1,\"total_sales_amount\":150,\"deduct_stock\":false}', '2026-10-28 08:31:04'),
-(13, 2, 'sales_import_20261028_141738', 121, 2, 0, 1, 'failed', '{\"errors\":[{\"row\":2,\"field\":\"sku\",\"reason\":\"Product \'NON-EXISTENT-SKU\' does not exist in your store inventory.\"}]}', '2026-10-28 08:47:38'),
-(14, 2, 'sales_import_20261028_141738', 128, 1, 1, 0, 'completed', '{\"bills_created\":1,\"items_created\":1,\"total_sales_amount\":150,\"deduct_stock\":false}', '2026-10-28 08:47:38'),
-(15, 2, 'sales_import_20261028_145446', 121, 2, 0, 1, 'failed', '{\"errors\":[{\"row\":2,\"field\":\"sku\",\"reason\":\"Product \'NON-EXISTENT-SKU\' does not exist in your store inventory.\"}]}', '2026-10-28 09:24:46'),
-(16, 2, 'sales_import_20261028_145446', 128, 1, 1, 0, 'completed', '{\"bills_created\":1,\"items_created\":1,\"total_sales_amount\":150,\"deduct_stock\":false}', '2026-10-28 09:24:46'),
-(17, 2, 'sales_import_20261029_085000', 121, 2, 0, 1, 'failed', '{\"errors\":[{\"row\":2,\"field\":\"sku\",\"reason\":\"Product \'NON-EXISTENT-SKU\' does not exist in your store inventory.\"}]}', '2026-10-29 03:20:00'),
-(18, 2, 'sales_import_20261029_085000', 128, 1, 1, 0, 'completed', '{\"bills_created\":1,\"items_created\":1,\"total_sales_amount\":150,\"deduct_stock\":false}', '2026-10-29 03:20:00'),
-(19, 2, 'sales_import_20261029_085558', 121, 2, 0, 1, 'failed', '{\"errors\":[{\"row\":2,\"field\":\"sku\",\"reason\":\"Product \'NON-EXISTENT-SKU\' does not exist in your store inventory.\"}]}', '2026-10-29 03:25:58'),
-(20, 2, 'sales_import_20261029_085558', 128, 1, 1, 0, 'completed', '{\"bills_created\":1,\"items_created\":1,\"total_sales_amount\":150,\"deduct_stock\":false}', '2026-10-29 03:25:58'),
-(21, 2, 'sales_import_20261029_085617', 121, 2, 0, 1, 'failed', '{\"errors\":[{\"row\":2,\"field\":\"sku\",\"reason\":\"Product \'NON-EXISTENT-SKU\' does not exist in your store inventory.\"}]}', '2026-10-29 03:26:17'),
-(22, 2, 'sales_import_20261029_085617', 128, 1, 1, 0, 'completed', '{\"bills_created\":1,\"items_created\":1,\"total_sales_amount\":150,\"deduct_stock\":false}', '2026-10-29 03:26:17'),
-(23, 2, 'sales_import_20261029_090857', 121, 2, 0, 1, 'failed', '{\"errors\":[{\"row\":2,\"field\":\"sku\",\"reason\":\"Product \'NON-EXISTENT-SKU\' does not exist in your store inventory.\"}]}', '2026-10-29 03:38:57'),
-(24, 2, 'sales_import_20261029_090858', 128, 1, 1, 0, 'completed', '{\"bills_created\":1,\"items_created\":1,\"total_sales_amount\":150,\"deduct_stock\":false}', '2026-10-29 03:38:58'),
-(25, 2, 'sales_import_20261029_091516', 121, 2, 0, 1, 'failed', '{\"errors\":[{\"row\":2,\"field\":\"sku\",\"reason\":\"Product \'NON-EXISTENT-SKU\' does not exist in your store inventory.\"}]}', '2026-10-29 03:45:16'),
-(26, 2, 'sales_import_20261029_091516', 128, 1, 1, 0, 'completed', '{\"bills_created\":1,\"items_created\":1,\"total_sales_amount\":150,\"deduct_stock\":false}', '2026-10-29 03:45:16'),
-(27, 2, 'sales_import_20261029_091542', 121, 2, 0, 1, 'failed', '{\"errors\":[{\"row\":2,\"field\":\"sku\",\"reason\":\"Product \'NON-EXISTENT-SKU\' does not exist in your store inventory.\"}]}', '2026-10-29 03:45:42'),
-(28, 2, 'sales_import_20261029_091542', 128, 1, 1, 0, 'completed', '{\"bills_created\":1,\"items_created\":1,\"total_sales_amount\":150,\"deduct_stock\":false}', '2026-10-29 03:45:42'),
-(29, 2, 'sales_import_20261029_092736', 121, 2, 0, 1, 'failed', '{\"errors\":[{\"row\":2,\"field\":\"sku\",\"reason\":\"Product \'NON-EXISTENT-SKU\' does not exist in your store inventory.\"}]}', '2026-10-29 03:57:36'),
-(30, 2, 'sales_import_20261029_092736', 128, 1, 1, 0, 'completed', '{\"bills_created\":1,\"items_created\":1,\"total_sales_amount\":150,\"deduct_stock\":false}', '2026-10-29 03:57:36'),
-(31, 2, 'test_notif.csv', 1024, 25, 20, 5, 'completed', NULL, '2026-10-29 04:36:10'),
-(32, 2, 'test_notif.csv', 1024, 25, 20, 5, 'completed', NULL, '2026-10-29 04:40:03'),
-(34, 2, 'sales_import_20261029_101805', 121, 2, 0, 1, 'failed', '{\"errors\":[{\"row\":2,\"field\":\"sku\",\"reason\":\"Product \'NON-EXISTENT-SKU\' does not exist in your store inventory.\"}]}', '2026-10-29 04:48:05'),
-(35, 2, 'sales_import_20261029_101805', 128, 1, 1, 0, 'completed', '{\"bills_created\":1,\"items_created\":1,\"total_sales_amount\":150,\"deduct_stock\":false}', '2026-10-29 04:48:05'),
-(36, 2, 'test_notif.csv', 1024, 25, 20, 5, 'completed', NULL, '2026-10-29 04:49:06'),
-(38, 2, 'test_notif.csv', 1024, 25, 20, 5, 'completed', NULL, '2026-10-29 05:01:27'),
-(40, 2, 'test_notif.csv', 1024, 25, 20, 5, 'completed', NULL, '2026-10-29 09:19:46'),
-(42, 2, 'sales_import_20261029_145034', 121, 2, 0, 1, 'failed', '{\"errors\":[{\"row\":2,\"field\":\"sku\",\"reason\":\"Product \'NON-EXISTENT-SKU\' does not exist in your store inventory.\"}]}', '2026-10-29 09:20:34'),
-(43, 2, 'sales_import_20261029_145034', 128, 1, 1, 0, 'completed', '{\"bills_created\":1,\"items_created\":1,\"total_sales_amount\":150,\"deduct_stock\":false}', '2026-10-29 09:20:34'),
-(44, 2, 'test_notif.csv', 1024, 25, 20, 5, 'completed', NULL, '2026-10-30 02:52:09'),
-(46, 2, 'sales_import_20261030_082226', 121, 2, 0, 1, 'failed', '{\"errors\":[{\"row\":2,\"field\":\"sku\",\"reason\":\"Product \'NON-EXISTENT-SKU\' does not exist in your store inventory.\"}]}', '2026-10-30 02:52:26'),
-(47, 2, 'sales_import_20261030_082226', 128, 1, 1, 0, 'completed', '{\"bills_created\":1,\"items_created\":1,\"total_sales_amount\":150,\"deduct_stock\":false}', '2026-10-30 02:52:26'),
-(48, 23, 'sales_import_20261030_142815', 307, 2, 0, 1, 'failed', '{\"errors\":[{\"row\":2,\"field\":\"sku\",\"reason\":\"Product \'STP-003\' does not exist in your store inventory.\"}]}', '2026-10-30 08:58:15');
+INSERT INTO `import_history` (`id`, `shop_owner_id`, `idempotency_key`, `file_name`, `file_size`, `total_rows`, `success_count`, `failed_count`, `status`, `details`, `created_at`) VALUES
+(1, 2, NULL, 'sample_error_import.csv', 207, 5, 0, 2, 'failed', '{\"errors\":[{\"row_number\":4,\"field\":\"units\",\"reason\":\"Invalid quantity: \'18O\'\"},{\"row_number\":6,\"field\":\"sku\",\"reason\":\"Invalid SKU\"}]}', '2026-10-28 05:14:58'),
+(2, 2, NULL, 'sample_error_import.csv', 207, 5, 0, 2, 'failed', '{\"errors\":[{\"row_number\":4,\"field\":\"units\",\"reason\":\"Invalid quantity: \'18O\'\"},{\"row_number\":6,\"field\":\"sku\",\"reason\":\"Invalid SKU\"}]}', '2026-10-28 05:16:30'),
+(3, 2, NULL, 'sample_valid_import.csv', 213, 5, 5, 0, 'completed', '{\"products_updated\":4,\"products_added\":1,\"stock_added\":134,\"corrected_rows\":0,\"skipped_rows\":0,\"total_active_products\":7,\"new_inventory_value\":27070}', '2026-10-28 05:16:30'),
+(4, 2, NULL, 'sample_error_import.csv', 207, 5, 0, 2, 'failed', '{\"errors\":[{\"row_number\":4,\"field\":\"units\",\"reason\":\"Invalid quantity: \'18O\'\"},{\"row_number\":6,\"field\":\"sku\",\"reason\":\"Invalid SKU\"}]}', '2026-10-28 05:20:51'),
+(5, 2, NULL, 'sample_valid_import.csv', 213, 5, 5, 0, 'completed', '{\"products_updated\":5,\"products_added\":0,\"stock_added\":134,\"corrected_rows\":0,\"skipped_rows\":0,\"total_active_products\":7,\"new_inventory_value\":35690}', '2026-10-28 05:20:52'),
+(6, 2, NULL, 'sample_error_import.csv', 207, 5, 0, 2, 'failed', '{\"errors\":[{\"row_number\":4,\"field\":\"units\",\"reason\":\"Invalid quantity: \'18O\'\"},{\"row_number\":6,\"field\":\"sku\",\"reason\":\"Invalid SKU\"}]}', '2026-10-28 05:21:23'),
+(7, 2, NULL, 'sample_valid_import.csv', 213, 5, 5, 0, 'completed', '{\"products_updated\":4,\"products_added\":1,\"stock_added\":134,\"corrected_rows\":0,\"skipped_rows\":0,\"total_active_products\":7,\"new_inventory_value\":41710}', '2026-10-28 05:21:23'),
+(8, 6, NULL, 'stock_oct15.xlsx', 213, 5, 5, 0, 'completed', '{\"products_updated\":0,\"products_added\":5,\"stock_added\":134,\"corrected_rows\":1,\"skipped_rows\":0,\"total_active_products\":6,\"new_inventory_value\":15870}', '2026-10-28 06:39:13'),
+(9, 2, NULL, 'sales_import_20261028_135348', 121, 2, 0, 1, 'failed', '{\"errors\":[{\"row\":2,\"field\":\"sku\",\"reason\":\"Product \'NON-EXISTENT-SKU\' does not exist in your store inventory.\"}]}', '2026-10-28 08:23:48'),
+(10, 2, NULL, 'sales_import_20261028_135348', 128, 1, 1, 0, 'completed', '{\"bills_created\":1,\"items_created\":1,\"total_sales_amount\":150,\"deduct_stock\":false}', '2026-10-28 08:23:48'),
+(11, 2, NULL, 'sales_import_20261028_140104', 121, 2, 0, 1, 'failed', '{\"errors\":[{\"row\":2,\"field\":\"sku\",\"reason\":\"Product \'NON-EXISTENT-SKU\' does not exist in your store inventory.\"}]}', '2026-10-28 08:31:04'),
+(12, 2, NULL, 'sales_import_20261028_140104', 128, 1, 1, 0, 'completed', '{\"bills_created\":1,\"items_created\":1,\"total_sales_amount\":150,\"deduct_stock\":false}', '2026-10-28 08:31:04'),
+(13, 2, NULL, 'sales_import_20261028_141738', 121, 2, 0, 1, 'failed', '{\"errors\":[{\"row\":2,\"field\":\"sku\",\"reason\":\"Product \'NON-EXISTENT-SKU\' does not exist in your store inventory.\"}]}', '2026-10-28 08:47:38'),
+(14, 2, NULL, 'sales_import_20261028_141738', 128, 1, 1, 0, 'completed', '{\"bills_created\":1,\"items_created\":1,\"total_sales_amount\":150,\"deduct_stock\":false}', '2026-10-28 08:47:38'),
+(15, 2, NULL, 'sales_import_20261028_145446', 121, 2, 0, 1, 'failed', '{\"errors\":[{\"row\":2,\"field\":\"sku\",\"reason\":\"Product \'NON-EXISTENT-SKU\' does not exist in your store inventory.\"}]}', '2026-10-28 09:24:46'),
+(16, 2, NULL, 'sales_import_20261028_145446', 128, 1, 1, 0, 'completed', '{\"bills_created\":1,\"items_created\":1,\"total_sales_amount\":150,\"deduct_stock\":false}', '2026-10-28 09:24:46'),
+(17, 2, NULL, 'sales_import_20261029_085000', 121, 2, 0, 1, 'failed', '{\"errors\":[{\"row\":2,\"field\":\"sku\",\"reason\":\"Product \'NON-EXISTENT-SKU\' does not exist in your store inventory.\"}]}', '2026-10-29 03:20:00'),
+(18, 2, NULL, 'sales_import_20261029_085000', 128, 1, 1, 0, 'completed', '{\"bills_created\":1,\"items_created\":1,\"total_sales_amount\":150,\"deduct_stock\":false}', '2026-10-29 03:20:00'),
+(19, 2, NULL, 'sales_import_20261029_085558', 121, 2, 0, 1, 'failed', '{\"errors\":[{\"row\":2,\"field\":\"sku\",\"reason\":\"Product \'NON-EXISTENT-SKU\' does not exist in your store inventory.\"}]}', '2026-10-29 03:25:58'),
+(20, 2, NULL, 'sales_import_20261029_085558', 128, 1, 1, 0, 'completed', '{\"bills_created\":1,\"items_created\":1,\"total_sales_amount\":150,\"deduct_stock\":false}', '2026-10-29 03:25:58'),
+(21, 2, NULL, 'sales_import_20261029_085617', 121, 2, 0, 1, 'failed', '{\"errors\":[{\"row\":2,\"field\":\"sku\",\"reason\":\"Product \'NON-EXISTENT-SKU\' does not exist in your store inventory.\"}]}', '2026-10-29 03:26:17'),
+(22, 2, NULL, 'sales_import_20261029_085617', 128, 1, 1, 0, 'completed', '{\"bills_created\":1,\"items_created\":1,\"total_sales_amount\":150,\"deduct_stock\":false}', '2026-10-29 03:26:17'),
+(23, 2, NULL, 'sales_import_20261029_090857', 121, 2, 0, 1, 'failed', '{\"errors\":[{\"row\":2,\"field\":\"sku\",\"reason\":\"Product \'NON-EXISTENT-SKU\' does not exist in your store inventory.\"}]}', '2026-10-29 03:38:57'),
+(24, 2, NULL, 'sales_import_20261029_090858', 128, 1, 1, 0, 'completed', '{\"bills_created\":1,\"items_created\":1,\"total_sales_amount\":150,\"deduct_stock\":false}', '2026-10-29 03:38:58'),
+(25, 2, NULL, 'sales_import_20261029_091516', 121, 2, 0, 1, 'failed', '{\"errors\":[{\"row\":2,\"field\":\"sku\",\"reason\":\"Product \'NON-EXISTENT-SKU\' does not exist in your store inventory.\"}]}', '2026-10-29 03:45:16'),
+(26, 2, NULL, 'sales_import_20261029_091516', 128, 1, 1, 0, 'completed', '{\"bills_created\":1,\"items_created\":1,\"total_sales_amount\":150,\"deduct_stock\":false}', '2026-10-29 03:45:16'),
+(27, 2, NULL, 'sales_import_20261029_091542', 121, 2, 0, 1, 'failed', '{\"errors\":[{\"row\":2,\"field\":\"sku\",\"reason\":\"Product \'NON-EXISTENT-SKU\' does not exist in your store inventory.\"}]}', '2026-10-29 03:45:42'),
+(28, 2, NULL, 'sales_import_20261029_091542', 128, 1, 1, 0, 'completed', '{\"bills_created\":1,\"items_created\":1,\"total_sales_amount\":150,\"deduct_stock\":false}', '2026-10-29 03:45:42'),
+(29, 2, NULL, 'sales_import_20261029_092736', 121, 2, 0, 1, 'failed', '{\"errors\":[{\"row\":2,\"field\":\"sku\",\"reason\":\"Product \'NON-EXISTENT-SKU\' does not exist in your store inventory.\"}]}', '2026-10-29 03:57:36'),
+(30, 2, NULL, 'sales_import_20261029_092736', 128, 1, 1, 0, 'completed', '{\"bills_created\":1,\"items_created\":1,\"total_sales_amount\":150,\"deduct_stock\":false}', '2026-10-29 03:57:36'),
+(31, 2, NULL, 'test_notif.csv', 1024, 25, 20, 5, 'completed', NULL, '2026-10-29 04:36:10'),
+(32, 2, NULL, 'test_notif.csv', 1024, 25, 20, 5, 'completed', NULL, '2026-10-29 04:40:03'),
+(34, 2, NULL, 'sales_import_20261029_101805', 121, 2, 0, 1, 'failed', '{\"errors\":[{\"row\":2,\"field\":\"sku\",\"reason\":\"Product \'NON-EXISTENT-SKU\' does not exist in your store inventory.\"}]}', '2026-10-29 04:48:05'),
+(35, 2, NULL, 'sales_import_20261029_101805', 128, 1, 1, 0, 'completed', '{\"bills_created\":1,\"items_created\":1,\"total_sales_amount\":150,\"deduct_stock\":false}', '2026-10-29 04:48:05'),
+(36, 2, NULL, 'test_notif.csv', 1024, 25, 20, 5, 'completed', NULL, '2026-10-29 04:49:06'),
+(38, 2, NULL, 'test_notif.csv', 1024, 25, 20, 5, 'completed', NULL, '2026-10-29 05:01:27'),
+(40, 2, NULL, 'test_notif.csv', 1024, 25, 20, 5, 'completed', NULL, '2026-10-29 09:19:46'),
+(42, 2, NULL, 'sales_import_20261029_145034', 121, 2, 0, 1, 'failed', '{\"errors\":[{\"row\":2,\"field\":\"sku\",\"reason\":\"Product \'NON-EXISTENT-SKU\' does not exist in your store inventory.\"}]}', '2026-10-29 09:20:34'),
+(43, 2, NULL, 'sales_import_20261029_145034', 128, 1, 1, 0, 'completed', '{\"bills_created\":1,\"items_created\":1,\"total_sales_amount\":150,\"deduct_stock\":false}', '2026-10-29 09:20:34'),
+(44, 2, NULL, 'test_notif.csv', 1024, 25, 20, 5, 'completed', NULL, '2026-10-30 02:52:09'),
+(46, 2, NULL, 'sales_import_20261030_082226', 121, 2, 0, 1, 'failed', '{\"errors\":[{\"row\":2,\"field\":\"sku\",\"reason\":\"Product \'NON-EXISTENT-SKU\' does not exist in your store inventory.\"}]}', '2026-10-30 02:52:26'),
+(47, 2, NULL, 'sales_import_20261030_082226', 128, 1, 1, 0, 'completed', '{\"bills_created\":1,\"items_created\":1,\"total_sales_amount\":150,\"deduct_stock\":false}', '2026-10-30 02:52:26'),
+(48, 23, NULL, 'sales_import_20261030_142815', 307, 2, 0, 1, 'failed', '{\"errors\":[{\"row\":2,\"field\":\"sku\",\"reason\":\"Product \'STP-003\' does not exist in your store inventory.\"}]}', '2026-10-30 08:58:15'),
+(49, 23, NULL, '1_good_import.csv', 289, 5, 5, 0, 'completed', '{\"products_updated\":0,\"products_added\":5,\"stock_added\":224,\"corrected_rows\":0,\"skipped_rows\":0,\"total_active_products\":8,\"new_inventory_value\":18405}', '2026-10-31 05:27:01'),
+(50, 2, NULL, '1_good_import.csv', 230, 2, 2, 0, 'completed', '{\"products_updated\":0,\"products_added\":2,\"stock_added\":75,\"corrected_rows\":0,\"skipped_rows\":0,\"total_active_products\":15,\"new_inventory_value\":84700}', '2026-10-31 06:54:04'),
+(51, 2, NULL, '1_good_import.csv', 230, 2, 2, 0, 'completed', '{\"products_updated\":0,\"products_added\":2,\"stock_added\":75,\"corrected_rows\":0,\"skipped_rows\":0,\"total_active_products\":15,\"new_inventory_value\":84700}', '2026-10-31 06:56:01'),
+(52, 2, NULL, '1_good_import.csv', 230, 2, 2, 0, 'completed', '{\"products_updated\":0,\"products_added\":2,\"stock_added\":75,\"corrected_rows\":0,\"skipped_rows\":0,\"total_active_products\":15,\"new_inventory_value\":84700}', '2026-10-31 06:57:45'),
+(53, 23, NULL, 'A_no_sku_pos_style.csv', 109, 3, 3, 0, 'completed', '{\"products_updated\":0,\"products_added\":3,\"stock_added\":115,\"corrected_rows\":0,\"skipped_rows\":0,\"total_active_products\":10,\"new_inventory_value\":30660}', '2026-10-31 08:28:53'),
+(54, 23, NULL, '1_good_import.csv', 289, 5, 5, 0, 'completed', '{\"products_updated\":0,\"products_added\":5,\"stock_added\":224,\"corrected_rows\":0,\"skipped_rows\":0,\"total_active_products\":11,\"new_inventory_value\":34966}', '2026-10-31 08:32:05'),
+(55, 23, NULL, 'B_barcode_style.csv', 157, 3, 3, 0, 'completed', '{\"products_updated\":0,\"products_added\":3,\"stock_added\":262,\"corrected_rows\":0,\"skipped_rows\":0,\"total_active_products\":14,\"new_inventory_value\":40662}', '2026-10-31 08:33:28'),
+(56, 23, NULL, 'C_extra_columns.csv', 238, 2, 2, 0, 'completed', '{\"products_updated\":0,\"products_added\":2,\"stock_added\":65,\"corrected_rows\":0,\"skipped_rows\":0,\"total_active_products\":16,\"new_inventory_value\":46277}', '2026-10-31 08:35:18'),
+(57, 23, NULL, 'D_name_and_description.csv', 158, 2, 2, 0, 'completed', '{\"products_updated\":0,\"products_added\":2,\"stock_added\":118,\"corrected_rows\":0,\"skipped_rows\":0,\"total_active_products\":18,\"new_inventory_value\":49117}', '2026-10-31 08:37:42'),
+(58, 23, NULL, '2_bad_row.csv', 207, 3, 3, 0, 'completed', '{\"products_updated\":0,\"products_added\":3,\"stock_added\":36,\"corrected_rows\":1,\"skipped_rows\":0,\"total_active_products\":21,\"new_inventory_value\":53514}', '2026-10-31 08:40:38');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `import_mappings`
+--
+
+CREATE TABLE `import_mappings` (
+  `id` int(10) UNSIGNED NOT NULL,
+  `shop_owner_id` int(10) UNSIGNED NOT NULL,
+  `headers_hash` varchar(64) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `raw_headers` text COLLATE utf8mb4_unicode_ci NOT NULL,
+  `mapping` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL CHECK (json_valid(`mapping`)),
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `import_mappings`
+--
+
+INSERT INTO `import_mappings` (`id`, `shop_owner_id`, `headers_hash`, `raw_headers`, `mapping`, `created_at`, `updated_at`) VALUES
+(1, 9999, '27aaf2ca407382abbfe5957f7863e3b6000dbcac3b2c45b38dad0b5ffdb7cfef', '[\"Col A\",\"Col B\",\"Col C\"]', '{\"name\":\"Col A\",\"units\":\"Col B\",\"price\":\"Col C\"}', '2026-10-31 07:45:58', '2026-10-31 09:02:45'),
+(2, 23, '4cfa104043a96e0b99ad97643797343e5b5aaebfb1c2e2e9611e69490d6c0100', '[\"Item Name\",\"Qty\",\"MRP\",\"Purchase Rate\"]', '{\"name\":\"Item Name\",\"units\":\"Qty\",\"cost_price\":\"Purchase Rate\",\"price\":\"MRP\"}', '2026-10-31 08:28:53', '2026-10-31 08:28:53'),
+(3, 23, 'b0392d6e689fdc89450b465d5290f2b4a65e739aaa9ba28888fd8f882c4f04af', '[\"Product Name\",\"SKU\",\"Category\",\"Quantity\",\"Cost Price\",\"Selling Price\",\"Minimum Stock\"]', '{\"name\":\"Product Name\",\"sku\":\"SKU\",\"units\":\"Quantity\",\"cost_price\":\"Cost Price\",\"price\":\"Selling Price\",\"category\":\"Category\",\"minimum_stock\":\"Minimum Stock\"}', '2026-10-31 08:32:06', '2026-10-31 08:40:38'),
+(4, 23, '5c90a6f112aca2438aaca1c31a90b41faaa7d7305678421574cd476f0280faff', '[\"Description\",\"Barcode\",\"Qty On Hand\",\"Rate\"]', '{\"name\":\"Description\",\"sku\":\"Barcode\",\"units\":\"Qty On Hand\",\"price\":\"Rate\"}', '2026-10-31 08:33:28', '2026-10-31 08:33:28'),
+(5, 23, '3fd0c5767f7e8f2917e40a9d4ab1f66b6fff9c39b0ab7450ba2c5d8ceb236b44', '[\"Product\",\"Article No\",\"Units\",\"Unit Cost\",\"Selling Price\",\"Group\",\"Supplier\",\"Tax %\",\"Shelf Location\",\"Expiry Date\"]', '{\"name\":\"Product\",\"sku\":\"Article No\",\"units\":\"Units\",\"cost_price\":\"Unit Cost\",\"price\":\"Selling Price\",\"category\":\"Group\"}', '2026-10-31 08:35:18', '2026-10-31 08:35:18'),
+(6, 23, '7aab39e561a9c2eef76e39bac75fec6a20da90016bc0203541d9ba7fdb24b667', '[\"Product Name\",\"Description\",\"Qty\",\"Selling Price\",\"Cost Price\"]', '{\"name\":\"Product Name\",\"units\":\"Qty\",\"cost_price\":\"Cost Price\",\"price\":\"Selling Price\"}', '2026-10-31 08:37:42', '2026-10-31 08:37:42'),
+(8, 2, 'efaa4beee3ce838e5ab75a7b2afd13a760aee18df9fac90813057ec20fd53c6a', '[\"Product Name\",\"SKU\",\"Quantity\",\"Cost Price\",\"Selling Price\",\"Category\"]', '{\"name\":\"Product Name\",\"sku\":\"SKU\",\"units\":\"Quantity\",\"cost_price\":\"Cost Price\",\"price\":\"Selling Price\",\"category\":\"Category\"}', '2026-10-31 09:02:38', '2026-10-31 09:02:38');
 
 -- --------------------------------------------------------
 
@@ -170,7 +210,8 @@ INSERT INTO `owner_account` (`id`, `full_name`, `shop_name`, `location`, `store_
 (12, 'DAKSH KOTHARI', 'BAKERY MART', 'TRL , CHENNAI', 'Grocery store', 'INR (₹)', 'daksh222@gmail.com', '$2y$10$oyifOpC7B32fpc18neBf7eqmThSATkfnEUeIAz8cHCF05i1QxAnG6', '2026-10-29 08:30:03', '2026-10-29 08:30:03'),
 (13, 'Amit Kappor', 'SPCC MART', 'MVN, Chennai', 'Neighbourhood supermarket', '₹ INR / IST', 'amitkappor@gmail.com', '$2y$10$fa6hyt287QbWuFL.6zohy.MPzBG2OHKYcadJZ3/2BFoyDVx75OSXa', '2026-10-29 08:34:02', '2026-10-29 08:34:02'),
 (19, 'Rohan K. Sharma', 'Sharma Mega Mart', 'Anna Nagar, Chennai', 'Medium supermarket', '₹ INR / IST', 'rohan.updated@gmail.com', '$2y$10$FPv8w5E69CXb0U1T6qPKd.F1naBt0oaDXsdqI9o/WqEkIzFGLFZYa', '2026-10-30 02:59:27', '2026-10-30 02:59:27'),
-(23, 'Thaurn', 'Lulu Market', 'Shenoy Nagar, Chennai', 'Neighbourhood supermarket', 'INR (₹)', 'thaurn@gmail.com', '$2y$10$wpwmSYlflQxPz4xRZPr0pOWd9UnqIwjs/dgKYvsOSflw4eN2xCxWW', '2026-10-30 04:38:22', '2026-10-30 04:40:20');
+(23, 'Thaurn', 'Lulu Market', 'Shenoy Nagar, Chennai', 'Neighbourhood supermarket', 'INR (₹)', 'thaurn@gmail.com', '$2y$10$wpwmSYlflQxPz4xRZPr0pOWd9UnqIwjs/dgKYvsOSflw4eN2xCxWW', '2026-10-30 04:38:22', '2026-10-30 04:40:20'),
+(24, 'Test Owner', 'Test Shop', 'Chennai', 'Medium supermarket', '₹', 'owner@test.com', '$2y$10$bZngM6aGPOMfDpi/DnM3gu8zzk32Dz0kBuR6sn5FE9pA6JBunkww6', '2026-10-31 06:50:40', '2026-10-31 06:50:40');
 
 -- --------------------------------------------------------
 
@@ -223,7 +264,25 @@ INSERT INTO `products` (`id`, `shop_owner_id`, `name`, `sku`, `category`, `descr
 (120, 2, 'Notification Low Stock Biscuit', 'NOTIF-01', 'Biscuits', NULL, '50.00', '30.00', 50, 10, NULL, 0, '2026-10-30 02:52:09', '2026-10-30 02:52:10'),
 (122, 23, 'Fortune Sunflower Oil · 1 L', 'OIL-005', 'Staples', '1 L pouch · Refined oil', '145.00', '120.00', 49, 15, NULL, 2, '2026-10-30 08:39:37', '2026-10-30 08:54:46'),
 (123, 23, 'Surf Excel - 500 g', 'HOM-021', 'Home care', 'Imported product batch', '65.00', '58.00', 20, 10, NULL, 2, '2026-10-30 08:40:34', '2026-10-30 08:40:34'),
-(124, 23, 'Amul Milk - 500 ml', 'DAI-001', 'General', 'Imported product batch', '30.00', '27.00', 51, 10, NULL, 2, '2026-10-30 08:40:34', '2026-10-30 08:47:55');
+(124, 23, 'Amul Milk - 500 ml', 'DAI-001', 'General', 'Imported product batch', '30.00', '27.00', 51, 10, NULL, 2, '2026-10-30 08:40:34', '2026-10-30 08:47:55'),
+(142, 23, 'KP Rice 5 kg', 'SKU-KPRI-40122', 'General', 'Imported product', '310.00', '265.00', 20, 10, NULL, 0, '2026-10-31 08:28:53', '2026-10-31 08:28:53'),
+(143, 23, 'KP Toor Dal 1 kg', 'SKU-KPTO-47045', 'General', 'Imported product', '165.00', '140.00', 35, 10, NULL, 0, '2026-10-31 08:28:53', '2026-10-31 08:28:53'),
+(144, 23, 'KP Sugar 1 kg', 'SKU-KPSU-78E3A', 'General', 'Imported product', '48.00', '41.00', 60, 10, NULL, 0, '2026-10-31 08:28:53', '2026-10-31 08:28:53'),
+(145, 23, 'Test Rice 1 kg', 'TST-001', 'Grocery', 'Imported product', '60.00', '52.00', 50, 10, NULL, 0, '2026-10-31 08:32:05', '2026-10-31 08:32:05'),
+(146, 23, 'Test Dal 500 g', 'TST-002', 'Grocery', 'Imported product', '82.00', '70.00', 40, 8, NULL, 0, '2026-10-31 08:32:05', '2026-10-31 08:32:05'),
+(147, 23, 'Test Soap', 'TST-003', 'Personal Care', 'Imported product', '32.00', '25.00', 30, 6, NULL, 0, '2026-10-31 08:32:05', '2026-10-31 08:32:05'),
+(148, 23, 'Test Biscuit', 'TST-004', 'Snacks', 'Imported product', '10.00', '8.00', 80, 15, NULL, 0, '2026-10-31 08:32:05', '2026-10-31 08:32:05'),
+(149, 23, 'Test Juice 1 L', 'TST-005', 'Beverages', 'Imported product', '89.00', '70.00', 24, 5, NULL, 0, '2026-10-31 08:32:05', '2026-10-31 08:32:05'),
+(150, 23, 'KP Hair Oil 100 ml', '8901000000011', 'General', 'Imported product', '62.00', '0.00', 18, 10, NULL, 0, '2026-10-31 08:33:28', '2026-10-31 08:33:28'),
+(151, 23, 'KP Tooth Paste 150 g', '8901000000028', 'General', 'Imported product', '95.00', '0.00', 44, 10, NULL, 0, '2026-10-31 08:33:28', '2026-10-31 08:33:28'),
+(152, 23, 'KP Shampoo Sachet', '8901000000035', 'General', 'Imported product', '2.00', '0.00', 200, 10, NULL, 0, '2026-10-31 08:33:28', '2026-10-31 08:33:28'),
+(153, 23, 'KP Cooking Oil 1 L', 'KP-OIL-1', 'Grocery', 'Imported product', '135.00', '118.00', 25, 10, NULL, 0, '2026-10-31 08:35:18', '2026-10-31 08:35:18'),
+(154, 23, 'KP Butter 100 g', 'KP-BUT-1', 'Dairy', 'Imported product', '56.00', '48.00', 40, 10, NULL, 0, '2026-10-31 08:35:18', '2026-10-31 08:35:18'),
+(155, 23, 'KP Biscuit Family Pack', 'SKU-KPBI-7C78D', 'General', 'Imported product', '30.00', '24.00', 48, 10, NULL, 0, '2026-10-31 08:37:42', '2026-10-31 08:37:42'),
+(156, 23, 'KP Chips Masala', 'SKU-KPCH-45E12', 'General', 'Imported product', '20.00', '15.00', 70, 10, NULL, 0, '2026-10-31 08:37:42', '2026-10-31 08:37:42'),
+(157, 23, 'Test Tea 250 g', 'TST-006', 'Beverages', 'Imported product', '110.00', '90.00', 20, 5, NULL, 0, '2026-10-31 08:40:38', '2026-10-31 08:40:38'),
+(158, 23, 'Test Salt 1 kg', 'TST-007', 'Grocery', 'Imported product', '22.00', '18.00', 1, 10, NULL, 0, '2026-10-31 08:40:38', '2026-10-31 08:40:38'),
+(159, 23, 'Test Oil 1 L', 'TST-008', 'Grocery', 'Imported product', '145.00', '120.00', 15, 4, NULL, 0, '2026-10-31 08:40:38', '2026-10-31 08:40:38');
 
 -- --------------------------------------------------------
 
@@ -604,9 +663,13 @@ INSERT INTO `tokens` (`id`, `user_id`, `token_hash`, `expires_at`, `created_at`)
 (215, 23, 'cc3f3f8912cbf4b3ab7f2a879cdaf3fbb971a4d440f78590799cbb30f2b6494f', '2026-11-06 05:38:22', '2026-10-30 04:38:22'),
 (216, 23, '84fd63ab554b1b46a18759c1da3c14380e88d8e5ef72617b7f071d5b609cbc8d', '2026-11-06 05:40:41', '2026-10-30 04:40:41'),
 (217, 23, 'c5f80f6425ce0a7649e10092a6a0fad1da0bd67ec0744425af437b394cf4b3ca', '2026-11-06 05:44:33', '2026-10-30 04:44:33'),
-(219, 23, '22bb6a56784b2053f5bb722191a1d7dfb3c46fa9b4ad678a048c6a48ce64697c', '2026-11-06 08:55:15', '2026-10-30 07:55:15'),
 (220, 23, '921dd4406cdf4ffac6efe267b4d04a4e1ba6f003d0a344480a745a33226047d8', '2026-11-06 09:38:53', '2026-10-30 08:38:53'),
-(221, 2, 'ee8c7cdfdd0b4df0cb1eb20b65153134823c9cbb6f855775263d51ebcdea1c03', '2026-10-31 10:13:41', '2026-10-30 09:13:41');
+(221, 2, 'ee8c7cdfdd0b4df0cb1eb20b65153134823c9cbb6f855775263d51ebcdea1c03', '2026-10-31 10:13:41', '2026-10-30 09:13:41'),
+(222, 23, '0c107fda0842d16a108d4c1f3962ee98f4aacbe223ad8009be43e11e5277843b', '2026-11-07 06:23:17', '2026-10-31 05:23:17'),
+(223, 24, '4dcddb333ba478662f37c9f8b65dddabfc9bb735eebb69b21d00230384b59f3d', '2026-11-07 07:50:40', '2026-10-31 06:50:40'),
+(224, 2, 'e9258a52ae029f97ea70c4326dd997da81f376e2eb53bd3fb42d1943d26e78a4', '2026-11-07 07:54:04', '2026-10-31 06:54:04'),
+(225, 2, '2666caccb9468d6b4eda879842cb25fd99484b61f1d325fe3a295813ce647766', '2026-11-07 07:56:01', '2026-10-31 06:56:01'),
+(226, 2, 'aa7dde7e66301cf5992e4eebb2849c3e87930a74e8fb0984bd399496eab991af', '2026-11-07 07:57:45', '2026-10-31 06:57:45');
 
 -- --------------------------------------------------------
 
@@ -659,7 +722,16 @@ INSERT INTO `user_settings` (`id`, `user_id`, `low_stock_alerts`, `ai_recommenda
 --
 ALTER TABLE `import_history`
   ADD PRIMARY KEY (`id`),
-  ADD KEY `idx_import_owner` (`shop_owner_id`);
+  ADD KEY `idx_import_owner` (`shop_owner_id`),
+  ADD KEY `idx_owner_idempotency` (`shop_owner_id`,`idempotency_key`);
+
+--
+-- Indexes for table `import_mappings`
+--
+ALTER TABLE `import_mappings`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `unique_owner_headers` (`shop_owner_id`,`headers_hash`),
+  ADD KEY `idx_owner` (`shop_owner_id`);
 
 --
 -- Indexes for table `login_attempts`
@@ -765,7 +837,13 @@ ALTER TABLE `user_settings`
 -- AUTO_INCREMENT for table `import_history`
 --
 ALTER TABLE `import_history`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=49;
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=60;
+
+--
+-- AUTO_INCREMENT for table `import_mappings`
+--
+ALTER TABLE `import_mappings`
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
 
 --
 -- AUTO_INCREMENT for table `login_attempts`
@@ -783,13 +861,13 @@ ALTER TABLE `notification_states`
 -- AUTO_INCREMENT for table `owner_account`
 --
 ALTER TABLE `owner_account`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=24;
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=25;
 
 --
 -- AUTO_INCREMENT for table `products`
 --
 ALTER TABLE `products`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=125;
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=161;
 
 --
 -- AUTO_INCREMENT for table `purchase_orders`
@@ -831,7 +909,7 @@ ALTER TABLE `sales_items`
 -- AUTO_INCREMENT for table `tokens`
 --
 ALTER TABLE `tokens`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=222;
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=228;
 
 --
 -- AUTO_INCREMENT for table `user_settings`
