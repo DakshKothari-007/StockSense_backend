@@ -463,6 +463,17 @@ All responses adhere to the standard JSON envelope:
 
 ### Module 4: Spreadsheet Bulk Import (`import/`)
 
+Header detection is case-insensitive and ignores spaces, dashes, and underscores. The backend supports the following canonical fields and synonyms:
+- `name` *(Required)*: `product name`, `name`, `item`, `item name`, `product`, `description`
+- `sku` *(Required)*: `sku`, `code`, `item code`, `product code`, `barcode`
+- `units` *(Required)*: `quantity`, `qty`, `units`, `stock`, `opening stock`
+- `cost_price` *(Optional)*: `cost price`, `cost`, `purchase price`, `buying price`
+- `price` *(Optional)*: `selling price`, `sale price`, `price`, `mrp`, `rate`
+- `category` *(Optional)*: `category`, `type`, `group`
+- `minimum_stock` *(Optional)*: `minimum stock`, `min stock`, `reorder level`, `threshold`
+
+Validation Rule: If any of `name`, `sku`, or `units` (quantity) is not mapped, `validate.php` and `execute.php` reject the request with `400 Bad Request` ("Validation failed: ... column(s) are required and must be mapped.").
+
 #### 4.1 Upload Spreadsheet
 - **Method & Path**: `POST /import/upload.php`
 - **Token Required**: Yes
@@ -472,12 +483,23 @@ All responses adhere to the standard JSON envelope:
   ```json
   {
     "status": true,
-    "message": "File uploaded successfully.",
+    "message": "File uploaded and parsed successfully",
     "data": {
-      "file_token": "abc123xyz_import",
+      "file_token": "imp_2_abc123_1793164882.csv",
       "file_name": "stock_oct.xlsx",
-      "file_type": "xlsx",
-      "file_size": 15234
+      "file_size": "15 KB",
+      "file_size_bytes": 15234,
+      "total_rows_detected": 5,
+      "headers": ["Product Name", "SKU", "Category", "Quantity", "Cost Price", "Selling Price", "Minimum Stock"],
+      "suggested_mapping": {
+        "name": "Product Name",
+        "sku": "SKU",
+        "category": "Category",
+        "units": "Quantity",
+        "cost_price": "Cost Price",
+        "price": "Selling Price",
+        "minimum_stock": "Minimum Stock"
+      }
     }
   }
   ```
@@ -489,10 +511,19 @@ All responses adhere to the standard JSON envelope:
 - **Request Body**:
   ```json
   {
-    "file_token": "abc123xyz_import"
+    "file_token": "imp_2_abc123_1793164882.csv",
+    "column_mapping": {
+      "name": "Product Name",
+      "sku": "SKU",
+      "category": "Category",
+      "units": "Quantity",
+      "cost_price": "Cost Price",
+      "price": "Selling Price",
+      "minimum_stock": "Minimum Stock"
+    }
   }
   ```
-- **Success Response (`200 OK`)**: Returns header auto-mapping and first 5 sample rows.
+- **Success Response (`200 OK`)**: Returns `mapped_columns_count`, `mappings`, `available_headers`, `total_rows`, and parsed `preview_rows`.
 
 #### 4.3 Validate Spreadsheet Data
 - **Method & Path**: `POST /import/validate.php`
@@ -501,17 +532,27 @@ All responses adhere to the standard JSON envelope:
 - **Request Body**:
   ```json
   {
-    "file_token": "abc123xyz_import",
-    "mappings": {
+    "file_token": "imp_2_abc123_1793164882.csv",
+    "column_mapping": {
+      "name": "Product Name",
       "sku": "SKU",
-      "name": "Item Name",
+      "category": "Category",
       "units": "Quantity",
-      "cost_price": "Cost",
-      "price": "Selling Price"
-    }
+      "cost_price": "Cost Price",
+      "price": "Selling Price",
+      "minimum_stock": "Minimum Stock"
+    },
+    "corrections": [
+      {
+        "row_number": 4,
+        "field": "units",
+        "value": 18
+      }
+    ]
   }
   ```
-- **Success Response (`200 OK`)**: Returns row status (`valid`, `warning`, `error`), invalid row count, and suggested auto-fixes.
+- **Validation Rule**: If `name`, `sku`, or `units` is unmapped or empty, returns `400 Bad Request`.
+- **Success Response (`200 OK`)**: Returns `rows_checked`, `ready_rows`, `errors_remaining`, `ready_to_import`, row-level `errors` array, and `summary`.
 
 #### 4.4 Execute Import
 - **Method & Path**: `POST /import/execute.php`
@@ -520,8 +561,17 @@ All responses adhere to the standard JSON envelope:
 - **Request Body**:
   ```json
   {
-    "file_token": "abc123xyz_import",
-    "mappings": { ... },
+    "file_token": "imp_2_abc123_1793164882.csv",
+    "file_name": "stock_oct.xlsx",
+    "column_mapping": {
+      "name": "Product Name",
+      "sku": "SKU",
+      "category": "Category",
+      "units": "Quantity",
+      "cost_price": "Cost Price",
+      "price": "Selling Price",
+      "minimum_stock": "Minimum Stock"
+    },
     "confirm_replace": false
   }
   ```
@@ -530,11 +580,17 @@ All responses adhere to the standard JSON envelope:
   ```json
   {
     "status": true,
-    "message": "Import completed successfully.",
+    "message": "Your shelves are up to date. Import complete.",
     "data": {
-      "imported_count": 45,
-      "updated_count": 30,
-      "created_count": 15
+      "import_id": 1,
+      "file_name": "stock_oct.xlsx",
+      "products_updated": 4,
+      "products_added": 1,
+      "data_rows_imported": "5 of 5",
+      "stock_added": "134 units",
+      "corrected_skipped_text": "1 / 0 rows",
+      "total_active_products": 129,
+      "new_inventory_value": "₹1,56,212"
     }
   }
   ```
@@ -542,7 +598,7 @@ All responses adhere to the standard JSON envelope:
 #### 4.5 Get Import History
 - **Method & Path**: `GET /import/get_history.php`
 - **Token Required**: Yes
-- **App Screen**: `InventoryScreen.kt`
+- **App Screen**: `ImportInventoryUploadScreen.kt`, `InventoryScreen.kt`
 - **Success Response (`200 OK`)**: Returns list of past imports, timestamps, and row counts.
 
 ---

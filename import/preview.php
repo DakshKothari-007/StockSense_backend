@@ -13,6 +13,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 require_once __DIR__ . "/../config/db.php";
 require_once __DIR__ . "/../inventory/auth_helper.php";
 require_once __DIR__ . "/SpreadsheetReader.php";
+require_once __DIR__ . "/ColumnMatcher.php";
 
 $owner = authenticateShopOwner($pdo);
 
@@ -92,52 +93,31 @@ foreach ($headerRow as $idx => $name) {
 }
 
 // Determine column mappings
-$userMapping = $input['column_mapping'] ?? [];
-$resolvedMapping = [
-    'sku' => null,
-    'name' => null,
-    'units' => null,
-    'cost_price' => null,
-    'price' => null
-];
+$userMapping = $input['column_mapping'] ?? null;
+$hasUserMapping = ($userMapping !== null && is_array($userMapping) && !empty($userMapping));
 
-// Helper to find column index
-$resolveIndex = function($field, $defaultIdx, $regexPatterns) use ($userMapping, $headerMap, $headerRow) {
-    if (!empty($userMapping[$field])) {
-        $target = trim($userMapping[$field]);
-        if (isset($headerMap[$target])) {
-            return $headerMap[$target];
-        }
-        if (isset($headerMap[strtolower($target)])) {
-            return $headerMap[strtolower($target)];
-        }
-        if (is_numeric($target) && isset($headerRow[(int)$target])) {
-            return (int)$target;
-        }
-    }
-    // Auto detect from header names
-    foreach ($headerRow as $i => $h) {
-        $hClean = strtolower(trim($h));
-        if (preg_match($regexPatterns, $hClean)) {
-            return $i;
-        }
-    }
-    return isset($headerRow[$defaultIdx]) ? $defaultIdx : null;
-};
-
-$colSkuIdx = $resolveIndex('sku', 0, '/^(sku|code|item_id|barcode|product_code)$/i');
-$colNameIdx = $resolveIndex('name', 1, '/^(product|name|title|product_name|item)$/i');
-$colUnitsIdx = $resolveIndex('units', 2, '/^(quantity|units|qty|stock|units_to_add|count|add)$/i');
-$colCostIdx = $resolveIndex('cost_price', 3, '/^(cost|unit_cost|cost_price|buy_price|purchase_price)$/i');
-$colPriceIdx = $resolveIndex('price', 4, '/^(price|selling_price|sell_price|mrp|unit_price|rate)$/i');
+$colNameIdx = ColumnMatcher::resolveColumnIndex('name', $userMapping['name'] ?? null, $headerRow, !$hasUserMapping);
+$colSkuIdx = ColumnMatcher::resolveColumnIndex('sku', $userMapping['sku'] ?? null, $headerRow, !$hasUserMapping);
+$colUnitsIdx = ColumnMatcher::resolveColumnIndex('units', $userMapping['units'] ?? null, $headerRow, !$hasUserMapping);
+$colCostIdx = ColumnMatcher::resolveColumnIndex('cost_price', $userMapping['cost_price'] ?? null, $headerRow, !$hasUserMapping);
+$colPriceIdx = ColumnMatcher::resolveColumnIndex('price', $userMapping['price'] ?? null, $headerRow, !$hasUserMapping);
+$colCategoryIdx = ColumnMatcher::resolveColumnIndex('category', $userMapping['category'] ?? null, $headerRow, !$hasUserMapping);
+$colMinStockIdx = ColumnMatcher::resolveColumnIndex('minimum_stock', $userMapping['minimum_stock'] ?? null, $headerRow, !$hasUserMapping);
 
 $resolvedMapping = [
-    'sku' => ($colSkuIdx !== null && isset($headerRow[$colSkuIdx])) ? $headerRow[$colSkuIdx] : 'SKU',
-    'name' => ($colNameIdx !== null && isset($headerRow[$colNameIdx])) ? $headerRow[$colNameIdx] : 'Product',
-    'units' => ($colUnitsIdx !== null && isset($headerRow[$colUnitsIdx])) ? $headerRow[$colUnitsIdx] : 'Quantity',
-    'cost_price' => ($colCostIdx !== null && isset($headerRow[$colCostIdx])) ? $headerRow[$colCostIdx] : 'Cost',
-    'price' => ($colPriceIdx !== null && isset($headerRow[$colPriceIdx])) ? $headerRow[$colPriceIdx] : 'Price'
+    'name' => ($colNameIdx !== null && isset($headerRow[$colNameIdx])) ? $headerRow[$colNameIdx] : null,
+    'sku' => ($colSkuIdx !== null && isset($headerRow[$colSkuIdx])) ? $headerRow[$colSkuIdx] : null,
+    'units' => ($colUnitsIdx !== null && isset($headerRow[$colUnitsIdx])) ? $headerRow[$colUnitsIdx] : null,
+    'cost_price' => ($colCostIdx !== null && isset($headerRow[$colCostIdx])) ? $headerRow[$colCostIdx] : null,
+    'price' => ($colPriceIdx !== null && isset($headerRow[$colPriceIdx])) ? $headerRow[$colPriceIdx] : null,
+    'category' => ($colCategoryIdx !== null && isset($headerRow[$colCategoryIdx])) ? $headerRow[$colCategoryIdx] : null,
+    'minimum_stock' => ($colMinStockIdx !== null && isset($headerRow[$colMinStockIdx])) ? $headerRow[$colMinStockIdx] : null
 ];
+
+$mappedCount = 0;
+foreach ($resolvedMapping as $v) {
+    if ($v !== null) $mappedCount++;
+}
 
 // Fetch all existing SKUs for this shop owner in one query
 $skuStmt = $pdo->prepare("SELECT sku, name, units, cost_price, price FROM products WHERE shop_owner_id = ?");
@@ -187,8 +167,10 @@ echo json_encode([
     "status" => true,
     "message" => "Preview generated successfully",
     "data" => [
-        "mapped_columns_count" => 5,
+        "mapped_columns_count" => $mappedCount,
         "mappings" => $resolvedMapping,
+        "available_headers" => $headerRow,
+        "headers" => $headerRow,
         "total_rows" => count($previewRows),
         "preview_rows" => $previewRows
     ]

@@ -1,0 +1,6 @@
+Product Name,SKU,Category,Quantity,Cost Price,Selling Price,Minimum Stock
+Test Rice 1 kg,TST-001,Grocery,50,52,60,10
+Test Dal 500 g,TST-002,Grocery,40,70,82,8
+Test Soap,TST-003,Personal Care,30,25,32,6
+Test Biscuit,TST-004,Snacks,80,8,10,15
+Test Juice 1 L,TST-005,Beverages,24,70,89,5

@@ -13,6 +13,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 require_once __DIR__ . "/../config/db.php";
 require_once __DIR__ . "/../inventory/auth_helper.php";
 require_once __DIR__ . "/SpreadsheetReader.php";
+require_once __DIR__ . "/ColumnMatcher.php";
 
 $owner = authenticateShopOwner($pdo);
 
@@ -90,26 +91,32 @@ foreach ($headerRow as $idx => $name) {
     $headerMap[strtolower(trim($name))] = $idx;
 }
 
-$userMapping = $input['column_mapping'] ?? [];
-$resolveIndex = function($field, $defaultIdx, $regexPatterns) use ($userMapping, $headerMap, $headerRow) {
-    if (!empty($userMapping[$field])) {
-        $target = trim($userMapping[$field]);
-        if (isset($headerMap[$target])) return $headerMap[$target];
-        if (isset($headerMap[strtolower($target)])) return $headerMap[strtolower($target)];
-        if (is_numeric($target) && isset($headerRow[(int)$target])) return (int)$target;
-    }
-    foreach ($headerRow as $i => $h) {
-        $hClean = strtolower(trim($h));
-        if (preg_match($regexPatterns, $hClean)) return $i;
-    }
-    return isset($headerRow[$defaultIdx]) ? $defaultIdx : null;
-};
+$userMapping = $input['column_mapping'] ?? null;
+$hasUserMapping = ($userMapping !== null && is_array($userMapping) && !empty($userMapping));
 
-$colSkuIdx = $resolveIndex('sku', 0, '/^(sku|code|item_id|barcode|product_code)$/i');
-$colNameIdx = $resolveIndex('name', 1, '/^(product|name|title|product_name|item)$/i');
-$colUnitsIdx = $resolveIndex('units', 2, '/^(quantity|units|qty|stock|units_to_add|count|add)$/i');
-$colCostIdx = $resolveIndex('cost_price', 3, '/^(cost|unit_cost|cost_price|buy_price|purchase_price)$/i');
-$colPriceIdx = $resolveIndex('price', 4, '/^(price|selling_price|sell_price|mrp|unit_price|rate)$/i');
+$colNameIdx = ColumnMatcher::resolveColumnIndex('name', $userMapping['name'] ?? null, $headerRow, !$hasUserMapping);
+$colSkuIdx = ColumnMatcher::resolveColumnIndex('sku', $userMapping['sku'] ?? null, $headerRow, !$hasUserMapping);
+$colUnitsIdx = ColumnMatcher::resolveColumnIndex('units', $userMapping['units'] ?? null, $headerRow, !$hasUserMapping);
+$colCostIdx = ColumnMatcher::resolveColumnIndex('cost_price', $userMapping['cost_price'] ?? null, $headerRow, !$hasUserMapping);
+$colPriceIdx = ColumnMatcher::resolveColumnIndex('price', $userMapping['price'] ?? null, $headerRow, !$hasUserMapping);
+$colCategoryIdx = ColumnMatcher::resolveColumnIndex('category', $userMapping['category'] ?? null, $headerRow, !$hasUserMapping);
+$colMinStockIdx = ColumnMatcher::resolveColumnIndex('minimum_stock', $userMapping['minimum_stock'] ?? null, $headerRow, !$hasUserMapping);
+
+// Check required mappings: name, sku, units must be mapped
+$missingRequired = [];
+if ($colNameIdx === null) $missingRequired[] = "Product Name (name)";
+if ($colSkuIdx === null) $missingRequired[] = "SKU (sku)";
+if ($colUnitsIdx === null) $missingRequired[] = "Quantity (units)";
+
+if (!empty($missingRequired)) {
+    http_response_code(400);
+    echo json_encode([
+        "status" => false,
+        "message" => "Validation failed: " . implode(", ", $missingRequired) . " column(s) are required and must be mapped.",
+        "data" => (object)[]
+    ]);
+    exit;
+}
 
 // Parse corrections if supplied
 // e.g. [{"row_number": 4, "field": "units", "value": 18}]

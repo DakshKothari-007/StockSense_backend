@@ -13,6 +13,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 require_once __DIR__ . "/../config/db.php";
 require_once __DIR__ . "/../inventory/auth_helper.php";
 require_once __DIR__ . "/SpreadsheetReader.php";
+require_once __DIR__ . "/ColumnMatcher.php";
 
 $owner = authenticateShopOwner($pdo);
 
@@ -143,37 +144,8 @@ if (empty($headers)) {
     exit;
 }
 
-// 5. Intelligent suggested mapping based on headers
-$suggestedMapping = [
-    "sku" => null,
-    "name" => null,
-    "units" => null,
-    "cost_price" => null,
-    "price" => null
-];
-
-foreach ($headers as $header) {
-    $cleanH = strtolower(trim($header));
-
-    if (!$suggestedMapping['sku'] && preg_match('/^(sku|code|item_id|barcode|product_code|item_code)$/i', $cleanH)) {
-        $suggestedMapping['sku'] = $header;
-    } elseif (!$suggestedMapping['name'] && preg_match('/^(product|name|item|product_name|title|description)$/i', $cleanH)) {
-        $suggestedMapping['name'] = $header;
-    } elseif (!$suggestedMapping['units'] && preg_match('/^(quantity|units|qty|stock|units_to_add|count|add)$/i', $cleanH)) {
-        $suggestedMapping['units'] = $header;
-    } elseif (!$suggestedMapping['cost_price'] && preg_match('/^(cost|cost_price|unit_cost|purchase_price|buy_price)$/i', $cleanH)) {
-        $suggestedMapping['cost_price'] = $header;
-    } elseif (!$suggestedMapping['price'] && preg_match('/^(price|selling_price|sell_price|mrp|unit_price|rate)$/i', $cleanH)) {
-        $suggestedMapping['price'] = $header;
-    }
-}
-
-// Fallback to position if headers are standard 5 columns
-if (!$suggestedMapping['sku'] && isset($headers[0])) $suggestedMapping['sku'] = $headers[0];
-if (!$suggestedMapping['name'] && isset($headers[1])) $suggestedMapping['name'] = $headers[1];
-if (!$suggestedMapping['units'] && isset($headers[2])) $suggestedMapping['units'] = $headers[2];
-if (!$suggestedMapping['cost_price'] && isset($headers[3])) $suggestedMapping['cost_price'] = $headers[3];
-if (!$suggestedMapping['price'] && isset($headers[4])) $suggestedMapping['price'] = $headers[4];
+// 5. Intelligent suggested mapping based on headers using synonyms
+$suggestedMapping = ColumnMatcher::detectMappings($headers);
 
 // Format human-readable file size
 $formattedSize = ($file['size'] >= 1048576)
