@@ -123,10 +123,9 @@ $colPriceIdx = ColumnMatcher::resolveColumnIndex('price', $userMapping['price'] 
 $colCategoryIdx = ColumnMatcher::resolveColumnIndex('category', $userMapping['category'] ?? null, $headerRow, !$hasUserMapping);
 $colMinStockIdx = ColumnMatcher::resolveColumnIndex('minimum_stock', $userMapping['minimum_stock'] ?? null, $headerRow, !$hasUserMapping);
 
-// Check required mappings: name, sku, units must be mapped
+// Check required mappings: only name and units are strictly required
 $missingRequired = [];
 if ($colNameIdx === null) $missingRequired[] = "Product Name (name)";
-if ($colSkuIdx === null) $missingRequired[] = "SKU (sku)";
 if ($colUnitsIdx === null) $missingRequired[] = "Quantity (units)";
 
 if (!empty($missingRequired)) {
@@ -137,6 +136,12 @@ if (!empty($missingRequired)) {
         "data" => (object)[]
     ]);
     exit;
+}
+
+// If SKU is not mapped, check if a barcode column is present in headers
+$colBarcodeIdx = null;
+if ($colSkuIdx === null) {
+    $colBarcodeIdx = ColumnMatcher::resolveColumnIndex('sku', null, $headerRow, true);
 }
 
 // Parse corrections
@@ -162,6 +167,9 @@ foreach ($rows as $index => $row) {
     $rowNumber = $index + 2;
 
     $rawSku = ($colSkuIdx !== null && isset($row[$colSkuIdx])) ? trim($row[$colSkuIdx]) : '';
+    if ($rawSku === '' && $colBarcodeIdx !== null && isset($row[$colBarcodeIdx])) {
+        $rawSku = trim($row[$colBarcodeIdx]);
+    }
     if (isset($correctionsMap[$rowNumber]['sku'])) {
         $rawSku = trim((string)$correctionsMap[$rowNumber]['sku']);
     }
@@ -169,6 +177,11 @@ foreach ($rows as $index => $row) {
     $rawName = ($colNameIdx !== null && isset($row[$colNameIdx])) ? trim($row[$colNameIdx]) : '';
     if (isset($correctionsMap[$rowNumber]['name'])) {
         $rawName = trim((string)$correctionsMap[$rowNumber]['name']);
+    }
+
+    // Generate stable SKU if missing and name is present
+    if ($rawSku === '' && $rawName !== '') {
+        $rawSku = ColumnMatcher::generateStableSku($ownerId, $rawName);
     }
 
     $rawUnits = ($colUnitsIdx !== null && isset($row[$colUnitsIdx])) ? trim($row[$colUnitsIdx]) : '';
@@ -208,6 +221,9 @@ foreach ($rows as $index => $row) {
 
     $cleanPrice = preg_replace('/[^0-9.]/', '', $rawPrice);
     $priceVal = is_numeric($cleanPrice) ? (float)$cleanPrice : 0.0;
+    if ($priceVal <= 0.0 && $costVal > 0.0) {
+        $priceVal = $costVal;
+    }
 
     if ($costVal < 0 || $priceVal < 0) {
         $hasRowError = true;
@@ -388,6 +404,19 @@ try {
     $importId = (int)$pdo->lastInsertId();
 
     $pdo->commit();
+
+    // Persist final column mapping for this shop owner so identical sheets are auto-mapped
+    $resolvedMapping = [
+        'name' => ($colNameIdx !== null && isset($headerRow[$colNameIdx])) ? $headerRow[$colNameIdx] : null,
+        'sku' => ($colSkuIdx !== null && isset($headerRow[$colSkuIdx])) ? $headerRow[$colSkuIdx] : null,
+        'units' => ($colUnitsIdx !== null && isset($headerRow[$colUnitsIdx])) ? $headerRow[$colUnitsIdx] : null,
+        'cost_price' => ($colCostIdx !== null && isset($headerRow[$colCostIdx])) ? $headerRow[$colCostIdx] : null,
+        'price' => ($colPriceIdx !== null && isset($headerRow[$colPriceIdx])) ? $headerRow[$colPriceIdx] : null,
+        'category' => ($colCategoryIdx !== null && isset($headerRow[$colCategoryIdx])) ? $headerRow[$colCategoryIdx] : null,
+        'minimum_stock' => ($colMinStockIdx !== null && isset($headerRow[$colMinStockIdx])) ? $headerRow[$colMinStockIdx] : null
+    ];
+    $mappingToSave = !empty($userMapping) ? $userMapping : array_filter($resolvedMapping);
+    ColumnMatcher::saveMapping($pdo, $ownerId, $headerRow, $mappingToSave);
 
     // Clean up temporary file
     @unlink($filePath);

@@ -463,16 +463,18 @@ All responses adhere to the standard JSON envelope:
 
 ### Module 4: Spreadsheet Bulk Import (`import/`)
 
-Header detection is case-insensitive and ignores spaces, dashes, and underscores. The backend supports the following canonical fields and synonyms:
-- `name` *(Required)*: `product name`, `name`, `item`, `item name`, `product`, `description`
-- `sku` *(Required)*: `sku`, `code`, `item code`, `product code`, `barcode`
-- `units` *(Required)*: `quantity`, `qty`, `units`, `stock`, `opening stock`
-- `cost_price` *(Optional)*: `cost price`, `cost`, `purchase price`, `buying price`
-- `price` *(Optional)*: `selling price`, `sale price`, `price`, `mrp`, `rate`
-- `category` *(Optional)*: `category`, `type`, `group`
-- `minimum_stock` *(Optional)*: `minimum stock`, `min stock`, `reorder level`, `threshold`
+Header detection is case-insensitive, ignores spaces, dashes, and underscores, supports fuzzy matching (normalized similarity $\ge 0.70$) for typos/abbreviations, inspects the first 20 sample rows for data type heuristics (integers, decimals, short codes, text), and supports per-shop persistent header mappings (`import_mappings` table).
 
-Validation Rule: If any of `name`, `sku`, or `units` (quantity) is not mapped, `validate.php` and `execute.php` reject the request with `400 Bad Request` ("Validation failed: ... column(s) are required and must be mapped.").
+The backend supports the following canonical fields and extended supermarket synonyms:
+- `name` *(Required)*: `product name`, `item name`, `item description`, `product description`, `product`, `item`, `name`, `description`, `title`, `particulars`, `article name`, `goods description`, `product title`, `item title`, `item details`, `prod name`, `item desc`, `prod desc`, `descr`
+- `units` *(Required)*: `quantity`, `qty`, `units`, `stock`, `opening stock`, `qty on hand`, `quantity on hand`, `stock in hand`, `closing stock`, `current stock`, `balance stock`, `balance`, `pcs`, `count`, `physical stock`, `units to add`, `add stock`, `available qty`, `on hand`, `qnty`, `stock qty`, `total stock`, `units in stock`
+- `sku` *(Optional)*: `sku`, `code`, `item code`, `product code`, `barcode`, `ean`, `ean code`, `hsn`, `hsn code`, `upc`, `article no`, `article number`, `item id`, `gtin`, `sku code`, `product id`, `item no`, `part no`, `bar code`, `itemcode`, `prodcode`. *(If omitted or unmapped, the backend uses any detected barcode column, otherwise generates a deterministic stable SKU: `SKU-{PREFIX}-{HASH}`)*
+- `price` *(Optional)*: `selling price`, `sale price`, `price`, `mrp`, `rate`, `selling rate`, `sale rate`, `unit price`, `retail price`, `sp`, `sales price`, `sales rate`, `selling`, `retail rate`, `unit rate`, `item price`, `sale mrp`, `mrp rate`. *(Defaults to `cost_price` or `0.00`)*
+- `cost_price` *(Optional)*: `cost price`, `cost`, `purchase price`, `buying price`, `purchase rate`, `buy rate`, `unit cost`, `cp`, `landed cost`, `cost rate`, `purchase`, `base cost`, `buy price`, `purchase cost`, `item cost`. *(Defaults to `0.00`)*
+- `category` *(Optional)*: `category`, `type`, `group`, `department`, `dept`, `product category`, `classification`, `family`, `section`, `item group`, `cat`, `sub category`, `sub cat`, `prod group`. *(Defaults to `General`)*
+- `minimum_stock` *(Optional)*: `minimum stock`, `min stock`, `reorder level`, `threshold`, `min level`, `rop`, `safety stock`, `alert qty`, `low stock threshold`, `min qty`, `reorder point`, `min threshold`, `alert level`, `warning level`. *(Defaults to `10`)*
+
+Validation Rule: Only `name` and `units` (quantity) are strictly required to be mapped. If either is not mapped, `validate.php` and `execute.php` reject the request with `400 Bad Request` ("Validation failed: ... column(s) are required and must be mapped."). Unknown extra columns in the spreadsheet are safely ignored.
 
 #### 4.1 Upload Spreadsheet
 - **Method & Path**: `POST /import/upload.php`
@@ -499,7 +501,20 @@ Validation Rule: If any of `name`, `sku`, or `units` (quantity) is not mapped, `
         "cost_price": "Cost Price",
         "price": "Selling Price",
         "minimum_stock": "Minimum Stock"
-      }
+      },
+      "confidence": {
+        "name": 1.0,
+        "sku": 1.0,
+        "category": 1.0,
+        "units": 1.0,
+        "cost_price": 1.0,
+        "price": 1.0,
+        "minimum_stock": 1.0
+      },
+      "matched_count": 7,
+      "total_columns": 7,
+      "required_matched": true,
+      "is_saved": false
     }
   }
   ```
@@ -523,7 +538,7 @@ Validation Rule: If any of `name`, `sku`, or `units` (quantity) is not mapped, `
     }
   }
   ```
-- **Success Response (`200 OK`)**: Returns `mapped_columns_count`, `mappings`, `available_headers`, `total_rows`, and parsed `preview_rows`.
+- **Success Response (`200 OK`)**: Returns `matched_count`, `total_columns`, `required_matched`, `is_saved`, `confidence`, `mappings`, `available_headers`, `total_rows`, and parsed `preview_rows`.
 
 #### 4.3 Validate Spreadsheet Data
 - **Method & Path**: `POST /import/validate.php`
@@ -551,7 +566,7 @@ Validation Rule: If any of `name`, `sku`, or `units` (quantity) is not mapped, `
     ]
   }
   ```
-- **Validation Rule**: If `name`, `sku`, or `units` is unmapped or empty, returns `400 Bad Request`.
+- **Validation Rule**: If `name` or `units` is unmapped or empty, returns `400 Bad Request`. SKU is optional and will fall back to barcode or a stable generated SKU. Safe defaults are assigned for category (`General`), cost price (`0.00`), selling price (`cost_price` or `0.00`), and minimum stock (`10`).
 - **Success Response (`200 OK`)**: Returns `rows_checked`, `ready_rows`, `errors_remaining`, `ready_to_import`, row-level `errors` array, and `summary`.
 
 #### 4.4 Execute Import

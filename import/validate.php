@@ -102,10 +102,9 @@ $colPriceIdx = ColumnMatcher::resolveColumnIndex('price', $userMapping['price'] 
 $colCategoryIdx = ColumnMatcher::resolveColumnIndex('category', $userMapping['category'] ?? null, $headerRow, !$hasUserMapping);
 $colMinStockIdx = ColumnMatcher::resolveColumnIndex('minimum_stock', $userMapping['minimum_stock'] ?? null, $headerRow, !$hasUserMapping);
 
-// Check required mappings: name, sku, units must be mapped
+// Check required mappings: only name and units are strictly required
 $missingRequired = [];
 if ($colNameIdx === null) $missingRequired[] = "Product Name (name)";
-if ($colSkuIdx === null) $missingRequired[] = "SKU (sku)";
 if ($colUnitsIdx === null) $missingRequired[] = "Quantity (units)";
 
 if (!empty($missingRequired)) {
@@ -116,6 +115,12 @@ if (!empty($missingRequired)) {
         "data" => (object)[]
     ]);
     exit;
+}
+
+// If SKU is not mapped, check if a barcode column is present in the headers
+$colBarcodeIdx = null;
+if ($colSkuIdx === null) {
+    $colBarcodeIdx = ColumnMatcher::resolveColumnIndex('sku', null, $headerRow, true);
 }
 
 // Parse corrections if supplied
@@ -155,6 +160,9 @@ foreach ($rows as $index => $row) {
 
     // Extract values with corrections override
     $rawSku = ($colSkuIdx !== null && isset($row[$colSkuIdx])) ? trim($row[$colSkuIdx]) : '';
+    if ($rawSku === '' && $colBarcodeIdx !== null && isset($row[$colBarcodeIdx])) {
+        $rawSku = trim($row[$colBarcodeIdx]);
+    }
     if (isset($correctionsMap[$rowNumber]['sku'])) {
         $rawSku = trim((string)$correctionsMap[$rowNumber]['sku']);
     }
@@ -162,6 +170,11 @@ foreach ($rows as $index => $row) {
     $rawName = ($colNameIdx !== null && isset($row[$colNameIdx])) ? trim($row[$colNameIdx]) : '';
     if (isset($correctionsMap[$rowNumber]['name'])) {
         $rawName = trim((string)$correctionsMap[$rowNumber]['name']);
+    }
+
+    // Generate stable SKU if missing and name is present
+    if ($rawSku === '' && $rawName !== '') {
+        $rawSku = ColumnMatcher::generateStableSku($ownerId, $rawName);
     }
 
     $rawUnits = ($colUnitsIdx !== null && isset($row[$colUnitsIdx])) ? trim($row[$colUnitsIdx]) : '';

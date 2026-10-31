@@ -96,27 +96,57 @@ foreach ($headerRow as $idx => $name) {
 $userMapping = $input['column_mapping'] ?? null;
 $hasUserMapping = ($userMapping !== null && is_array($userMapping) && !empty($userMapping));
 
-$colNameIdx = ColumnMatcher::resolveColumnIndex('name', $userMapping['name'] ?? null, $headerRow, !$hasUserMapping);
-$colSkuIdx = ColumnMatcher::resolveColumnIndex('sku', $userMapping['sku'] ?? null, $headerRow, !$hasUserMapping);
-$colUnitsIdx = ColumnMatcher::resolveColumnIndex('units', $userMapping['units'] ?? null, $headerRow, !$hasUserMapping);
-$colCostIdx = ColumnMatcher::resolveColumnIndex('cost_price', $userMapping['cost_price'] ?? null, $headerRow, !$hasUserMapping);
-$colPriceIdx = ColumnMatcher::resolveColumnIndex('price', $userMapping['price'] ?? null, $headerRow, !$hasUserMapping);
-$colCategoryIdx = ColumnMatcher::resolveColumnIndex('category', $userMapping['category'] ?? null, $headerRow, !$hasUserMapping);
-$colMinStockIdx = ColumnMatcher::resolveColumnIndex('minimum_stock', $userMapping['minimum_stock'] ?? null, $headerRow, !$hasUserMapping);
+$colBarcodeIdx = null;
 
-$resolvedMapping = [
-    'name' => ($colNameIdx !== null && isset($headerRow[$colNameIdx])) ? $headerRow[$colNameIdx] : null,
-    'sku' => ($colSkuIdx !== null && isset($headerRow[$colSkuIdx])) ? $headerRow[$colSkuIdx] : null,
-    'units' => ($colUnitsIdx !== null && isset($headerRow[$colUnitsIdx])) ? $headerRow[$colUnitsIdx] : null,
-    'cost_price' => ($colCostIdx !== null && isset($headerRow[$colCostIdx])) ? $headerRow[$colCostIdx] : null,
-    'price' => ($colPriceIdx !== null && isset($headerRow[$colPriceIdx])) ? $headerRow[$colPriceIdx] : null,
-    'category' => ($colCategoryIdx !== null && isset($headerRow[$colCategoryIdx])) ? $headerRow[$colCategoryIdx] : null,
-    'minimum_stock' => ($colMinStockIdx !== null && isset($headerRow[$colMinStockIdx])) ? $headerRow[$colMinStockIdx] : null
-];
+if (!$hasUserMapping) {
+    // Intelligent detection with saved mappings, fuzzy matching, and heuristics
+    $detection = ColumnMatcher::detect($headerRow, array_slice($rows, 0, 20), $pdo, $ownerId);
+    $resolvedMapping = $detection['mappings'];
+    $confidences = $detection['confidence'];
+    $mappedCount = $detection['matched_count'];
+    $totalColumns = $detection['total_columns'];
+    $requiredMatched = $detection['required_matched'];
+    $isSaved = $detection['is_saved'];
 
-$mappedCount = 0;
-foreach ($resolvedMapping as $v) {
-    if ($v !== null) $mappedCount++;
+    $colNameIdx = ColumnMatcher::resolveColumnIndex('name', $resolvedMapping['name'] ?? null, $headerRow, false);
+    $colSkuIdx = ColumnMatcher::resolveColumnIndex('sku', $resolvedMapping['sku'] ?? null, $headerRow, false);
+    $colUnitsIdx = ColumnMatcher::resolveColumnIndex('units', $resolvedMapping['units'] ?? null, $headerRow, false);
+    $colCostIdx = ColumnMatcher::resolveColumnIndex('cost_price', $resolvedMapping['cost_price'] ?? null, $headerRow, false);
+    $colPriceIdx = ColumnMatcher::resolveColumnIndex('price', $resolvedMapping['price'] ?? null, $headerRow, false);
+    $colCategoryIdx = ColumnMatcher::resolveColumnIndex('category', $resolvedMapping['category'] ?? null, $headerRow, false);
+    $colMinStockIdx = ColumnMatcher::resolveColumnIndex('minimum_stock', $resolvedMapping['minimum_stock'] ?? null, $headerRow, false);
+} else {
+    $colNameIdx = ColumnMatcher::resolveColumnIndex('name', $userMapping['name'] ?? null, $headerRow, false);
+    $colSkuIdx = ColumnMatcher::resolveColumnIndex('sku', $userMapping['sku'] ?? null, $headerRow, false);
+    $colUnitsIdx = ColumnMatcher::resolveColumnIndex('units', $userMapping['units'] ?? null, $headerRow, false);
+    $colCostIdx = ColumnMatcher::resolveColumnIndex('cost_price', $userMapping['cost_price'] ?? null, $headerRow, false);
+    $colPriceIdx = ColumnMatcher::resolveColumnIndex('price', $userMapping['price'] ?? null, $headerRow, false);
+    $colCategoryIdx = ColumnMatcher::resolveColumnIndex('category', $userMapping['category'] ?? null, $headerRow, false);
+    $colMinStockIdx = ColumnMatcher::resolveColumnIndex('minimum_stock', $userMapping['minimum_stock'] ?? null, $headerRow, false);
+
+    $resolvedMapping = [
+        'name' => ($colNameIdx !== null && isset($headerRow[$colNameIdx])) ? $headerRow[$colNameIdx] : null,
+        'sku' => ($colSkuIdx !== null && isset($headerRow[$colSkuIdx])) ? $headerRow[$colSkuIdx] : null,
+        'units' => ($colUnitsIdx !== null && isset($headerRow[$colUnitsIdx])) ? $headerRow[$colUnitsIdx] : null,
+        'cost_price' => ($colCostIdx !== null && isset($headerRow[$colCostIdx])) ? $headerRow[$colCostIdx] : null,
+        'price' => ($colPriceIdx !== null && isset($headerRow[$colPriceIdx])) ? $headerRow[$colPriceIdx] : null,
+        'category' => ($colCategoryIdx !== null && isset($headerRow[$colCategoryIdx])) ? $headerRow[$colCategoryIdx] : null,
+        'minimum_stock' => ($colMinStockIdx !== null && isset($headerRow[$colMinStockIdx])) ? $headerRow[$colMinStockIdx] : null
+    ];
+
+    $matchedCount = count(array_unique(array_filter(array_values($resolvedMapping))));
+    $totalColumns = count($headerRow);
+    $requiredMatched = (!empty($resolvedMapping['name']) && !empty($resolvedMapping['units']));
+    $isSaved = false;
+    $confidences = [];
+    foreach ($resolvedMapping as $k => $v) {
+        $confidences[$k] = ($v !== null) ? 1.0 : 0.0;
+    }
+}
+
+// If SKU column is not explicitly mapped, check for barcode column in headers
+if ($colSkuIdx === null) {
+    $colBarcodeIdx = ColumnMatcher::resolveColumnIndex('sku', null, $headerRow, true);
 }
 
 // Fetch all existing SKUs for this shop owner in one query
@@ -130,14 +160,21 @@ while ($p = $skuStmt->fetch(PDO::FETCH_ASSOC)) {
 $previewRows = [];
 foreach ($rows as $index => $row) {
     $rawSku = ($colSkuIdx !== null && isset($row[$colSkuIdx])) ? trim($row[$colSkuIdx]) : '';
+    if ($rawSku === '' && $colBarcodeIdx !== null && isset($row[$colBarcodeIdx])) {
+        $rawSku = trim($row[$colBarcodeIdx]);
+    }
     $rawName = ($colNameIdx !== null && isset($row[$colNameIdx])) ? trim($row[$colNameIdx]) : '';
+    if ($rawSku === '' && $rawName !== '') {
+        $rawSku = ColumnMatcher::generateStableSku($ownerId, $rawName);
+    }
+
     $rawUnits = ($colUnitsIdx !== null && isset($row[$colUnitsIdx])) ? trim($row[$colUnitsIdx]) : '0';
     $rawCost = ($colCostIdx !== null && isset($row[$colCostIdx])) ? trim($row[$colCostIdx]) : '0';
     $rawPrice = ($colPriceIdx !== null && isset($row[$colPriceIdx])) ? trim($row[$colPriceIdx]) : '0';
 
     // Check if rawUnits contains errors (e.g. "18O" or stray letters)
     $isUnitsValidInt = preg_match('/^\d+$/', $rawUnits);
-    $isHighlighted = !$isUnitsValidInt || empty($rawSku) || empty($rawName);
+    $isHighlighted = !$isUnitsValidInt || empty($rawName);
 
     $cleanCostNum = preg_replace('/[^0-9.]/', '', $rawCost);
     $cleanPriceNum = preg_replace('/[^0-9.]/', '', $rawPrice);
@@ -168,6 +205,11 @@ echo json_encode([
     "message" => "Preview generated successfully",
     "data" => [
         "mapped_columns_count" => $mappedCount,
+        "matched_count" => $mappedCount,
+        "total_columns" => $totalColumns,
+        "required_matched" => $requiredMatched,
+        "is_saved" => $isSaved,
+        "confidence" => $confidences ?? (object)[],
         "mappings" => $resolvedMapping,
         "available_headers" => $headerRow,
         "headers" => $headerRow,

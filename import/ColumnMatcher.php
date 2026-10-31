@@ -224,12 +224,14 @@ class ColumnMatcher {
                 foreach ($saved as $k => $v) {
                     $conf[$k] = ($v !== null && $v !== '') ? 1.0 : 0.0;
                 }
-                $matchedCount = count(array_filter($saved, function($v) { return $v !== null && $v !== ''; }));
+                $matchedCols = array_unique(array_filter(array_values($saved)));
+                $matchedCount = count($matchedCols);
                 $reqMatched = !empty($saved['name']) && !empty($saved['units']);
                 return [
                     'mappings' => $saved,
                     'confidence' => $conf,
                     'matched_count' => $matchedCount,
+                    'total_columns' => count($headers),
                     'total_fields' => 7,
                     'is_saved' => true,
                     'required_matched' => $reqMatched
@@ -368,17 +370,27 @@ class ColumnMatcher {
             }
         }
 
-        $matchedCount = count(array_filter($detected, function($v) { return $v !== null && $v !== ''; }));
+        $matchedCols = array_unique(array_filter(array_values($detected)));
+        $matchedCount = count($matchedCols);
         $requiredMatched = (!empty($detected['name']) && !empty($detected['units']));
 
         return [
             'mappings' => $detected,
             'confidence' => $confidences,
             'matched_count' => $matchedCount,
+            'total_columns' => count($headers),
             'total_fields' => 7,
             'is_saved' => false,
             'required_matched' => $requiredMatched
         ];
+    }
+
+    /**
+     * Legacy convenience wrapper returning only the mappings array.
+     */
+    public static function detectMappings(array $headers): array {
+        $res = self::detect($headers);
+        return $res['mappings'];
     }
 
     /**

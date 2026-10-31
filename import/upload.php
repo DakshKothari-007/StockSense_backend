@@ -144,8 +144,8 @@ if (empty($headers)) {
     exit;
 }
 
-// 5. Intelligent suggested mapping based on headers using synonyms
-$suggestedMapping = ColumnMatcher::detectMappings($headers);
+// 5. Intelligent suggested mapping based on headers using synonyms, fuzzy matching, and heuristics
+$detection = ColumnMatcher::detect($headers, $previewRows, $pdo, (int)$owner['id']);
 
 // Format human-readable file size
 $formattedSize = ($file['size'] >= 1048576)
@@ -164,6 +164,11 @@ echo json_encode([
         "total_rows_detected" => $totalRows,
         "headers" => $headers,
         "preview_rows" => $previewRows,
-        "suggested_mapping" => $suggestedMapping
+        "suggested_mapping" => $detection['mappings'],
+        "confidence" => $detection['confidence'],
+        "matched_count" => $detection['matched_count'],
+        "total_columns" => $detection['total_columns'],
+        "required_matched" => $detection['required_matched'],
+        "is_saved" => $detection['is_saved']
     ]
 ]);
