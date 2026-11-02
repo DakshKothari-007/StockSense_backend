@@ -71,10 +71,18 @@ $resExpired = apiCall("$baseUrl/reorder/list.php", 'GET', null, ["Authorization:
 assertCheck("1b. Invalid/expired token returns 401 Unauthorized", $resExpired['code'] === 401);
 
 // Set up clean product test state for Shop 2
+// Clean up any previous test purchase orders for Shop 2
+$pdo->prepare("DELETE FROM purchase_order_items WHERE purchase_order_id IN (SELECT id FROM purchase_orders WHERE shop_owner_id = 2)")->execute();
+$pdo->prepare("DELETE FROM purchase_orders WHERE shop_owner_id = 2")->execute();
+
 // Product 1: units = 8, min_stock_threshold = 24, cost_price = 27.00
 $pdo->prepare("UPDATE products SET units = 8, min_stock_threshold = 24, cost_price = 27.00, status = 'Active' WHERE id = 1 AND shop_owner_id = 2")->execute();
-// Product 4: cost_price = null, units = 0 (out of stock)
-$pdo->prepare("UPDATE products SET units = 0, min_stock_threshold = 20, cost_price = NULL, status = 'Active' WHERE id = 4 AND shop_owner_id = 2")->execute();
+
+// Dedicated test product for zero-demand / zero-sales tests
+$pdo->prepare("DELETE FROM purchase_order_items WHERE product_id IN (SELECT id FROM products WHERE sku = 'TEST-ZERO-DEMAND' AND shop_owner_id = 2)")->execute();
+$pdo->prepare("DELETE FROM products WHERE sku = 'TEST-ZERO-DEMAND' AND shop_owner_id = 2")->execute();
+$pdo->prepare("INSERT INTO products (shop_owner_id, name, sku, category, price, cost_price, units, min_stock_threshold, status) VALUES (2, 'Zero Demand Tea', 'TEST-ZERO-DEMAND', 'Beverages', 100.00, 0.00, 0, 10, 'Active')")->execute();
+$zeroDemandId = (int)$pdo->lastInsertId();
 
 // Ensure Shop 2 has >= 30 days of sales history
 $oldBillNo = "BILL-HIST-35DAYS";
@@ -97,33 +105,33 @@ assertCheck("2b. reorder_config returned with lead_time, safety, cover days",
 $items = $resList['json']['data']['items'] ?? [];
 assertCheck("2c. Items list returned", !empty($items));
 
-// Find Product 4 in list (Out of stock with cost_price null, and 0 sales in last 30 days)
-$prod4Item = null;
+// Find Zero Demand Product in list (Out of stock with cost_price null, and 0 sales in last 30 days)
+$zeroDemandItem = null;
 $prod1Item = null;
 foreach ($items as $it) {
-    if ($it['product']['id'] === 4) $prod4Item = $it;
+    if ($it['product']['id'] === $zeroDemandId) $zeroDemandItem = $it;
     if ($it['product']['id'] === 1) $prod1Item = $it;
 }
 
 // 3. Test: Cost price null returns estimated_cost = null (Rule: do not guess)
-assertCheck("3a. Product with null cost_price has estimated_cost = null", $prod4Item !== null && $prod4Item['estimated_cost'] === null);
+assertCheck("3a. Product with null cost_price has estimated_cost = null", $zeroDemandItem !== null && $zeroDemandItem['estimated_cost'] === null);
 assertCheck("3b. Product with units = 0 has high priority with exact rule", 
-    $prod4Item !== null && 
-    $prod4Item['priority'] === 'high' && 
-    $prod4Item['priority_rule'] === 'Out of stock (units = 0)'
+    $zeroDemandItem !== null && 
+    $zeroDemandItem['priority'] === 'high' && 
+    $zeroDemandItem['priority_rule'] === 'Out of stock (units = 0)'
 );
 
 // 4. Test: Rate 0 or no sales returns days_of_stock_left = null (never divide by zero)
 assertCheck("4. Zero demand product returns days_of_stock_left = null", 
-    $prod4Item !== null && $prod4Item['days_of_stock_left'] === null
+    $zeroDemandItem !== null && $zeroDemandItem['days_of_stock_left'] === null
 );
 
-// 4b. Test (NEW FIX): Shop HAS >= 30 days history, product sold 0 in 30 days -> suggested_quantity = null & reason
-assertCheck("4b. Product with 0 sales in 30 days has suggested_quantity = null", 
-    $prod4Item !== null && $prod4Item['suggested_quantity'] === null
+// 4b. Test: Product with stock <= min and 0 sales suggests at least reaching min + safety buffer (never 0)
+assertCheck("4b. Product with stock <= min and 0 sales has suggested_quantity > 0 (reaches min + safety)", 
+    $zeroDemandItem !== null && $zeroDemandItem['suggested_quantity'] > 0
 );
-assertCheck("4c. Reason matches 'No sales in 30 days. Review before reordering.'", 
-    $prod4Item !== null && $prod4Item['reason'] === 'No sales in 30 days. Review before reordering.'
+assertCheck("4c. Reason indicates minimum threshold fallback with safety buffer", 
+    $zeroDemandItem !== null && strpos($zeroDemandItem['reason'], 'safety buffer') !== false
 );
 
 // 5. Test: Shop 3 has no sales history -> history_warning = true and 2x-min fallback
@@ -163,7 +171,7 @@ assertCheck("6b. Quantity 0 rejected with 400", $resBadQty['code'] === 400);
 $validOrderPayload = [
     "notes" => "Automated test replenishment",
     "items" => [
-        ["product_id" => 1, "quantity" => 20]
+        ["product_id" => 1, "quantity" => 10]
     ]
 ];
 $resCreateOrder = apiCall("$baseUrl/reorder/create_order.php", 'POST', $validOrderPayload, ["Authorization: Bearer $token2"]);
@@ -182,12 +190,12 @@ $prod1After = null;
 foreach ($resListAfterOrder['json']['data']['items'] as $it) {
     if ($it['product']['id'] === 1) $prod1After = $it;
 }
-assertCheck("7a. on_order_units reflects the placed order (20 units)", 
-    $prod1After !== null && $prod1After['on_order_units'] === 20
+assertCheck("7a. on_order_units reflects the placed order (10 units)", 
+    $prod1After !== null && $prod1After['on_order_units'] === 10
 );
 assertCheck("7b. suggested_quantity subtracted on_order_units", 
     $prod1After !== null && 
-    $prod1After['suggested_quantity'] === max(0, $prod1After['gross_suggested_quantity'] - 20)
+    $prod1After['suggested_quantity'] === max(0, $prod1After['gross_suggested_quantity'] - 10)
 );
 
 // 8. Test: reorder/orders.php lists orders with items
@@ -206,7 +214,7 @@ $resReceive = apiCall("$baseUrl/reorder/receive.php", 'POST', ["order_id" => $cr
 assertCheck("10a. Receive order returns 200 OK", $resReceive['code'] === 200, "Body: {$resReceive['body']}");
 $stockAfterReceive = (int)$pdo->query("SELECT units FROM products WHERE id = 1")->fetchColumn();
 assertCheck("10b. Stock increased by order units (from $stockBeforeReceive to $stockAfterReceive)", 
-    $stockAfterReceive === ($stockBeforeReceive + 20)
+    $stockAfterReceive === ($stockBeforeReceive + 10)
 );
 
 // 11. Test: Receive twice rejected with 400 (Rule 4)
@@ -224,6 +232,36 @@ assertCheck("12a. Cancel open order returns 200 OK", $resCancel['code'] === 200)
 
 $resReceiveCancelled = apiCall("$baseUrl/reorder/receive.php", 'POST', ["order_id" => $cancelOrderId], ["Authorization: Bearer $token2"]);
 assertCheck("12b. Attempting to receive cancelled order rejected with 400", $resReceiveCancelled['code'] === 400);
+
+// 13. Test: Items fully covered by open orders are excluded from reorder/list.php
+$coverOrderPayload = ["items" => [["product_id" => $zeroDemandId, "quantity" => 50]]];
+$resCoverOrder = apiCall("$baseUrl/reorder/create_order.php", 'POST', $coverOrderPayload, ["Authorization: Bearer $token2"]);
+$coverOrderId = (int)($resCoverOrder['json']['data']['order_id'] ?? 0);
+assertCheck("13a. Create cover order for Zero Demand Product returns 201", $resCoverOrder['code'] === 201);
+
+$resListCovered = apiCall("$baseUrl/reorder/list.php", 'GET', null, ["Authorization: Bearer $token2"]);
+$zeroCovered = null;
+foreach ($resListCovered['json']['data']['items'] as $it) {
+    if ($it['product']['id'] === $zeroDemandId) $zeroCovered = $it;
+}
+assertCheck("13b. Fully covered product (needed <= 0) is excluded from reorder/list.php", $zeroCovered === null);
+
+$resDetailCovered = apiCall("$baseUrl/inventory/get_product_detail.php?id=$zeroDemandId", 'GET', null, ["Authorization: Bearer $token2"]);
+$detailData = $resDetailCovered['json']['data'] ?? [];
+assertCheck("13c. get_product_detail.php returns suggested_reorder_units: 0 when covered", 
+    (int)($detailData['suggested_reorder_units'] ?? -1) === 0
+);
+assertCheck("13d. get_product_detail.php returns on_order_units accurately", 
+    (int)($detailData['on_order_units'] ?? -1) === 50
+);
+
+// Cleanup cover order and test zero-demand product
+$resCancelCover = apiCall("$baseUrl/reorder/cancel.php", 'POST', ["order_id" => $coverOrderId], ["Authorization: Bearer $token2"]);
+assertCheck("13e. Cleaned up cover order with cancel", $resCancelCover['code'] === 200);
+
+$pdo->prepare("DELETE FROM purchase_order_items WHERE purchase_order_id = ?")->execute([$coverOrderId]);
+$pdo->prepare("DELETE FROM purchase_orders WHERE id = ?")->execute([$coverOrderId]);
+$pdo->prepare("DELETE FROM products WHERE id = ?")->execute([$zeroDemandId]);
 
 echo "\n========================================================\n";
 echo "   RESULT: $passed / $tests TESTS PASSED                \n";

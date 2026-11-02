@@ -225,13 +225,33 @@ try {
     // 7. AI Priorities (Reorder and Clearance based on real data)
     $aiPriorities = [];
 
-    // Reorder recommendation (from highest priority low-stock product)
-    if (!empty($lowStockItems)) {
-        $topLow = $lowStockItems[0];
-        $targetStock = $topLow['min_stock_threshold'] * 2;
-        $orderUnits = max(1, $targetStock - $topLow['units']);
+    // Fetch open on-order quantities for active products
+    $openOrdersStmt = $pdo->prepare("
+        SELECT poi.product_id, COALESCE(SUM(poi.quantity), 0) AS on_order_qty
+        FROM purchase_order_items poi
+        INNER JOIN purchase_orders po ON poi.purchase_order_id = po.id
+        WHERE po.shop_owner_id = ? AND po.status = 'placed'
+        GROUP BY poi.product_id
+    ");
+    $openOrdersStmt->execute([$ownerId]);
+    $openOrdersMap = [];
+    while ($row = $openOrdersStmt->fetch(PDO::FETCH_ASSOC)) {
+        $openOrdersMap[(int)$row["product_id"]] = (int)$row["on_order_qty"];
+    }
+
+    // Reorder recommendation (from highest priority low-stock product that still needs units after open orders)
+    foreach ($lowStockItems as $topLow) {
+        $lowPid = (int)$topLow['id'];
+        $onOrder = $openOrdersMap[$lowPid] ?? 0;
+        $targetStock = (int)$topLow['min_stock_threshold'] * 2;
+        $orderUnits = $targetStock - (int)$topLow['units'] - $onOrder;
+
+        if ($orderUnits <= 0) {
+            // If quantity still needed is 0 or less, do not suggest reorder for this item
+            continue;
+        }
+
         $unitCost = (float)$topLow['cost_price'];
-        
         $hasCost = ($unitCost > 0);
         $estCost = $hasCost ? round($orderUnits * $unitCost, 2) : null;
 
@@ -251,6 +271,7 @@ try {
             "estimated_cost" => $estCost,
             "rule" => "order up to 2x minimum"
         ];
+        break; // Only pick the top valid reorder candidate
     }
 
     // Slow moving clearance priority (from top slow moving product)

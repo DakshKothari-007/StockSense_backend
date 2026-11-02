@@ -725,6 +725,20 @@ Validation Rule: Only `name` and `units` (quantity) are strictly required to be 
 - **Request Body**: JSON batch or CSV payload; optional `deduct_stock: false`.
 - **Success Response (`201 Created`)**
 
+#### 6.5 Product 7-Day Sales History
+- **Method & Path**: `GET /sales/product_history.php?id={id}` or `GET /sales/product_history.php?sku={sku}`
+- **Token Required**: Yes
+- **App Screen**: `ProductDetailScreen.kt` ("Sales history" card)
+- **Query Parameters**:
+  - `id` (integer, optional if `sku` provided): Product ID
+  - `sku` (string, optional if `id` provided): Product SKU
+- **Error Responses**:
+  - `401 Unauthorized`: Missing or invalid Bearer token.
+  - `422 Unprocessable Entity`: Neither `id` nor `sku` was provided.
+  - `404 Not Found`: Product not found in authenticated shop inventory.
+- **Success Response (`200 OK`)**:
+  - Returns 7 contiguous daily sales history data points up to today (`day_number`, `day_label`, `units_sold`, `height_ratio`, `is_today`), `total_units_sold`, and boolean flag `has_sales`. If zero sales in the past 7 days, `has_sales` is `false`.
+
 ---
 
 ### Module 7: Reorder & Purchase Orders (`reorder/`)

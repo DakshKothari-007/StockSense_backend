@@ -38,6 +38,7 @@ if ($productId <= 0 && $sku === "") {
 }
 
 try {
+    $product = null;
     if ($productId > 0) {
         $stmt = $pdo->prepare("
             SELECT id, shop_owner_id, name, sku, category, description, price, cost_price, units, min_stock_threshold, status, icon_type, created_at, updated_at
@@ -46,7 +47,10 @@ try {
             LIMIT 1
         ");
         $stmt->execute([$productId, $shopOwnerId]);
-    } else {
+        $product = $stmt->fetch(PDO::FETCH_ASSOC);
+    }
+
+    if (empty($product) && $sku !== "") {
         $stmt = $pdo->prepare("
             SELECT id, shop_owner_id, name, sku, category, description, price, cost_price, units, min_stock_threshold, status, icon_type, created_at, updated_at
             FROM products
@@ -54,9 +58,8 @@ try {
             LIMIT 1
         ");
         $stmt->execute([$sku, $shopOwnerId]);
+        $product = $stmt->fetch(PDO::FETCH_ASSOC);
     }
-
-    $product = $stmt->fetch(PDO::FETCH_ASSOC);
 
     if (!$product) {
         http_response_code(404);
@@ -117,17 +120,26 @@ try {
     $dailySalesRate = ($divisor > 0) ? round($sold30 / $divisor, 2) : 0.0;
     $stockCoverDays = ($dailySalesRate > 0) ? round($units / $dailySalesRate, 1) : null;
 
+    $targetStock = 0;
     if ($historyWarning) {
-        $targetFallback = $threshold * 2;
-        $grossSuggested = max(0, $targetFallback - $units);
-        $unitsToReorder = max(0, $grossSuggested - $onOrderUnits);
-    } elseif ($sold30 === 0 || $dailySalesRate <= 0) {
-        $unitsToReorder = 0;
+        $targetStock = $threshold * 2;
+    } elseif ($sold30 > 0 && $dailySalesRate > 0) {
+        $targetStock = (int)ceil($dailySalesRate * $leadSafetyCover);
+        if ($units <= $threshold) {
+            $safetyAmount = max(1, (int)ceil($dailySalesRate * $safety));
+            $targetStock = max($targetStock, $threshold + $safetyAmount);
+        }
     } else {
-        $targetCoverageUnits = (int)ceil($dailySalesRate * $leadSafetyCover);
-        $grossSuggested = max(0, $targetCoverageUnits - $units);
-        $unitsToReorder = max(0, $grossSuggested - $onOrderUnits);
+        if ($units <= $threshold) {
+            $safetyAmount = max(1, (int)ceil($threshold * 0.2));
+            $targetStock = $threshold + $safetyAmount;
+        } else {
+            $targetStock = 0;
+        }
     }
+
+    $grossSuggested = max(0, $targetStock - $units);
+    $unitsToReorder = max(0, $targetStock - $units - $onOrderUnits);
     $estimatedCost = round($unitsToReorder * $costPrice, 2);
 
     $status = $product["status"];
@@ -155,6 +167,9 @@ try {
         "min_stock_threshold" => $threshold,
         "stock_cover_days" => $stockCoverDays,
         "unitsToReorder" => $unitsToReorder,
+        "suggested_reorder_units" => $unitsToReorder,
+        "on_order_units" => $onOrderUnits,
+        "onOrderUnits" => $onOrderUnits,
         "estimatedCost" => "₹" . number_format($estimatedCost),
         "created_at" => $product["created_at"],
         "updated_at" => $product["updated_at"]

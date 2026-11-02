@@ -1572,6 +1572,49 @@
                             }
                         }
                     ]
+                },
+                {
+                    "name": "10. Product 7-Day Sales History",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/sales/product_history.php?sku=DAI-001",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "sales",
+                                "product_history.php"
+                            ],
+                            "query": [
+                                {
+                                    "key": "sku",
+                                    "value": "DAI-001",
+                                    "description": "Product SKU"
+                                }
+                            ]
+                        },
+                        "description": "Fetches past 7 days of daily units sold for a product (by id or sku), with normalized bar height ratios and has_sales indicator."
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Status code is 200 OK', function () {",
+                                    "    pm.response.to.have.status(200);",
+                                    "});"
+                                ]
+                            }
+                        }
+                    ]
                 }
             ]
         },

@@ -231,6 +231,29 @@ assertCheck("13d. Dashboard top selling products populated", !empty($resDash['js
 $slowMeta = $resDash['json']['data']['alerts']['slow_moving_metadata'] ?? [];
 assertCheck("13e. Slow-moving metadata contains rule and history flag", isset($slowMeta['rule']) && isset($slowMeta['has_enough_sales_history']));
 
+// 14. Test: sales/product_history.php (last 7 days sales per product with isolation)
+$resHistMissing = apiCall("$baseUrl/sales/product_history.php", 'GET', null, ["Authorization: Bearer $token2"]);
+assertCheck("14a. product_history without id/sku returns 422", $resHistMissing['code'] === 422);
+
+$resHistSku = apiCall("$baseUrl/sales/product_history.php?sku=DAI-001", 'GET', null, ["Authorization: Bearer $token2"]);
+assertCheck("14b. product_history by sku returns 200", $resHistSku['code'] === 200 && $resHistSku['json']['status'] === true);
+$histData = $resHistSku['json']['data'] ?? [];
+assertCheck("14c. product_history returns 7 days of points", count($histData['history'] ?? []) === 7);
+
+$resHistIso = apiCall("$baseUrl/sales/product_history.php?id=1", 'GET', null, ["Authorization: Bearer $token3"]);
+assertCheck("14d. product_history enforces shop isolation (404 for other shop product)", $resHistIso['code'] === 404);
+
+// Zero sales product test
+$pdo->prepare("DELETE FROM products WHERE sku = 'TEST-SALES-HIST-ZERO' AND shop_owner_id = 2")->execute();
+$pdo->prepare("INSERT INTO products (shop_owner_id, name, sku, category, price, cost_price, units, min_stock_threshold) VALUES (2, 'Zero Sale Item', 'TEST-SALES-HIST-ZERO', 'Dairy', 20, 15, 10, 5)")->execute();
+$zeroProdId = (int)$pdo->lastInsertId();
+
+$resHistZero = apiCall("$baseUrl/sales/product_history.php?id=$zeroProdId", 'GET', null, ["Authorization: Bearer $token2"]);
+assertCheck("14e. product_history for zero sales product returns has_sales=false", 
+    $resHistZero['code'] === 200 && ($resHistZero['json']['data']['has_sales'] ?? true) === false
+);
+$pdo->prepare("DELETE FROM products WHERE id = ?")->execute([$zeroProdId]);
+
 echo "\n========================================================\n";
 echo "   RESULT: $passed / $tests TESTS PASSED                \n";
 echo "========================================================\n";
