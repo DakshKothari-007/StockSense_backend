@@ -10,6 +10,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit;
 }
 
+// Global exception handler ensuring raw 500 HTML is never leaked to the client
+set_exception_handler(function(Throwable $e) use (&$pdo) {
+    if (isset($pdo) && $pdo instanceof PDO && $pdo->inTransaction()) {
+        $pdo->rollBack();
+    }
+    error_log("Unhandled error in execute.php: " . $e->getMessage() . " in " . $e->getFile() . ":" . $e->getLine());
+    if (!headers_sent()) {
+        http_response_code(500);
+        header("Content-Type: application/json; charset=UTF-8");
+    }
+    echo json_encode([
+        "status" => false,
+        "message" => "Import execution failed: " . $e->getMessage(),
+        "data" => (object)[]
+    ]);
+    exit;
+});
+
 require_once __DIR__ . "/../config/db.php";
 require_once __DIR__ . "/../inventory/auth_helper.php";
 require_once __DIR__ . "/SpreadsheetReader.php";
@@ -368,7 +386,7 @@ try {
     $productsAdded = 0;
     $stockAdded = 0;
 
-    $checkStmt = $pdo->prepare("SELECT id, name, units, cost_price, price FROM products WHERE shop_owner_id = ? AND sku = ? LIMIT 1 FOR UPDATE");
+    $checkStmt = $pdo->prepare("SELECT id, name, category, units, cost_price, price, min_stock_threshold FROM products WHERE shop_owner_id = ? AND sku = ? LIMIT 1 FOR UPDATE");
     $unitsUpdateExpr = ($shopImportMode === 'REPLACE') ? ":units" : "units + :units";
     $updateStmt = $pdo->prepare("
         UPDATE products
@@ -376,8 +394,8 @@ try {
             cost_price = :cost_price,
             price = :price,
             name = :name,
-            category = CASE WHEN :category != '' THEN :category ELSE category END,
-            min_stock_threshold = CASE WHEN :min_stock_threshold > 0 THEN :min_stock_threshold ELSE min_stock_threshold END,
+            category = :category,
+            min_stock_threshold = :min_stock_threshold,
             updated_at = CURRENT_TIMESTAMP
         WHERE shop_owner_id = :shop_owner_id AND sku = :sku
     ");
@@ -391,17 +409,19 @@ try {
         $existing = $checkStmt->fetch(PDO::FETCH_ASSOC);
 
         if ($existing) {
-            $updateCost = ($item['cost_price'] > 0) ? $item['cost_price'] : $existing['cost_price'];
-            $updatePrice = ($item['price'] > 0) ? $item['price'] : $existing['price'];
+            $updateCost = ($colCostIdx !== null && $item['cost_price'] > 0) ? $item['cost_price'] : (float)$existing['cost_price'];
+            $updatePrice = ($colPriceIdx !== null && $item['price'] > 0) ? $item['price'] : (float)$existing['price'];
             $updateName = (!empty($item['name'])) ? $item['name'] : $existing['name'];
+            $updateCategory = (!empty($item['category'])) ? $item['category'] : (!empty($existing['category']) ? $existing['category'] : 'General');
+            $updateMinStock = ($colMinStockIdx !== null && $item['min_stock_threshold'] > 0) ? $item['min_stock_threshold'] : (int)($existing['min_stock_threshold'] ?? 10);
 
             $updateStmt->execute([
                 ':units' => $item['units'],
                 ':cost_price' => $updateCost,
                 ':price' => $updatePrice,
                 ':name' => $updateName,
-                ':category' => $item['category'] ?? '',
-                ':min_stock_threshold' => $item['min_stock_threshold'] ?? 0,
+                ':category' => $updateCategory,
+                ':min_stock_threshold' => $updateMinStock,
                 ':shop_owner_id' => $ownerId,
                 ':sku' => $item['sku']
             ]);
@@ -504,14 +524,18 @@ try {
     ]);
 
 } catch (Throwable $e) {
-    if ($pdo->inTransaction()) {
+    if (isset($pdo) && $pdo instanceof PDO && $pdo->inTransaction()) {
         $pdo->rollBack();
     }
-    error_log("Import execution transaction error: " . $e->getMessage());
-    http_response_code(500);
+    error_log("Import execution transaction error: " . $e->getMessage() . " in " . $e->getFile() . " on line " . $e->getLine());
+    if (!headers_sent()) {
+        http_response_code(500);
+        header("Content-Type: application/json; charset=UTF-8");
+    }
     echo json_encode([
         "status" => false,
-        "message" => "Import transaction failed. No inventory changes were made.",
+        "message" => "Import transaction failed: " . $e->getMessage(),
         "data" => (object)[]
     ]);
+    exit;
 }

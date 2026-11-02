@@ -135,6 +135,7 @@ if (!$hasUserMapping) {
     ];
 
     $matchedCount = count(array_unique(array_filter(array_values($resolvedMapping))));
+    $mappedCount = $matchedCount;
     $totalColumns = count($headerRow);
     $requiredMatched = (!empty($resolvedMapping['name']) && !empty($resolvedMapping['units']));
     $isSaved = false;
