@@ -690,7 +690,7 @@ Validation Rule: Only `name` and `units` (quantity) are strictly required to be 
   ```json
   {
     "bill_no": "BILL-2026-001 (required, unique per shop)",
-    "sale_date": "2026-10-29 10:15:00 (required, past/present only)",
+    "sale_date": "2026-10-29 10:15:00 (optional, past/present only. If missing or empty, defaults to current server time in Asia/Kolkata Y-m-d H:i:s)",
     "customer_name": "Ramesh Kumar (optional)",
     "customer_phone": "9876543210 (optional)",
     "payment_method": "UPI | CASH | CARD (optional, default CASH)",

@@ -35,8 +35,8 @@ $limit = max(1, min(100, (int)($_GET["limit"] ?? 20)));
 $offset = ($page - 1) * $limit;
 
 // 2. Date filtering using range queries (Rule 6: sale_date >= ? AND sale_date < ?)
-$fromDateRaw = isset($_GET["from"]) ? trim($_GET["from"]) : "";
-$toDateRaw = isset($_GET["to"]) ? trim($_GET["to"]) : "";
+$fromDateRaw = isset($_GET["from"]) ? trim($_GET["from"]) : (isset($_GET["start_date"]) ? trim($_GET["start_date"]) : "");
+$toDateRaw = isset($_GET["to"]) ? trim($_GET["to"]) : (isset($_GET["end_date"]) ? trim($_GET["end_date"]) : "");
 
 $isValidDate = function(string $date): bool {
     if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)) {

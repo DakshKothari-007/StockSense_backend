@@ -33,8 +33,41 @@ $shopOwnerId = (int)$owner["id"];
 $todayDateStr = date('Y-m-d');
 $defaultFrom = date('Y-m-d', strtotime('-30 days'));
 
-$fromDateRaw = isset($_GET["from"]) ? trim($_GET["from"]) : $defaultFrom;
-$toDateRaw = isset($_GET["to"]) ? trim($_GET["to"]) : $todayDateStr;
+$period = isset($_GET["period"]) ? trim(strtolower($_GET["period"])) : "";
+if ($period !== "") {
+    switch ($period) {
+        case "today":
+            $fromDateRaw = $todayDateStr;
+            $toDateRaw = $todayDateStr;
+            break;
+        case "7_days":
+        case "7days":
+            $fromDateRaw = date('Y-m-d', strtotime('-6 days'));
+            $toDateRaw = $todayDateStr;
+            break;
+        case "30_days":
+        case "30days":
+            $fromDateRaw = date('Y-m-d', strtotime('-29 days'));
+            $toDateRaw = $todayDateStr;
+            break;
+        case "90_days":
+        case "90days":
+            $fromDateRaw = date('Y-m-d', strtotime('-89 days'));
+            $toDateRaw = $todayDateStr;
+            break;
+        case "this_month":
+            $fromDateRaw = date('Y-m-01');
+            $toDateRaw = $todayDateStr;
+            break;
+        default:
+            $fromDateRaw = isset($_GET["from"]) ? trim($_GET["from"]) : $defaultFrom;
+            $toDateRaw = isset($_GET["to"]) ? trim($_GET["to"]) : $todayDateStr;
+            break;
+    }
+} else {
+    $fromDateRaw = isset($_GET["from"]) ? trim($_GET["from"]) : $defaultFrom;
+    $toDateRaw = isset($_GET["to"]) ? trim($_GET["to"]) : $todayDateStr;
+}
 
 $isValidDate = function(string $date): bool {
     if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)) {

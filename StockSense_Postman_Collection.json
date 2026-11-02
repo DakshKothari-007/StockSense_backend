@@ -1183,7 +1183,7 @@
                         ],
                         "body": {
                             "mode": "raw",
-                            "raw": "{\n  \"bill_no\": \"INV-TEST-001\",\n  \"sale_date\": \"2026-10-28 14:00:00\",\n  \"notes\": \"Counter POS cash sale\",\n  \"items\": [\n    {\n      \"product_id\": 1,\n      \"quantity\": 2\n    },\n    {\n      \"sku\": \"DAI-001\",\n      \"quantity\": 1\n    }\n  ]\n}"
+                            "raw": "{\n  \"bill_no\": \"INV-TEST-001\",\n  \"notes\": \"Counter POS cash sale\",\n  \"items\": [\n    {\n      \"product_id\": 1,\n      \"quantity\": 2\n    },\n    {\n      \"sku\": \"DAI-001\",\n      \"quantity\": 1\n    }\n  ]\n}"
                         },
                         "url": {
                             "raw": "{{base_url}}/sales/create.php",
