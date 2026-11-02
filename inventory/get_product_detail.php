@@ -83,14 +83,52 @@ try {
     ");
     $salesStmt->execute([(int)$product['id'], $shopOwnerId, $thirtyDaysAgo]);
     $sold30 = (int)$salesStmt->fetchColumn();
-    $stockCoverDays = ($sold30 > 0) ? round($units / ($sold30 / 30.0), 1) : null;
 
-    // Suggested reorder computation
-    $unitsToReorder = max(10, ($threshold * 2) - $units);
-    if ($units > $threshold * 2) {
-        $unitsToReorder = 0;
+    // Reorder module integration for exact matching numbers
+    require_once __DIR__ . "/../settings/settings_helper.php";
+    $shopSettings = get_shop_settings($pdo, $shopOwnerId);
+    $lead = (int)($shopSettings["lead_time_days"] ?? 3);
+    $safety = (int)($shopSettings["safety_days"] ?? 2);
+    $cover = (int)($shopSettings["cover_days"] ?? 7);
+    $minHistoryDays = (int)($shopSettings["min_history_days"] ?? 30);
+    $leadSafetyCover = $lead + $safety + $cover;
+
+    $historyStmt = $pdo->prepare("SELECT MIN(sale_date) FROM sales WHERE shop_owner_id = ?");
+    $historyStmt->execute([$shopOwnerId]);
+    $firstSaleDate = $historyStmt->fetchColumn();
+    $historyDays = 0;
+    $historyWarning = true;
+    if ($firstSaleDate) {
+        $historyDays = max(0, (time() - strtotime($firstSaleDate)) / 86400.0);
+        $historyWarning = ($historyDays < $minHistoryDays);
     }
-    $estimatedCost = $unitsToReorder * $costPrice;
+    $divisor = ($historyDays >= 7) ? min(30.0, $historyDays) : 0;
+
+    // Check open on-order units from placed purchase orders
+    $openOrdersStmt = $pdo->prepare("
+        SELECT COALESCE(SUM(poi.quantity), 0)
+        FROM purchase_order_items poi
+        INNER JOIN purchase_orders po ON poi.purchase_order_id = po.id
+        WHERE po.shop_owner_id = ? AND po.status = 'placed' AND poi.product_id = ?
+    ");
+    $openOrdersStmt->execute([$shopOwnerId, (int)$product['id']]);
+    $onOrderUnits = (int)$openOrdersStmt->fetchColumn();
+
+    $dailySalesRate = ($divisor > 0) ? round($sold30 / $divisor, 2) : 0.0;
+    $stockCoverDays = ($dailySalesRate > 0) ? round($units / $dailySalesRate, 1) : null;
+
+    if ($historyWarning) {
+        $targetFallback = $threshold * 2;
+        $grossSuggested = max(0, $targetFallback - $units);
+        $unitsToReorder = max(0, $grossSuggested - $onOrderUnits);
+    } elseif ($sold30 === 0 || $dailySalesRate <= 0) {
+        $unitsToReorder = 0;
+    } else {
+        $targetCoverageUnits = (int)ceil($dailySalesRate * $leadSafetyCover);
+        $grossSuggested = max(0, $targetCoverageUnits - $units);
+        $unitsToReorder = max(0, $grossSuggested - $onOrderUnits);
+    }
+    $estimatedCost = round($unitsToReorder * $costPrice, 2);
 
     $status = $product["status"];
     if (empty($status) && $units <= $threshold) {
