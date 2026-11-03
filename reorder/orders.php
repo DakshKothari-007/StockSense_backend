@@ -91,6 +91,7 @@ try {
                 poi.line_estimated_cost,
                 p.name AS product_name,
                 p.sku,
+                p.units AS current_stock,
                 COALESCE(p.category, 'Uncategorised') AS category
             FROM purchase_order_items poi
             INNER JOIN products p ON poi.product_id = p.id
@@ -107,7 +108,8 @@ try {
                 "category" => $row["category"],
                 "quantity" => (int)$row["quantity"],
                 "cost_price" => ($row["cost_price"] !== null) ? (float)$row["cost_price"] : null,
-                "line_estimated_cost" => ($row["line_estimated_cost"] !== null) ? (float)$row["line_estimated_cost"] : null
+                "line_estimated_cost" => ($row["line_estimated_cost"] !== null) ? (float)$row["line_estimated_cost"] : null,
+                "current_stock" => ($row["current_stock"] !== null) ? (int)$row["current_stock"] : null
             ];
         }
     }
