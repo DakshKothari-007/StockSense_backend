@@ -21,8 +21,14 @@ SetEnvIf Authorization "(.*)" HTTP_AUTHORIZATION=$1
     Header set Referrer-Policy "strict-origin-when-cross-origin"
 </IfModule>
 
+# Block direct HTTP access to internal backend directories
+<IfModule mod_rewrite.c>
+    RewriteRule ^cron/ - [F,L]
+    RewriteRule ^includes/ - [F,L]
+</IfModule>
+
 # Block access to test scripts, check scripts, scratch files, schemas, and docs from the browser
-<FilesMatch "^(test_.*\.php|check_.*\.php|.*\.sql|.*\.md|.*\.json|.*\.csv|.*\.xlsx)$">
+<FilesMatch "^(test_.*\.php|send_test_push\.php|check_.*\.php|reproduce_.*\.php|desc_.*\.php|seed_.*\.php|temp_.*\.php|.*\.sql|.*\.md|.*\.json|.*\.csv|.*\.xlsx|.*\.bat)$">
     Require all denied
 </FilesMatch>
 

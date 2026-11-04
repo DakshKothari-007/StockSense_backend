@@ -485,6 +485,25 @@ try {
 
     $pdo->commit();
 
+    // Post-commit low stock push notifications if any imported products are at or below minimum stock
+    try {
+        require_once __DIR__ . "/../includes/PushNotifier.php";
+        $stmtLowImp = $pdo->prepare("
+            SELECT id, name, units, min_stock_threshold 
+            FROM products 
+            WHERE shop_owner_id = ? 
+              AND min_stock_threshold IS NOT NULL 
+              AND units <= min_stock_threshold
+        ");
+        $stmtLowImp->execute([$ownerId]);
+        $lowProducts = $stmtLowImp->fetchAll(PDO::FETCH_ASSOC);
+        foreach ($lowProducts as $prodRow) {
+            PushNotifier::triggerLowStock($pdo, $ownerId, $prodRow);
+        }
+    } catch (Throwable $pushEx) {
+        error_log("Import execute push notification error: " . $pushEx->getMessage());
+    }
+
     // Persist final column mapping for this shop owner so identical sheets are auto-mapped
     $resolvedMapping = [
         'name' => ($colNameIdx !== null && isset($headerRow[$colNameIdx])) ? $headerRow[$colNameIdx] : null,

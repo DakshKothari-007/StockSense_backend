@@ -1181,3 +1181,118 @@ Generated on-the-fly directly from live database state (no cron or background wo
   }
   ```
 
+#### 10.6 Register Device (FCM Token)
+- **Method & Path**: `POST /notifications/register_device.php`
+- **Token Required**: Yes (Bearer Token)
+- **App Screen**: App Launch / FCM Service Token Refresh
+- **Request Body**:
+  ```json
+  {
+    "fcm_token": "eY123abc...",
+    "platform": "android"
+  }
+  ```
+- **Validation**:
+  - `fcm_token` (string, required): Up to 255 characters.
+  - `platform` (string, optional, default "android").
+- **Behavior**:
+  - Inserts or updates device token for the authenticated store owner.
+  - If token was previously registered to another shop/user, safely reassigns it to the current shop owner.
+- **Success Response (`200 OK`)**:
+  ```json
+  {
+    "status": true,
+    "message": "Device token registered successfully.",
+    "data": {
+      "shop_id": 2,
+      "fcm_token": "eY123abc...",
+      "platform": "android"
+    }
+  }
+  ```
+- **Error Responses**:
+  - `400 Bad Request`: Missing or invalid `fcm_token`.
+  - `401 Unauthorized`: Missing or invalid Bearer token.
+
+#### 10.7 Unregister Device (FCM Token)
+- **Method & Path**: `POST /notifications/unregister_device.php`
+- **Token Required**: Yes (Bearer Token)
+- **App Screen**: Sign Out / Disable Push
+- **Request Body**:
+  ```json
+  {
+    "fcm_token": "eY123abc..."
+  }
+  ```
+- **Behavior**:
+  - Removes the specific device token for the authenticated store owner.
+- **Success Response (`200 OK`)**:
+  ```json
+  {
+    "status": true,
+    "message": "Device token unregistered successfully.",
+    "data": null
+  }
+  ```
+- **Error Responses**:
+  - `400 Bad Request`: Missing `fcm_token`.
+  - `401 Unauthorized`: Missing or invalid Bearer token.
+
+#### 10.8 Push Notification System (FCM HTTP v1) Rules & Triggers
+StockSense uses Firebase Cloud Messaging (FCM) HTTP v1 protocol using pure PHP (RS256 JWT generation with `openssl_sign` and Google OAuth2 access token caching). Push operations run post-commit and never block or fail database transactions.
+
+- **Configuration & Security**:
+  - Service Account Key is located at `C:\xampp\StockSense_private\firebase-service-account.json` (outside the web root).
+  - Web requests to `cron/`, `includes/`, and test scripts are blocked by Apache `.htaccess`.
+  - Missing service account key fails silently with a single log line and never crashes callers.
+
+- **Device Token Lifecycle**:
+  - Registered via `POST /notifications/register_device.php`. If a token exists under another shop, it is safely moved to the authenticated shop.
+  - Removed via `POST /notifications/unregister_device.php`.
+  - Removed on logout if `fcm_token` is included in `POST /auth/logout.php`.
+  - All tokens and push logs purged on account deletion in `POST /auth/delete_account.php`.
+  - Invalid/expired tokens returning `UNREGISTERED` or `INVALID_ARGUMENT` from FCM HTTP v1 API are automatically deleted from `device_tokens`.
+
+- **Settings Toggles Enforcement (from `get_shop_settings()` in `user_settings`)**:
+  - `low_stock_alerts`: Controls `low_stock` push notifications.
+  - `ai_recommendations`: Controls `reorder_suggestion` (and AI insights) push notifications.
+  - `daily_sales_summary`: Controls `daily_summary` push notifications.
+  - `weekly_email_digest`: No push notifications sent.
+
+- **Allowed Push Notification Types**:
+  1. **Low Stock Alert (`low_stock`)**:
+     - *Title*: `"Low stock"`
+     - *Body*: `"{Product Name} has {units} units left."`
+     - *Channel*: `stocksense_alerts` (Priority: High)
+     - *Data Payload*: `{"type": "low_stock", "product_id": "{id}"}`
+     - *Trigger*: After sales recording (`sales/create.php`) or inventory import (`import/execute.php`) when `units <= min_stock_threshold`.
+     - *Settings Toggle*: `low_stock_alerts` must be `1`.
+     - *Deduplication*: `low_stock:{product_id}:{YYYY-MM-DD}` (maximum 1 push per product per day).
+  2. **Reorder Suggestion / AI Recommendation (`reorder_suggestion`)**:
+     - *Title*: `"Reorder suggestion"`
+     - *Body*: `"AI suggests reordering {qty} units of {Product Name} ({₹cost})."`
+     - *Channel*: `stocksense_alerts` (Priority: High)
+     - *Data Payload*: `{"type": "reorder_suggestion", "product_id": "{id}"}`
+     - *Trigger*: Reorder recommendations and AI inventory insights.
+     - *Settings Toggle*: `ai_recommendations` must be `1`.
+     - *Deduplication*: `reorder_suggestion:{product_id}:{YYYY-MM-DD}` (maximum 1 push per product per day).
+  3. **Daily Sales Summary (`daily_summary`)**:
+     - *Title*: `"Daily summary"`
+     - *Body*: `"Yesterday's sales: ₹{sales_amount}. {low_stock_count} products low on stock."`
+     - *Channel*: `stocksense_alerts` (Priority: High)
+     - *Data Payload*: `{"type": "daily_summary", "date": "{YYYY-MM-DD}", "sales_amount": "{amount}", "low_stock_count": "{count}"}`
+     - *Trigger*: Daily cron job (`cron/daily_summary.php` / `cron/daily_summary.bat`).
+     - *Settings Toggle*: `daily_sales_summary` must be `1`.
+     - *Deduplication*: `daily_summary:{shop_id}:{YYYY-MM-DD}` (maximum 1 push per shop per day).
+
+- **Strictly Excluded Events (No Push Notifications)**:
+  - `order_placed`: No push notification sent.
+  - `order_received`: No push notification sent.
+  - `import_done`: No push notification sent.
+  - `weekly_email_digest`: No push notification or email sender.
+  *(These events update in-app database records only; `PushNotifier::send()` explicitly blocks them with reason `event_type_not_allowed_for_push`).*
+
+- **Number Formatting**:
+  - Currency values are formatted using Indian number grouping (e.g., `₹1,480`, `₹1,20,500`, `₹1,00,00,000`).
+
+

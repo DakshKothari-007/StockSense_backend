@@ -31,11 +31,21 @@ if (preg_match('/Bearer\s+(\S+)/i', $authHeader, $matches)) {
     $token = trim($matches[1]);
 }
 
-if (!$token) {
-    $raw = file_get_contents("php://input");
-    $data = json_decode($raw, true);
-    if (is_array($data) && !empty($data['token'])) {
-        $token = trim($data['token']);
+$raw = file_get_contents("php://input");
+$data = json_decode($raw, true);
+
+if (!$token && is_array($data) && !empty($data['token'])) {
+    $token = trim($data['token']);
+}
+
+// Delete device token if sent in logout payload
+if (is_array($data) && !empty($data['fcm_token'])) {
+    $fcmToken = trim($data['fcm_token']);
+    try {
+        $stmtFcm = $pdo->prepare("DELETE FROM device_tokens WHERE fcm_token = ?");
+        $stmtFcm->execute([$fcmToken]);
+    } catch (Throwable $e) {
+        error_log("Logout fcm token delete error: " . $e->getMessage());
     }
 }
 

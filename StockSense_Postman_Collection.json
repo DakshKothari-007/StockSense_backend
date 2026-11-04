@@ -2327,6 +2327,72 @@
                         "description": "Permanently dismisses a notification so it is omitted from subsequent list responses."
                     },
                     "response": []
+                },
+                {
+                    "name": "Register Device (FCM)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{auth_token}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"fcm_token\": \"eY123abc...\",\n  \"platform\": \"android\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/notifications/register_device.php",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "notifications",
+                                "register_device.php"
+                            ]
+                        },
+                        "description": "Registers or updates an FCM registration token for push notifications."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Unregister Device (FCM)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{auth_token}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"fcm_token\": \"eY123abc...\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/notifications/unregister_device.php",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "notifications",
+                                "unregister_device.php"
+                            ]
+                        },
+                        "description": "Unregisters an FCM device token upon logout or notification disable."
+                    },
+                    "response": []
                 }
             ]
         }

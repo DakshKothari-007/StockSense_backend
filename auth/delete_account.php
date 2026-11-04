@@ -103,8 +103,10 @@ try {
     // 5. Delete recommendation responses
     $pdo->prepare("DELETE FROM recommendation_responses WHERE shop_owner_id = ?")->execute([$shopOwnerId]);
 
-    // 6. Delete notification states
+    // 6. Delete notification states, device tokens, and push log
     $pdo->prepare("DELETE FROM notification_states WHERE shop_owner_id = ?")->execute([$shopOwnerId]);
+    $pdo->prepare("DELETE FROM device_tokens WHERE shop_id = ? OR user_id = ?")->execute([$shopOwnerId, $shopOwnerId]);
+    $pdo->prepare("DELETE FROM push_log WHERE shop_id = ?")->execute([$shopOwnerId]);
 
     // 7. Delete user settings
     $pdo->prepare("DELETE FROM user_settings WHERE user_id = ?")->execute([$shopOwnerId]);

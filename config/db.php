@@ -1,4 +1,3 @@
-
 <?php
 
 // Security: Prevent leaking PHP warnings/errors to API clients
@@ -37,4 +36,3 @@ try {
     ]);
     exit;
 }
-

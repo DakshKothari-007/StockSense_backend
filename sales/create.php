@@ -276,6 +276,21 @@ try {
 
     $pdo->commit();
 
+    // Post-commit push notification for low-stock products (failure never affects main request)
+    try {
+        require_once __DIR__ . "/../includes/PushNotifier.php";
+        foreach ($processedItems as $pi) {
+            $pCheck = $pdo->prepare("SELECT id, name, units, min_stock_threshold FROM products WHERE id = ? AND shop_owner_id = ?");
+            $pCheck->execute([$pi['product_id'], $shopOwnerId]);
+            $prodRow = $pCheck->fetch(PDO::FETCH_ASSOC);
+            if ($prodRow && $prodRow['min_stock_threshold'] !== null && $prodRow['units'] <= $prodRow['min_stock_threshold']) {
+                PushNotifier::triggerLowStock($pdo, $shopOwnerId, $prodRow);
+            }
+        }
+    } catch (Throwable $pushEx) {
+        error_log("Sale create push notification error: " . $pushEx->getMessage());
+    }
+
     http_response_code(201);
     echo json_encode([
         "status" => true,
