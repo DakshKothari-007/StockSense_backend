@@ -80,11 +80,10 @@ try {
         http_response_code(400);
         echo json_encode([
             "status" => false,
-            "message" => "Cannot delete product '{$targetProduct['name']}' (SKU: {$targetProduct['sku']}) because it is linked to {$salesCount} sales records. Archive the product instead to preserve sales history.",
+            "message" => "This product appears in {$salesCount} sales bills, so it cannot be deleted.",
             "data" => [
                 "product_id" => $actualId,
-                "sales_count" => $salesCount,
-                "suggested_action" => "archive"
+                "sales_count" => $salesCount
             ]
         ]);
         exit;

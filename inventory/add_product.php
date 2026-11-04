@@ -21,6 +21,7 @@ if ($_SERVER["REQUEST_METHOD"] !== "POST") {
 }
 
 require_once __DIR__ . "/auth_helper.php";
+require_once __DIR__ . "/../import/ColumnMatcher.php";
 $owner = authenticateShopOwner($pdo);
 $shopOwnerId = (int)$owner["id"];
 
@@ -37,7 +38,7 @@ if (!is_array($data)) {
 
 // Field extraction and validation
 $name = trim($data["name"] ?? "");
-$sku = strtoupper(trim($data["sku"] ?? ""));
+$userSku = isset($data["sku"]) && is_string($data["sku"]) ? strtoupper(trim($data["sku"])) : "";
 $category = trim($data["category"] ?? "General");
 $description = trim($data["description"] ?? "");
 $price = isset($data["price"]) ? (float)$data["price"] : -1;
@@ -57,11 +58,11 @@ if ($name === "" || strlen($name) > 150) {
     exit;
 }
 
-if ($sku === "" || strlen($sku) > 50) {
+if ($userSku !== "" && strlen($userSku) > 50) {
     http_response_code(422);
     echo json_encode([
         "status" => false,
-        "message" => "SKU is required (max 50 characters).",
+        "message" => "SKU cannot exceed 50 characters.",
         "data" => (object)[]
     ]);
     exit;
@@ -93,17 +94,40 @@ if (empty($status) && $units <= $minStockThreshold) {
 }
 
 try {
-    // 1. Check for duplicate SKU in this shop
-    $dupCheck = $pdo->prepare("SELECT id FROM products WHERE shop_owner_id = ? AND sku = ? LIMIT 1");
-    $dupCheck->execute([$shopOwnerId, $sku]);
-    if ($dupCheck->fetch()) {
-        http_response_code(409);
-        echo json_encode([
-            "status" => false,
-            "message" => "A product with SKU '{$sku}' already exists in your shop.",
-            "data" => (object)[]
-        ]);
-        exit;
+    // 1. Resolve SKU: explicit user SKU vs server-generated stable unique SKU
+    if ($userSku !== "") {
+        $dupCheck = $pdo->prepare("SELECT id FROM products WHERE shop_owner_id = ? AND sku = ? LIMIT 1");
+        $dupCheck->execute([$shopOwnerId, $userSku]);
+        if ($dupCheck->fetch()) {
+            http_response_code(409);
+            echo json_encode([
+                "status" => false,
+                "message" => "A product with SKU '{$userSku}' already exists in your shop.",
+                "data" => (object)[]
+            ]);
+            exit;
+        }
+        $finalSku = $userSku;
+    } else {
+        // Missing or empty SKU: generate stable SKU like SKU-{PREFIX}-{HASH}
+        $baseSku = ColumnMatcher::generateStableSku($shopOwnerId, $name);
+        $dupCheck = $pdo->prepare("SELECT id FROM products WHERE shop_owner_id = ? AND sku = ? LIMIT 1");
+        $dupCheck->execute([$shopOwnerId, $baseSku]);
+        if (!$dupCheck->fetch()) {
+            $finalSku = $baseSku;
+        } else {
+            // Base generated SKU already exists in this shop: append unique numeric suffix (-1, -2, ...)
+            $suffix = 1;
+            do {
+                $candidateSku = $baseSku . "-" . $suffix;
+                $dupCheck->execute([$shopOwnerId, $candidateSku]);
+                if (!$dupCheck->fetch()) {
+                    $finalSku = $candidateSku;
+                    break;
+                }
+                $suffix++;
+            } while (true);
+        }
     }
 
     // 2. Insert product
@@ -114,7 +138,7 @@ try {
     $stmt->execute([
         $shopOwnerId,
         $name,
-        $sku,
+        $finalSku,
         $category,
         $description ?: null,
         $price,
@@ -134,7 +158,7 @@ try {
         "data" => [
             "id" => (string)$newId,
             "name" => $name,
-            "sku" => $sku,
+            "sku" => $finalSku,
             "category" => $category,
             "description" => $description,
             "price" => "₹" . rtrim(rtrim(number_format($price, 2), '0'), '.'),

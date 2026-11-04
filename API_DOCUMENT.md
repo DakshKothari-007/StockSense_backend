@@ -413,16 +413,39 @@ All responses adhere to the standard JSON envelope:
 - **Request Body**:
   ```json
   {
-    "sku": "string (required, unique per shop)",
-    "name": "string (required)",
-    "category": "string (optional)",
+    "name": "string (required, max 150 characters)",
+    "sku": "string (optional, max 50 characters; if omitted or empty, server generates a stable SKU like SKU-{PREFIX}-{HASH} with numeric suffix -1, -2 if duplicate in shop)",
+    "category": "string (optional, default 'General')",
+    "description": "string (optional)",
     "units": 100,
     "price": 25.00,
     "cost_price": 20.00,
-    "min_stock_threshold": 15
+    "min_stock_threshold": 15,
+    "icon_type": 2
   }
   ```
-- **Success Response (`201 Created`)**
+- **Success Response (`201 Created`)**:
+  ```json
+  {
+    "status": true,
+    "message": "Product added to inventory successfully.",
+    "data": {
+      "id": "1",
+      "name": "Fortune Sunflower Oil · 1 L",
+      "sku": "SKU-FORT-A1B2C",
+      "category": "Staples",
+      "price": "₹145",
+      "raw_price": 145.0,
+      "cost_price": "₹120",
+      "raw_cost_price": 120.0,
+      "units": "50",
+      "min_stock_threshold": 15
+    }
+  }
+  ```
+- **Error Responses**:
+  - `409 Conflict`: User-provided SKU already exists in this shop (`"A product with SKU '{sku}' already exists in your shop."`). Note: Generated SKUs automatically resolve collisions with a numeric suffix (`-1`, `-2`, etc.) and do not fail with 409.
+  - `422 Unprocessable Entity`: Missing required name, negative price/units.
 
 #### 3.4 Update Product
 - **Method & Path**: `POST /inventory/update_product.php`
@@ -457,7 +480,17 @@ All responses adhere to the standard JSON envelope:
     "message": "Product deleted successfully."
   }
   ```
-- **Error Response (`400 Bad Request`)**: If product has historical sales bills, deletion is rejected with a recommendation to archive.
+- **Error Response (`400 Bad Request`)**: If product has historical sales bills, deletion is rejected with:
+  ```json
+  {
+    "status": false,
+    "message": "This product appears in {N} sales bills, so it cannot be deleted.",
+    "data": {
+      "product_id": 1,
+      "sales_count": 5
+    }
+  }
+  ```
 
 ---
 

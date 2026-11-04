@@ -787,7 +787,38 @@
                                 "add_product.php"
                             ]
                         },
-                        "description": "Inserts a new product into the shop inventory with duplicate SKU prevention."
+                        "description": "Inserts a new product into the shop inventory. SKU is optional; if provided, duplicate SKU is rejected with 409 Conflict."
+                    }
+                },
+                {
+                    "name": "Add New Product (Auto-Generated SKU)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"name\": \"Fresh Farm Butter \u00b7 200 g\",\n  \"category\": \"Dairy\",\n  \"price\": 110.00,\n  \"cost_price\": 90.00,\n  \"units\": 35,\n  \"min_stock_threshold\": 10\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/inventory/add_product.php",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "inventory",
+                                "add_product.php"
+                            ]
+                        },
+                        "description": "Inserts a product with omitted SKU. The server creates a stable SKU like SKU-{PREFIX}-{HASH} and appends a numeric suffix (-1, -2, ...) if duplicate in this shop, returning final SKU in response."
                     }
                 },
                 {
@@ -880,7 +911,7 @@
                                 "delete_product.php"
                             ]
                         },
-                        "description": "Deletes a product by SKU or ID, scoped strictly to the authenticated shop owner."
+                        "description": "Deletes a product by SKU or ID, scoped strictly to the authenticated shop owner. If the product appears in sales bills, deletion is rejected with 400 Bad Request: 'This product appears in N sales bills, so it cannot be deleted.'"
                     }
                 }
             ]

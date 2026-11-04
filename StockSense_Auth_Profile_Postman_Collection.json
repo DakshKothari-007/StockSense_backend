@@ -471,7 +471,7 @@
                         "add_product.php"
                     ]
                 },
-                "description": "Adds a new product to the shop inventory with prepared statements and SKU uniqueness validation."
+                "description": "Adds a new product to the shop inventory with prepared statements. SKU is optional; if omitted or empty, server generates a stable SKU like SKU-{PREFIX}-{HASH} with unique numeric suffix (-1, -2, ...) on collision, returning final SKU in response."
             }
         },
         {
@@ -570,7 +570,7 @@
                         "delete_product.php"
                     ]
                 },
-                "description": "Deletes a product from the shop inventory. Validates ownership before deletion."
+                "description": "Deletes a product from the shop inventory. Validates ownership before deletion. Rejects with 400 Bad Request if linked to sales bills: 'This product appears in N sales bills, so it cannot be deleted.'"
             }
         },
         {
