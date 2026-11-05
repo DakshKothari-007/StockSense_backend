@@ -191,6 +191,18 @@ STYLE:
 - Reply in the user's language (English, Tamil, Hindi, Tanglish, Hinglish, etc.).
 - End with one useful next step when it makes sense.
 
+CONVERSATION CONTINUITY & SMALL TALK:
+- When the user sends short acknowledgements (e.g. "ok", "okay", "thanks", "fine", "ठीक है", "சரி"), respond with one short friendly line in the current conversation language and suggest a helpful next step (e.g., checking reorders or today's sales). NEVER restart with the greeting.
+- When the user says "yes" to your previous suggestion (e.g. "yes", "sure", "हाँ", "ஆம்"), proceed to carry out that suggestion using tools or direct answers.
+- When the user says "no" (e.g. "no", "nah", "नहीं", "இல்லை"), reply politely that you are here whenever needed.
+- Only send the greeting ("Namaste / Hello! I am Dukaan Mitra...") if the user explicitly greets you (e.g. "hi", "hello", "namaste") or at the very start of the conversation.
+
+ANSWER FORMATTING GUIDELINES:
+- Low stock answers: State the total count of low/out of stock products and list the names with units left (top 3 to 5), followed by a next-step suggestion.
+- Sales answers: State the amount (₹), bill count, units sold, and top seller (if available), followed by a next-step suggestion.
+- Reorder answers: State the count and list the product names with recommended reorder quantities (top 3 to 5), followed by a next-step suggestion.
+- Slow moving answers: State the count and list the product names with units left and cover days (top 3 to 5), followed by next-step advice.
+
 IDENTITY & CONFIDENTIALITY:
 - Your name is "Dukaan Mitra" ("Your shop assistant").
 - NEVER mention "Google", "Gemini", "OpenAI", "Anthropic", "LLM", or underlying model/provider names.
@@ -217,24 +229,109 @@ EOT;
     }
 
     /**
+     * Sanitizes up to 6 recent conversation history items (roles 'user' or 'assistant').
+     * Strips control characters, ensures shop data security, and truncates text to 300 chars.
+     */
+    public static function sanitizeHistory(array $rawHistory): array {
+        $sanitized = [];
+        $sliced = array_slice($rawHistory, -6);
+        foreach ($sliced as $item) {
+            if (!is_array($item)) continue;
+            $role = trim((string)($item['role'] ?? ''));
+            if ($role === 'model') $role = 'assistant';
+            if ($role !== 'user' && $role !== 'assistant') continue;
+
+            $text = (string)($item['text'] ?? '');
+            $text = preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/u', '', $text);
+            $text = trim($text);
+            if ($text === '') continue;
+
+            if (mb_strlen($text, 'UTF-8') > 300) {
+                $text = mb_substr($text, 0, 300, 'UTF-8');
+            }
+
+            $sanitized[] = [
+                'role' => $role,
+                'text' => $text
+            ];
+        }
+        return $sanitized;
+    }
+
+    /**
+     * Builds alternating Gemini contents array including validated history.
+     */
+    public static function buildGeminiContents(array $history, string $currentMessage): array {
+        $rawTurns = [];
+        foreach ($history as $h) {
+            $role = ($h['role'] === 'assistant') ? 'model' : 'user';
+            $text = trim($h['text'] ?? '');
+            if ($text !== '') {
+                $rawTurns[] = [
+                    'role' => $role,
+                    'parts' => [['text' => $text]]
+                ];
+            }
+        }
+
+        $normalized = [];
+        foreach ($rawTurns as $turn) {
+            if (empty($normalized)) {
+                if ($turn['role'] === 'user') {
+                    $normalized[] = $turn;
+                }
+            } else {
+                $lastIndex = count($normalized) - 1;
+                if ($normalized[$lastIndex]['role'] === $turn['role']) {
+                    $normalized[$lastIndex]['parts'][] = $turn['parts'][0];
+                } else {
+                    $normalized[] = $turn;
+                }
+            }
+        }
+
+        if (!empty($normalized) && $normalized[count($normalized) - 1]['role'] === 'user') {
+            $lastIndex = count($normalized) - 1;
+            $normalized[$lastIndex]['parts'][] = ['text' => $currentMessage];
+        } else {
+            $normalized[] = [
+                'role' => 'user',
+                'parts' => [['text' => $currentMessage]]
+            ];
+        }
+
+        return $normalized;
+    }
+
+    /**
      * Main Chat Orchestrator.
      * 
      * @param PDO $pdo
      * @param int $shopId
      * @param string $rawMessage
      * @param string|null $languageHint
-     * @return array ['answer' => string, 'cards' => array, 'actions' => array]
+     * @param array $rawHistory
+     * @return array ['answer' => string, 'cards' => array, 'actions' => array, 'suggestions' => array]
      */
-    public static function chat(PDO $pdo, int $shopId, string $rawMessage, ?string $languageHint = null): array {
+    public static function chat(
+        PDO $pdo,
+        int $shopId,
+        string $rawMessage,
+        ?string $languageHint = null,
+        array $rawHistory = []
+    ): array {
         $message = self::sanitizeMessage($rawMessage);
+        $history = self::sanitizeHistory($rawHistory);
+
         if ($message === '') {
             return [
                 'answer' => "Please ask a question about your shop's stock, sales, or orders.",
                 'cards' => [],
-                'actions' => [
-                    ['label' => 'Check low stock', 'target' => 'reorder'],
-                    ['label' => "Today's sales", 'target' => 'sales'],
-                    ['label' => 'View inventory', 'target' => 'inventory']
+                'actions' => [],
+                'suggestions' => [
+                    ['label' => 'Check low stock', 'message' => 'Which items are low on stock?'],
+                    ['label' => "Today's sales", 'message' => 'How much did I sell today?'],
+                    ['label' => 'What to reorder', 'message' => 'What should I reorder this week?']
                 ]
             ];
         }
@@ -245,8 +342,13 @@ EOT;
             throw new Exception($rateCheck['error'], 429);
         }
 
-        // 2. Cache check (5 minutes for identical questions)
-        $cacheKey = 'chat_' . md5(mb_strtolower($message, 'UTF-8'));
+        // 2. Cache check (5 minutes, keyed on message + history context + language hint)
+        $historyContext = '';
+        if (!empty($history)) {
+            $lastH = end($history);
+            $historyContext = ($lastH['role'] ?? '') . ':' . ($lastH['text'] ?? '');
+        }
+        $cacheKey = 'chat_' . md5(mb_strtolower($message, 'UTF-8') . '|' . $historyContext . '|' . ($languageHint ?? ''));
         $cached = self::getCachedResponse($pdo, $shopId, $cacheKey);
         if ($cached !== null) {
             return $cached;
@@ -257,17 +359,11 @@ EOT;
         $systemInstruction = self::getSystemInstruction($languageHint);
         $tools = AiTools::getFunctionDeclarations();
 
-        $contents = [
-            [
-                'role' => 'user',
-                'parts' => [
-                    ['text' => $message]
-                ]
-            ]
-        ];
+        $contents = self::buildGeminiContents($history, $message);
 
         $collectedCards = [];
         $collectedActions = [];
+        $collectedSuggestions = [];
         $finalAnswer = null;
 
         // Try Gemini with Function Calling
@@ -304,6 +400,9 @@ EOT;
                     if (!empty($toolExec['actions'])) {
                         $collectedActions = array_merge($collectedActions, $toolExec['actions']);
                     }
+                    if (!empty($toolExec['suggestions'])) {
+                        $collectedSuggestions = array_merge($collectedSuggestions, $toolExec['suggestions']);
+                    }
 
                     $userResponseParts[] = [
                         'functionResponse' => [
@@ -330,13 +429,16 @@ EOT;
 
         // If Gemini did not return a valid answer, execute rule-based keyword fallback
         if ($finalAnswer === null || $finalAnswer === '') {
-            $fallback = self::executeRuleBasedFallback($pdo, $shopId, $message);
+            $fallback = self::executeRuleBasedFallback($pdo, $shopId, $message, $history, $languageHint);
             $finalAnswer = $fallback['answer'];
             if (!empty($fallback['cards'])) {
                 $collectedCards = array_merge($collectedCards, $fallback['cards']);
             }
             if (!empty($fallback['actions'])) {
                 $collectedActions = array_merge($collectedActions, $fallback['actions']);
+            }
+            if (!empty($fallback['suggestions'])) {
+                $collectedSuggestions = array_merge($collectedSuggestions, $fallback['suggestions']);
             }
         }
 
@@ -364,15 +466,22 @@ EOT;
             }
         }
 
-        // Ensure default action if none provided
-        if (empty($dedupedActions)) {
-            $dedupedActions[] = ['label' => 'View Inventory', 'target' => 'inventory'];
+        // Deduplicate suggestions by label and message
+        $dedupedSuggestions = [];
+        $seenSugKeys = [];
+        foreach ($collectedSuggestions as $s) {
+            $sKey = ($s['label'] ?? '') . '|' . ($s['message'] ?? '');
+            if (!isset($seenSugKeys[$sKey])) {
+                $seenSugKeys[$sKey] = true;
+                $dedupedSuggestions[] = $s;
+            }
         }
 
         $result = [
             'answer' => $finalAnswer,
             'cards' => array_values($dedupedCards),
-            'actions' => array_values($dedupedActions)
+            'actions' => array_values($dedupedActions),
+            'suggestions' => array_values($dedupedSuggestions)
         ];
 
         // Increment usage and store in cache (5 minutes TTL)
@@ -384,44 +493,91 @@ EOT;
     }
 
     /**
-     * Detects language code ('hi', 'ta', or 'en') from script or keywords.
+     * Detects language code ('hi', 'ta', or 'en') from script, dialogue history, or keywords.
+     * Never defaults to Hindi: short/ambiguous English-letter messages inherit the last
+     * assistant answer's language in history; if none, English.
      */
-    public static function detectLanguage(string $message): string {
-        // 1. Devanagari script (Hindi)
+    public static function detectLanguage(
+        string $message,
+        array $history = [],
+        ?string $languageHint = null
+    ): string {
+        // 1. Script checks in current message
         if (preg_match('/[\x{0900}-\x{097F}]/u', $message)) {
             return 'hi';
         }
-        // 2. Tamil script
         if (preg_match('/[\x{0B80}-\x{0BFF}]/u', $message)) {
             return 'ta';
         }
 
-        $lower = mb_strtolower($message, 'UTF-8');
+        $trimmed = trim($message);
+        $lower = mb_strtolower($trimmed, 'UTF-8');
 
-        // 3. Hinglish romanized keywords
-        $hinglish = [
-            'aaj', 'kal', 'hafta', 'hafte', 'mahina', 'mahine', 'bikri', 'bika', 
-            'kamai', 'kitna', 'kitni', 'khatam', 'dobara', 'dheema', 'batao',
-            'mangana', 'dukaan', 'paisa', 'paise', 'kharid', 'khareed', 'biki'
+        // 2. Check for short or ambiguous English-letter messages
+        $isShortOrAmbiguous = (
+            mb_strlen($trimmed, 'UTF-8') <= 15 ||
+            preg_match('/^(ok|okay|k|thanks|thank\s*you|thx|fine|got\s*it|yes|yeah|yep|yup|haan|theek\s*hai|thik\s*hai|no|nope|nahi|nah|sure|cool|great|awesome|alright|why|how|what|s)[\s!\.,\?]*$/i', $trimmed)
+        );
+
+        if ($isShortOrAmbiguous && !empty($history)) {
+            $lastAssistantText = null;
+            for ($i = count($history) - 1; $i >= 0; $i--) {
+                if (($history[$i]['role'] ?? '') === 'assistant') {
+                    $lastAssistantText = $history[$i]['text'] ?? '';
+                    break;
+                }
+            }
+
+            if ($lastAssistantText !== null && $lastAssistantText !== '') {
+                if (preg_match('/[\x{0900}-\x{097F}]/u', $lastAssistantText)) {
+                    return 'hi';
+                }
+                if (preg_match('/[\x{0B80}-\x{0BFF}]/u', $lastAssistantText)) {
+                    return 'ta';
+                }
+                if (preg_match('/\b(வணக்கம்|விற்பனை|இருப்பு|பொருட்கள்|ஆர்டர்|தகான்|மித்ரா)\b/iu', $lastAssistantText)) {
+                    return 'ta';
+                }
+                if (preg_match('/\b(नमस्ते|बिक्री|स्टॉक|दुकान|मित्र|ऑर्डर)\b/iu', $lastAssistantText)) {
+                    return 'hi';
+                }
+                return 'en';
+            }
+        }
+
+        // 3. If explicit languageHint was provided (e.g. from the voice sheet)
+        if ($languageHint !== null && $languageHint !== '') {
+            if (stripos($languageHint, 'Tamil') !== false || stripos($languageHint, 'ta') !== false) {
+                return 'ta';
+            }
+            if (stripos($languageHint, 'Hindi') !== false || stripos($languageHint, 'hi') !== false) {
+                return 'hi';
+            }
+            return 'en';
+        }
+
+        // 4. Multi-word Hinglish / Tanglish phrases
+        $hinglishPhrases = [
+            'aaj ki sales', 'aaj ki sale', 'aaj sales', 'kitna bika', 'aaj kitna', 'kam stock',
+            'stock kam', 'mal khatam', 'stock khatam', 'kya mangana', 'dobara order', 'batao'
         ];
-        foreach ($hinglish as $hk) {
-            if (preg_match('/\b' . preg_quote($hk, '/') . '\b/iu', $lower)) {
+        foreach ($hinglishPhrases as $hp) {
+            if (mb_strpos($lower, $hp) !== false) {
                 return 'hi';
             }
         }
 
-        // 4. Tanglish romanized keywords
-        $tanglish = [
-            'inniku', 'inniki', 'iniku', 'indru', 'vaaram', 'maatham', 'virpanai',
-            'vithadhu', 'vikkala', 'evvalavu', 'kuraivu', 'kuraindha', 'meendum',
-            'marubadiyum', 'pannanum', 'kadai', 'panam', 'kammi'
+        $tanglishPhrases = [
+            'inniku sales', 'inniki sales', 'iniku sales', 'indru sales', 'indraya virpanai',
+            'stock kuraivu', 'kuraindha stock', 'meendum order', 'marubadiyum order', 'order pannanum'
         ];
-        foreach ($tanglish as $tk) {
-            if (preg_match('/\b' . preg_quote($tk, '/') . '\b/iu', $lower)) {
+        foreach ($tanglishPhrases as $tp) {
+            if (mb_strpos($lower, $tp) !== false) {
                 return 'ta';
             }
         }
 
+        // 5. Default to English. NEVER default to Hindi.
         return 'en';
     }
 
@@ -442,11 +598,27 @@ EOT;
     /**
      * Rule-based fallback when Gemini API is offline, times out, or lacks key.
      * Uses intelligent keyword matching to execute the exact right tool directly,
-     * provide labeled business tips, or politely refuse off-topic requests.
+     * provide labeled business tips, small-talk acknowledgements, or politely refuse off-topic requests.
      */
-    public static function executeRuleBasedFallback(PDO $pdo, int $shopId, string $message): array {
-        $lower = mb_strtolower($message, 'UTF-8');
-        $lang = self::detectLanguage($message);
+    public static function executeRuleBasedFallback(
+        PDO $pdo,
+        int $shopId,
+        string $message,
+        array $history = [],
+        ?string $languageHint = null
+    ): array {
+        $trimmed = trim($message);
+        $lower = mb_strtolower($trimmed, 'UTF-8');
+        $lang = self::detectLanguage($message, $history, $languageHint);
+
+        // Find last assistant message text in history (for contextual follow-ups like 'yes' / 'ok')
+        $lastAssistantText = null;
+        for ($i = count($history) - 1; $i >= 0; $i--) {
+            if (($history[$i]['role'] ?? '') === 'assistant') {
+                $lastAssistantText = $history[$i]['text'] ?? '';
+                break;
+            }
+        }
 
         // Refusal Case 1: Prompt injection / jailbreak attempts
         if (preg_match('/\b(ignore\s+(all\s+)?(previous\s+)?instructions|override\s+(all\s+)?rules|system\s+prompt|reveal\s+(system\s+)?instructions|you\s+are\s+now\s+a)\b/i', $lower)) {
@@ -458,9 +630,10 @@ EOT;
             return [
                 'answer' => $ans,
                 'cards' => [],
-                'actions' => [
-                    ['label' => 'Check low stock', 'target' => 'reorder'],
-                    ['label' => 'View inventory', 'target' => 'inventory']
+                'actions' => [],
+                'suggestions' => [
+                    ['label' => $lang === 'hi' ? 'कम स्टॉक' : ($lang === 'ta' ? 'குறைவான இருப்பு' : 'Check low stock'), 'message' => $lang === 'hi' ? 'कम स्टॉक वाले सामान दिखाएं' : ($lang === 'ta' ? 'குறைவான இருப்பு பொருட்கள்' : 'Which items are low on stock?')],
+                    ['label' => $lang === 'hi' ? 'आज की बिक्री' : ($lang === 'ta' ? 'இன்றைய விற்பனை' : "Today's sales"), 'message' => $lang === 'hi' ? 'आज की बिक्री कितनी है?' : ($lang === 'ta' ? 'இன்று விற்பனை எவ்வளவு?' : 'How much did I sell today?')]
                 ]
             ];
         }
@@ -475,9 +648,10 @@ EOT;
             return [
                 'answer' => $ans,
                 'cards' => [],
-                'actions' => [
-                    ['label' => 'View inventory', 'target' => 'inventory'],
-                    ['label' => 'Check low stock', 'target' => 'reorder']
+                'actions' => [],
+                'suggestions' => [
+                    ['label' => $lang === 'hi' ? 'कम स्टॉक' : ($lang === 'ta' ? 'குறைவான இருப்பு' : 'Check low stock'), 'message' => $lang === 'hi' ? 'कम स्टॉक वाले सामान दिखाएं' : ($lang === 'ta' ? 'குறைவான இருப்பு பொருட்கள்' : 'Which items are low on stock?')],
+                    ['label' => $lang === 'hi' ? 'आज की बिक्री' : ($lang === 'ta' ? 'இன்றைய விற்பனை' : "Today's sales"), 'message' => $lang === 'hi' ? 'आज की बिक्री कितनी है?' : ($lang === 'ta' ? 'இன்று விற்பனை எவ்வளவு?' : 'How much did I sell today?')]
                 ]
             ];
         }
@@ -492,9 +666,10 @@ EOT;
             return [
                 'answer' => $ans,
                 'cards' => [],
-                'actions' => [
-                    ['label' => 'Check low stock', 'target' => 'reorder'],
-                    ['label' => 'View inventory', 'target' => 'inventory']
+                'actions' => [],
+                'suggestions' => [
+                    ['label' => $lang === 'hi' ? 'कम स्टॉक' : ($lang === 'ta' ? 'குறைவான இருப்பு' : 'Check low stock'), 'message' => $lang === 'hi' ? 'कम स्टॉक वाले सामान दिखाएं' : ($lang === 'ta' ? 'குறைவான இருப்பு பொருட்கள்' : 'Which items are low on stock?')],
+                    ['label' => $lang === 'hi' ? 'आज की बिक्री' : ($lang === 'ta' ? 'இன்றைய விற்பனை' : "Today's sales"), 'message' => $lang === 'hi' ? 'आज की बिक्री कितनी है?' : ($lang === 'ta' ? 'இன்று விற்பனை எவ்வளவு?' : 'How much did I sell today?')]
                 ]
             ];
         }
@@ -509,9 +684,342 @@ EOT;
             return [
                 'answer' => $ans,
                 'cards' => [],
-                'actions' => [
-                    ['label' => 'Check low stock', 'target' => 'reorder'],
-                    ['label' => "Today's sales", 'target' => 'sales']
+                'actions' => [],
+                'suggestions' => [
+                    ['label' => $lang === 'hi' ? 'कम स्टॉक' : ($lang === 'ta' ? 'குறைவான இருப்பு' : 'Check low stock'), 'message' => $lang === 'hi' ? 'कम स्टॉक वाले सामान दिखाएं' : ($lang === 'ta' ? 'குறைவான இருப்பு பொருட்கள்' : 'Which items are low on stock?')],
+                    ['label' => $lang === 'hi' ? 'आज की बिक्री' : ($lang === 'ta' ? 'இன்றைய விற்பனை' : "Today's sales"), 'message' => $lang === 'hi' ? 'आज की बिक्री कितनी है?' : ($lang === 'ta' ? 'இன்று விற்பனை எவ்வளவு?' : 'How much did I sell today?')]
+                ]
+            ];
+        }
+
+        // ==========================================
+        // SMALL-TALK & FOLLOW-UPS (Contextual Dialogue)
+        // ==========================================
+
+        // Small-Talk 1: Acknowledgements (ok, okay, thanks, fine, got it, ठीक है, சரி, etc.)
+        $isAck = preg_match('/^(ok|okay|k|thx|thanks|thank\s+you|fine|got\s+it|alright|all\s+right|cool|great|awesome|theek\s+hai|thik\s+hai|theek|thik|accha|achha|dhanyawad|shukriya|சரி|நன்றி|ரொம்ப\s+நன்றி|சரிங்க|சந்தோசம்|சந்தோஷம்|நன்றிங்க|ठीक\s+है|धन्यवाद|शुक्रिया|अच्छा|बढ़िया)[\s!\.,\?]*$/iu', $trimmed);
+        if ($isAck) {
+            if ($lang === 'hi') {
+                $answer = "बहुत बढ़िया! क्या आप देखना चाहते हैं कि क्या दोबारा ऑर्डर करना है या आज की बिक्री?";
+                $suggestions = [
+                    ['label' => 'दोबारा ऑर्डर', 'message' => 'क्या दोबारा ऑर्डर करना है?'],
+                    ['label' => 'आज की बिक्री', 'message' => 'आज की बिक्री कितनी है?'],
+                    ['label' => 'कम स्टॉक', 'message' => 'कम स्टॉक वाले सामान दिखाएं']
+                ];
+            } elseif ($lang === 'ta') {
+                $answer = "மிக்க மகிழ்ச்சி! மீண்டும் ஆர்டர் செய்ய வேண்டிய பொருட்கள் அல்லது இன்றைய விற்பனையை பார்க்கலாமா?";
+                $suggestions = [
+                    ['label' => 'மீண்டும் ஆர்டர்', 'message' => 'மீண்டும் ஆர்டர் செய்ய வேண்டியவை'],
+                    ['label' => 'இன்றைய விற்பனை', 'message' => 'இன்று விற்பனை எவ்வளவு?'],
+                    ['label' => 'குறைவான இருப்பு', 'message' => 'குறைவான இருப்பு பொருட்கள்']
+                ];
+            } else {
+                $answer = "Great! Want me to show what to reorder, today's sales, or check low stock?";
+                $suggestions = [
+                    ['label' => 'What to reorder', 'message' => 'What should I reorder this week?'],
+                    ['label' => "Today's sales", 'message' => 'How much did I sell today?'],
+                    ['label' => 'Check low stock', 'message' => 'Which items are low on stock?']
+                ];
+            }
+            return [
+                'answer' => $answer,
+                'cards' => [],
+                'actions' => [],
+                'suggestions' => $suggestions
+            ];
+        }
+
+        // Small-Talk 2: Yes / Affirmations (carry forward suggestion from previous assistant answer)
+        $isYes = preg_match('/^(yes|yeah|yep|yup|sure|ok\s+show\s+me|show\s+me|haan|ha|han|ji\s+haan|ji\s+han|bilkul|हाँ|हां|ஆம்|ஆமாம்|aam|aama|aamam|kattayam|s)[\s!\.,\?]*$/iu', $trimmed);
+        if ($isYes) {
+            // Did the previous assistant answer suggest or discuss reorders?
+            if ($lastAssistantText !== null && preg_match('/(reorder|order|दोबारा\s+ऑर्डर|ऑर्डर\s+करना|रीऑर्डर|रिऑर्डर|மீண்டும்\s+ஆர்டர்|ஆர்டர்\s+செய்ய|ரீஆர்டர்|what\s+to\s+reorder)/iu', $lastAssistantText)) {
+                $res = AiTools::getReorderRecommendations($pdo, $shopId);
+                $recs = $res['result']['recommendations'] ?? [];
+                $count = count($recs);
+                if ($count > 0) {
+                    $top = array_slice($recs, 0, 5);
+                    if ($lang === 'hi') {
+                        $lines = [];
+                        foreach ($top as $r) {
+                            $qty = $r['suggested_quantity'] ?? $r['recommended_order_quantity'] ?? 10;
+                            $lines[] = "• " . $r['name'] . " (" . $qty . " पीस ऑर्डर करें)";
+                        }
+                        $answer = "आपकी बिक्री गति के आधार पर {$count} सामान दोबारा ऑर्डर करने की सिफारिश है:\n" . implode("\n", $lines) . "\n\nसप्लायर को ऑर्डर देने के लिए नीचे 'रीऑर्डर सूची खोलें' पर टैप करें।";
+                        $actions = [['label' => 'रीऑर्डर सूची खोलें', 'target' => 'reorder']];
+                        $suggestions = [['label' => 'कम स्टॉक', 'message' => 'कम स्टॉक वाले सामान दिखाएं']];
+                    } elseif ($lang === 'ta') {
+                        $lines = [];
+                        foreach ($top as $r) {
+                            $qty = $r['suggested_quantity'] ?? $r['recommended_order_quantity'] ?? 10;
+                            $lines[] = "• " . $r['name'] . " (" . $qty . " பொருட்கள் ஆர்டர் செய்யவும்)";
+                        }
+                        $answer = "உங்கள் விற்பனையின் அடிப்படையில் {$count} பொருட்களை மீண்டும் ஆர்டர் செய்ய பரிந்துரைக்கப்படுகிறது:\n" . implode("\n", $lines) . "\n\nஆர்டர் செய்ய கீழே உள்ள 'மீண்டும் ஆர்டர் பட்டியல்' பார்க்கவும்.";
+                        $actions = [['label' => 'மீண்டும் ஆர்டர் பட்டியல்', 'target' => 'reorder']];
+                        $suggestions = [['label' => 'குறைவான இருப்பு', 'message' => 'குறைவான இருப்பு பொருட்கள்']];
+                    } else {
+                        $lines = [];
+                        foreach ($top as $r) {
+                            $qty = $r['suggested_quantity'] ?? $r['recommended_order_quantity'] ?? 10;
+                            $lines[] = "• " . $r['name'] . " (Reorder " . $qty . " units)";
+                        }
+                        $answer = "Here are {$count} reorder recommendations based on your recent sales velocity:\n" . implode("\n", $lines) . "\n\nTap 'Open reorder list' below to create a purchase order, or ask me for details.";
+                        $actions = [['label' => 'Open reorder list', 'target' => 'reorder']];
+                        $suggestions = [['label' => 'Check low stock', 'message' => 'Which items are low on stock?']];
+                    }
+                } else {
+                    if ($lang === 'hi') {
+                        $answer = "अभी किसी सामान को दोबारा ऑर्डर करने की आवश्यकता नहीं है। स्टॉक ठीक है।";
+                        $actions = [];
+                        $suggestions = [['label' => 'आज की बिक्री', 'message' => 'आज की बिक्री कितनी है?']];
+                    } elseif ($lang === 'ta') {
+                        $answer = "தற்போது எந்த பொருளையும் மீண்டும் ஆர்டர் செய்ய வேண்டிய அவசியமில்லை. இருப்பு போதுமானதாக உள்ளது.";
+                        $actions = [];
+                        $suggestions = [['label' => 'இன்றைய விற்பனை', 'message' => 'இன்று விற்பனை எவ்வளவு?']];
+                    } else {
+                        $answer = "No immediate reorders needed right now. Stock levels are healthy.";
+                        $actions = [];
+                        $suggestions = [['label' => "Today's sales", 'message' => 'How much did I sell today?']];
+                    }
+                }
+                return [
+                    'answer' => $answer,
+                    'cards' => $res['cards'],
+                    'actions' => $actions,
+                    'suggestions' => $suggestions
+                ];
+            }
+
+            // Did previous assistant answer suggest low stock?
+            if ($lastAssistantText !== null && preg_match('/(low\s+stock|कम\s+स्टॉक|குறைவான\s+இருப்பு|ஸ்டாக்\s+குறைவு)/iu', $lastAssistantText)) {
+                $res = AiTools::listLowStock($pdo, $shopId);
+                $items = $res['result']['low_stock_products'] ?? [];
+                $count = count($items);
+                if ($count > 0) {
+                    $top = array_slice($items, 0, 5);
+                    if ($lang === 'hi') {
+                        $lines = [];
+                        foreach ($top as $it) {
+                            $lines[] = "• " . $it['name'] . " (" . $it['units'] . " पीस बचे हैं)";
+                        }
+                        $answer = "आपकी दुकान में {$count} सामान कम स्टॉक या खत्म होने वाले हैं:\n" . implode("\n", $lines) . "\n\nनया ऑर्डर बनाने के लिए नीचे 'रीऑर्डर सूची' देखें या मुझसे रीऑर्डर सलाह पूछें।";
+                        $actions = [
+                            ['label' => 'रीऑर्डर सूची खोलें', 'target' => 'reorder'],
+                            ['label' => 'इन्वेंटरी देखें', 'target' => 'inventory']
+                        ];
+                        $suggestions = [
+                            ['label' => 'दोबारा ऑर्डर', 'message' => 'क्या दोबारा ऑर्डर करना है?'],
+                            ['label' => 'आज की बिक्री', 'message' => 'आज की बिक्री कितनी है?']
+                        ];
+                    } elseif ($lang === 'ta') {
+                        $lines = [];
+                        foreach ($top as $it) {
+                            $lines[] = "• " . $it['name'] . " (" . $it['units'] . " பொருட்கள் மீதம்)";
+                        }
+                        $answer = "உங்கள் கடையில் {$count} பொருட்கள் இருப்பு குறைவாக உள்ளன:\n" . implode("\n", $lines) . "\n\nபர்சேஸ் ஆர்டர் செய்ய கீழே உள்ள 'மீண்டும் ஆர்டர் பட்டியல்' பார்க்கவும்.";
+                        $actions = [
+                            ['label' => 'மீண்டும் ஆர்டர் பட்டியல்', 'target' => 'reorder'],
+                            ['label' => 'இருப்பு பட்டியல்', 'target' => 'inventory']
+                        ];
+                        $suggestions = [
+                            ['label' => 'மீண்டும் ஆர்டர்', 'message' => 'மீண்டும் ஆர்டர் செய்ய வேண்டியவை'],
+                            ['label' => 'இன்றைய விற்பனை', 'message' => 'இன்று விற்பனை எவ்வளவு?']
+                        ];
+                    } else {
+                        $lines = [];
+                        foreach ($top as $it) {
+                            $lines[] = "• " . $it['name'] . " (" . $it['units'] . " units left)";
+                        }
+                        $answer = "You have {$count} product" . ($count > 1 ? 's' : '') . " running low on stock:\n" . implode("\n", $lines) . "\n\nTap 'Open reorder list' below to create a purchase order, or ask me for reorder suggestions.";
+                        $actions = [
+                            ['label' => 'Open reorder list', 'target' => 'reorder'],
+                            ['label' => 'View inventory', 'target' => 'inventory']
+                        ];
+                        $suggestions = [
+                            ['label' => 'What should I reorder?', 'message' => 'What should I reorder this week?'],
+                            ['label' => "Today's sales", 'message' => 'How much did I sell today?']
+                        ];
+                    }
+                } else {
+                    if ($lang === 'hi') {
+                        $answer = "आपकी दुकान में सभी सामान पर्याप्त मात्रा में उपलब्ध हैं।";
+                        $actions = [];
+                        $suggestions = [['label' => 'आज की बिक्री', 'message' => 'आज की बिक्री कितनी है?']];
+                    } elseif ($lang === 'ta') {
+                        $answer = "உங்கள் கடையில் அனைத்து பொருட்களும் போதுமான அளவில் உள்ளன.";
+                        $actions = [];
+                        $suggestions = [['label' => 'இன்றைய விற்பனை', 'message' => 'இன்று விற்பனை எவ்வளவு?']];
+                    } else {
+                        $answer = "All products in your shop are currently well-stocked above their minimum limits.";
+                        $actions = [];
+                        $suggestions = [['label' => "Today's sales", 'message' => 'How much did I sell today?']];
+                    }
+                }
+                return [
+                    'answer' => $answer,
+                    'cards' => $res['cards'],
+                    'actions' => $actions,
+                    'suggestions' => $suggestions
+                ];
+            }
+
+            // Did previous assistant answer suggest sales?
+            if ($lastAssistantText !== null && preg_match('/(sales|revenue|बिक्री|விற்பனை)/iu', $lastAssistantText)) {
+                $res = AiTools::getSalesSummary($pdo, $shopId, 'today');
+                $summary = $res['result'] ?? [];
+                $rev = $summary['total_revenue'] ?? '₹0';
+                $bills = (int)($summary['total_bills'] ?? 0);
+                $units = (int)($summary['total_units_sold'] ?? 0);
+                if ($lang === 'hi') {
+                    $answer = "आज की बिक्री: {$rev} ({$bills} बिल, {$units} पीस बिके)।\n\nक्या आप कम स्टॉक देखना चाहते हैं?";
+                    $actions = [['label' => 'बिक्री रिपोर्ट देखें', 'target' => 'sales']];
+                    $suggestions = [['label' => 'कम स्टॉक', 'message' => 'कम स्टॉक वाले सामान दिखाएं']];
+                } elseif ($lang === 'ta') {
+                    $answer = "இன்றைய விற்பனை: {$rev} ({$bills} பில்கள், {$units} பொருட்கள் விற்றன).\n\nகுறைவான இருப்பை பார்க்கலாமா?";
+                    $actions = [['label' => 'விற்பனை அறிக்கை', 'target' => 'sales']];
+                    $suggestions = [['label' => 'குறைவான இருப்பு', 'message' => 'குறைவான இருப்பு பொருட்கள்']];
+                } else {
+                    $answer = "Today's sales: {$rev} across {$bills} bill" . ($bills == 1 ? '' : 's') . " ({$units} units sold).\n\nWould you like to check your low stock?";
+                    $actions = [['label' => 'View sales report', 'target' => 'sales']];
+                    $suggestions = [['label' => 'Check low stock', 'message' => 'Which items are low on stock?']];
+                }
+                return [
+                    'answer' => $answer,
+                    'cards' => $res['cards'],
+                    'actions' => $actions,
+                    'suggestions' => $suggestions
+                ];
+            }
+
+            // Otherwise ask what to see
+            if ($lang === 'hi') {
+                $answer = "आप क्या देखना चाहते हैं? मैं कम स्टॉक, आज की बिक्री या दोबारा ऑर्डर में मदद कर सकता हूँ।";
+                $suggestions = [
+                    ['label' => 'कम स्टॉक', 'message' => 'कम स्टॉक वाले सामान दिखाएं'],
+                    ['label' => 'आज की बिक्री', 'message' => 'आज की बिक्री कितनी है?'],
+                    ['label' => 'दोबारा ऑर्डर', 'message' => 'क्या दोबारा ऑर्डर करना है?']
+                ];
+            } elseif ($lang === 'ta') {
+                $answer = "நீங்கள் என்ன பார்க்க விரும்புகிறீர்கள்? குறைவான இருப்பு, இன்றைய விற்பனை அல்லது மீண்டும் ஆர்டர் செய்ய உதவ முடியும்.";
+                $suggestions = [
+                    ['label' => 'குறைவான இருப்பு', 'message' => 'குறைவான இருப்பு பொருட்கள்'],
+                    ['label' => 'இன்றைய விற்பனை', 'message' => 'இன்று விற்பனை எவ்வளவு?'],
+                    ['label' => 'மீண்டும் ஆர்டர்', 'message' => 'மீண்டும் ஆர்டர் செய்ய வேண்டியவை']
+                ];
+            } else {
+                $answer = "What would you like to see? I can help with low stock, today's sales, or reorder recommendations.";
+                $suggestions = [
+                    ['label' => 'Check low stock', 'message' => 'Which items are low on stock?'],
+                    ['label' => "Today's sales", 'message' => 'How much did I sell today?'],
+                    ['label' => 'What to reorder', 'message' => 'What should I reorder this week?']
+                ];
+            }
+            return [
+                'answer' => $answer,
+                'cards' => [],
+                'actions' => [],
+                'suggestions' => $suggestions
+            ];
+        }
+
+        // Small-Talk 3: No / Negations
+        $isNo = preg_match('/^(no|nope|nah|not\s+now|nothing|later|no\s+thanks|nahi|nahin|kuch\s+nahi|kuchh\s+nahi|baad\s+mein|இல்லை|வேண்டாம்|illai|vendaam|appuram|onnum\s+illa|नहीं|नही|कुछ\s+नहीं|बाद\s+में)[\s!\.,\?]*$/iu', $trimmed);
+        if ($isNo) {
+            if ($lang === 'hi') {
+                $answer = "कोई बात नहीं! जब भी दुकान के लिए किसी जानकारी की आवश्यकता हो, बताइएगा।";
+                $suggestions = [
+                    ['label' => 'आज की बिक्री', 'message' => 'आज की बिक्री कितनी है?'],
+                    ['label' => 'कम स्टॉक', 'message' => 'कम स्टॉक वाले सामान दिखाएं']
+                ];
+            } elseif ($lang === 'ta') {
+                $answer = "சரிங்க! உங்கள் கடைக்கு உதவி தேவைப்படும்போது எப்போது வேண்டுமானாலும் கேளுங்கள்.";
+                $suggestions = [
+                    ['label' => 'இன்றைய விற்பனை', 'message' => 'இன்று விற்பனை எவ்வளவு?'],
+                    ['label' => 'குறைவான இருப்பு', 'message' => 'குறைவான இருப்பு பொருட்கள்']
+                ];
+            } else {
+                $answer = "No problem! Let me know whenever you need anything for your shop.";
+                $suggestions = [
+                    ['label' => "Today's sales", 'message' => 'How much did I sell today?'],
+                    ['label' => 'Check low stock', 'message' => 'Which items are low on stock?']
+                ];
+            }
+            return [
+                'answer' => $answer,
+                'cards' => [],
+                'actions' => [],
+                'suggestions' => $suggestions
+            ];
+        }
+
+        // Refusal Case 1: Prompt injection / jailbreak attempts
+        if (preg_match('/\b(ignore\s+(all\s+)?(previous\s+)?instructions|override\s+(all\s+)?rules|system\s+prompt|reveal\s+(system\s+)?instructions|you\s+are\s+now\s+a)\b/i', $lower)) {
+            $ans = $lang === 'hi' 
+                ? "क्षमा करें, मैं केवल आपकी दुकान, स्टॉक और बिक्री में मदद कर सकता हूँ। क्या आप कम स्टॉक देखना चाहते हैं?"
+                : ($lang === 'ta' 
+                    ? "மன்னிக்கவும், உங்கள் கடை, இருப்பு மற்றும் விற்பனை தொடர்பான விவரங்களுக்கு மட்டுமே நான் உதவ முடியும். குறைவான இருப்பு பார்க்கலாமா?"
+                    : "I'm sorry, I can only help with your shop, stock and sales. Would you like to check your low stock?");
+            return [
+                'answer' => $ans,
+                'cards' => [],
+                'actions' => [],
+                'suggestions' => [
+                    ['label' => $lang === 'hi' ? 'कम स्टॉक' : ($lang === 'ta' ? 'குறைவான இருப்பு' : 'Check low stock'), 'message' => $lang === 'hi' ? 'कम स्टॉक वाले सामान दिखाएं' : ($lang === 'ta' ? 'குறைவான இருப்பு பொருட்கள்' : 'Which items are low on stock?')],
+                    ['label' => $lang === 'hi' ? 'आज की बिक्री' : ($lang === 'ta' ? 'இன்றைய விற்பனை' : "Today's sales"), 'message' => $lang === 'hi' ? 'आज की बिक्री कितनी है?' : ($lang === 'ta' ? 'இன்று விற்பனை எவ்வளவு?' : 'How much did I sell today?')]
+                ]
+            ];
+        }
+
+        // Refusal Case 2: Other shops' data / sensitive credentials
+        if (preg_match('/\b(other\s+shops?|another\s+shop|competitor\s+store|secret\s*key|api\s*key|password|bearer\s*token)\b/i', $lower)) {
+            $ans = $lang === 'hi'
+                ? "क्षमा करें, मैं केवल आपकी अपनी दुकान का डेटा देख सकता हूँ। क्या आप अपनी इन्वेंटरी देखना चाहते हैं?"
+                : ($lang === 'ta'
+                    ? "மன்னிக்கவும், உங்கள் சொந்த கடையின் தகவல்களை மட்டுமே என்னால் அணுக முடியும். இருப்பை பார்க்கலாமா?"
+                    : "I'm sorry, I can only access data for your own shop. Would you like to check your inventory?");
+            return [
+                'answer' => $ans,
+                'cards' => [],
+                'actions' => [],
+                'suggestions' => [
+                    ['label' => $lang === 'hi' ? 'कम स्टॉक' : ($lang === 'ta' ? 'குறைவான இருப்பு' : 'Check low stock'), 'message' => $lang === 'hi' ? 'कम स्टॉक वाले सामान दिखाएं' : ($lang === 'ta' ? 'குறைவான இருப்பு பொருட்கள்' : 'Which items are low on stock?')],
+                    ['label' => $lang === 'hi' ? 'आज की बिक्री' : ($lang === 'ta' ? 'இன்றைய விற்பனை' : "Today's sales"), 'message' => $lang === 'hi' ? 'आज की बिक्री कितनी है?' : ($lang === 'ta' ? 'இன்று விற்பனை எவ்வளவு?' : 'How much did I sell today?')]
+                ]
+            ];
+        }
+
+        // Refusal Case 3: Abusive / inappropriate / harmful / adult
+        if (preg_match('/\b(kill|hate|idiot|stupid|abuse|fuck|bitch|bastard|porn|sex|harm)\b/i', $lower)) {
+            $ans = $lang === 'hi'
+                ? "क्षमा करें, मैं केवल आपकी दुकान, स्टॉक और बिक्री में मदद कर सकता हूँ। क्या आप कम स्टॉक देखना चाहते हैं?"
+                : ($lang === 'ta'
+                    ? "மன்னிக்கவும், உங்கள் கடை, இருப்பு மற்றும் விற்பனை தொடர்பான விவரங்களுக்கு மட்டுமே நான் உதவ முடியும். குறைவான இருப்பு பார்க்கலாமா?"
+                    : "I'm sorry, I can only help with your shop, stock and sales. Would you like to check your low stock?");
+            return [
+                'answer' => $ans,
+                'cards' => [],
+                'actions' => [],
+                'suggestions' => [
+                    ['label' => $lang === 'hi' ? 'कम स्टॉक' : ($lang === 'ta' ? 'குறைவான இருப்பு' : 'Check low stock'), 'message' => $lang === 'hi' ? 'कम स्टॉक वाले सामान दिखाएं' : ($lang === 'ta' ? 'குறைவான இருப்பு பொருட்கள்' : 'Which items are low on stock?')],
+                    ['label' => $lang === 'hi' ? 'आज की बिक्री' : ($lang === 'ta' ? 'இன்றைய விற்பனை' : "Today's sales"), 'message' => $lang === 'hi' ? 'आज की बिक्री कितनी है?' : ($lang === 'ta' ? 'இன்று விற்பனை எவ்வளவு?' : 'How much did I sell today?')]
+                ]
+            ];
+        }
+
+        // Refusal Case 4: Unrelated topics (entertainment, politics, religion, homework, coding, medical, legal)
+        if (preg_match('/\b(movie|actor|cinema|song|president|election|prime\s*minister|god|religion|cricket|football|homework|solve\s+math|python|javascript|write\s+code|programming|headache|doctor|medicine|fever|legal\s*advice|lawsuit|divorce)\b/i', $lower)) {
+            $ans = $lang === 'hi'
+                ? "क्षमा करें, मैं केवल आपकी दुकान, स्टॉक और बिक्री में मदद कर सकता हूँ। क्या आप कम स्टॉक देखना चाहते हैं?"
+                : ($lang === 'ta'
+                    ? "மன்னிக்கவும், உங்கள் கடை, இருப்பு மற்றும் விற்பனை தொடர்பான விவரங்களுக்கு மட்டுமே நான் உதவ முடியும். குறைவான இருப்பு பார்க்கலாமா?"
+                    : "I'm sorry, I can only help with your shop, stock and sales. Would you like to check your low stock?");
+            return [
+                'answer' => $ans,
+                'cards' => [],
+                'actions' => [],
+                'suggestions' => [
+                    ['label' => $lang === 'hi' ? 'कम स्टॉक' : ($lang === 'ta' ? 'குறைவான இருப்பு' : 'Check low stock'), 'message' => $lang === 'hi' ? 'कम स्टॉक वाले सामान दिखाएं' : ($lang === 'ta' ? 'குறைவான இருப்பு பொருட்கள்' : 'Which items are low on stock?')],
+                    ['label' => $lang === 'hi' ? 'आज की बिक्री' : ($lang === 'ta' ? 'இன்றைய விற்பனை' : "Today's sales"), 'message' => $lang === 'hi' ? 'आज की बिक्री कितनी है?' : ($lang === 'ta' ? 'இன்று விற்பனை எவ்வளவு?' : 'How much did I sell today?')]
                 ]
             ];
         }
@@ -519,11 +1027,12 @@ EOT;
         // General Business Advice Case 1: Pricing & Margins
         if (preg_match('/\b(margin|profit\s*margin|markup|pricing|how\s+to\s+price)\b/i', $lower)) {
             return [
-                'answer' => "General tip: For retail grocery and FMCG goods, typical profit margins range between 10% and 20%, while specialty items can carry 25%+. Compare nearby retail rates while ensuring all purchase costs are covered. Would you like to review product prices in Inventory?",
+                'answer' => "General tip: For retail grocery and FMCG goods, typical profit margins range between 10% and 20%, while specialty items can carry 25%+. Compare nearby retail rates while ensuring all purchase costs are covered. Would you like to check slow-moving items or low stock?",
                 'cards' => [],
-                'actions' => [
-                    ['label' => 'View inventory', 'target' => 'inventory'],
-                    ['label' => 'Sales analytics', 'target' => 'sales']
+                'actions' => [],
+                'suggestions' => [
+                    ['label' => 'Slow moving items', 'message' => 'Which products are not selling?'],
+                    ['label' => 'Check low stock', 'message' => 'Which items are low on stock?']
                 ]
             ];
         }
@@ -533,9 +1042,10 @@ EOT;
             return [
                 'answer' => "General tip: Run bundle promotions like 'Buy 2 Get 5% off' on slow-moving items to recover working capital without discounting fast-moving staples. Would you like to check your slow-moving products?",
                 'cards' => [],
-                'actions' => [
-                    ['label' => 'Slow moving items', 'target' => 'slow_moving'],
-                    ['label' => 'View inventory', 'target' => 'inventory']
+                'actions' => [],
+                'suggestions' => [
+                    ['label' => 'Slow moving items', 'message' => 'Which products are not selling?'],
+                    ['label' => 'Check low stock', 'message' => 'Which items are low on stock?']
                 ]
             ];
         }
@@ -543,11 +1053,12 @@ EOT;
         // General Business Advice Case 3: Festival & seasonal stocking
         if (preg_match('/\b(festival|diwali|pongal|eid|christmas|seasonal|monsoon|summer)\b/i', $lower)) {
             return [
-                'answer' => "General tip: Plan festive inventory 3 to 4 weeks in advance and place bulk supplier orders early to secure better rates and avoid stockouts. Would you like to review your sales history for planning?",
+                'answer' => "General tip: Plan festive inventory 3 to 4 weeks in advance and place bulk supplier orders early to secure better rates and avoid stockouts. Would you like to review your top sellers or reorder list?",
                 'cards' => [],
-                'actions' => [
-                    ['label' => 'Sales analytics', 'target' => 'sales'],
-                    ['label' => 'Check low stock', 'target' => 'reorder']
+                'actions' => [],
+                'suggestions' => [
+                    ['label' => 'Top sellers', 'message' => 'What are my top selling products?'],
+                    ['label' => 'What to reorder', 'message' => 'What should I reorder this week?']
                 ]
             ];
         }
@@ -557,9 +1068,10 @@ EOT;
             return [
                 'answer' => "General tip: Follow First-In, First-Out (FIFO) stocking so older batches sell first. Reposition slow inventory near the checkout or bundle with popular pairs to clear shelves. Check your slow-moving list to take action.",
                 'cards' => [],
-                'actions' => [
-                    ['label' => 'Slow moving items', 'target' => 'slow_moving'],
-                    ['label' => 'Product pairs', 'target' => 'insights']
+                'actions' => [],
+                'suggestions' => [
+                    ['label' => 'Slow moving items', 'message' => 'Which products are not selling?'],
+                    ['label' => 'What to reorder', 'message' => 'What should I reorder this week?']
                 ]
             ];
         }
@@ -567,11 +1079,12 @@ EOT;
         // General Business Advice Case 5: Supplier negotiations
         if (preg_match('/\b(supplier\s*talk|negotiat|vendor\s*deal|supplier\s*rate|payment\s*terms)\b/i', $lower)) {
             return [
-                'answer' => "General tip: Maintain prompt payment terms to negotiate 2-3% cash discounts or request returnable allowances for unsold seasonal items. Would you like to check your open purchase orders?",
+                'answer' => "General tip: Maintain prompt payment terms to negotiate 2-3% cash discounts or request returnable allowances for unsold seasonal items. Would you like to check your open orders or reorder list?",
                 'cards' => [],
-                'actions' => [
-                    ['label' => 'Purchase orders', 'target' => 'purchase_orders'],
-                    ['label' => 'Reorder list', 'target' => 'reorder']
+                'actions' => [],
+                'suggestions' => [
+                    ['label' => 'Open orders', 'message' => 'Do I have any open purchase orders?'],
+                    ['label' => 'What to reorder', 'message' => 'What should I reorder this week?']
                 ]
             ];
         }
@@ -581,8 +1094,10 @@ EOT;
             return [
                 'answer' => "General tip: Place impulse and high-margin products at eye level right near the billing counter. Keep daily essentials deeper in the shop so customers browse more shelves.",
                 'cards' => [],
-                'actions' => [
-                    ['label' => 'View inventory', 'target' => 'inventory']
+                'actions' => [],
+                'suggestions' => [
+                    ['label' => 'Check low stock', 'message' => 'Which items are low on stock?'],
+                    ['label' => 'Top sellers', 'message' => 'What are my top selling products?']
                 ]
             ];
         }
@@ -592,9 +1107,10 @@ EOT;
             return [
                 'answer' => "General tip: Keep at least 15 to 30 days of daily operational expenses in reserve and avoid over-ordering slow inventory. For formal tax and accounting guidance, please consult a chartered accountant. Would you like to check today's sales collection?",
                 'cards' => [],
-                'actions' => [
-                    ['label' => "Today's sales", 'target' => 'sales'],
-                    ['label' => 'Purchase orders', 'target' => 'purchase_orders']
+                'actions' => [],
+                'suggestions' => [
+                    ['label' => "Today's sales", 'message' => 'How much did I sell today?'],
+                    ['label' => 'Check low stock', 'message' => 'Which items are low on stock?']
                 ]
             ];
         }
@@ -604,9 +1120,10 @@ EOT;
             return [
                 'answer' => "General tip: Use 'Record sale' at the counter to keep inventory synchronized in real time. Check 'Reorder recommendations' weekly to prevent stockouts, and use 'Import' to add many products at once.",
                 'cards' => [],
-                'actions' => [
-                    ['label' => 'View inventory', 'target' => 'inventory'],
-                    ['label' => 'Reorder list', 'target' => 'reorder']
+                'actions' => [],
+                'suggestions' => [
+                    ['label' => 'Check low stock', 'message' => 'Which items are low on stock?'],
+                    ['label' => 'What to reorder', 'message' => 'What should I reorder this week?']
                 ]
             ];
         }
@@ -668,7 +1185,7 @@ EOT;
             'விற்பனை', 'இன்று', 'வாரம்', 'மாதம்', 'இன்றைக்கு', 'விற்றது', 'வசூல்',
             'inniku sales', 'inniki sales', 'iniku sales', 'virpanai', 'indru sales', 'indraya virpanai',
             // English
-            'sale', 'sales', 'revenue', 'collection', 'income', 'turnover', 'earnings', 'turn over'
+            'sale', 'sales', 'sell', 'sold', 'selling', 'revenue', 'collection', 'income', 'turnover', 'earnings', 'turn over'
         ];
 
         // Intent: Greetings (hello-type messages only)
@@ -685,99 +1202,186 @@ EOT;
         // 1. Reorder Intent
         if (self::matchesAnyKeyword($lower, $reorderKeywords)) {
             $res = AiTools::getReorderRecommendations($pdo, $shopId);
-            $count = count($res['result']['recommendations'] ?? []);
-            if ($lang === 'hi') {
-                $answer = $count > 0 
-                    ? "आपकी हाल की बिक्री के आधार पर {$count} सामान दोबारा ऑर्डर करने की सिफारिश है:"
-                    : "अभी किसी सामान को दोबारा ऑर्डर करने की आवश्यकता नहीं है। स्टॉक ठीक है।";
-                $actions = [
-                    ['label' => 'रीऑर्डर सूची', 'target' => 'reorder'],
-                    ['label' => 'इन्वेंटरी देखें', 'target' => 'inventory']
-                ];
-            } elseif ($lang === 'ta') {
-                $answer = $count > 0 
-                    ? "உங்கள் சமீபத்திய விற்பனையின் அடிப்படையில் {$count} பொருட்களை மீண்டும் ஆர்டர் செய்ய பரிந்துரைக்கப்படுகிறது:"
-                    : "தற்போது எந்த பொருளையும் மீண்டும் ஆர்டர் செய்ய வேண்டிய அவசியமில்லை. இருப்பு போதுமானதாக உள்ளது.";
-                $actions = [
-                    ['label' => 'மீண்டும் ஆர்டர் பட்டியல்', 'target' => 'reorder'],
-                    ['label' => 'இருப்பு பட்டியல்', 'target' => 'inventory']
-                ];
+            $recs = $res['result']['recommendations'] ?? [];
+            $count = count($recs);
+            if ($count > 0) {
+                $top = array_slice($recs, 0, 5);
+                if ($lang === 'hi') {
+                    $lines = [];
+                    foreach ($top as $r) {
+                        $qty = $r['suggested_quantity'] ?? $r['recommended_order_quantity'] ?? 10;
+                        $lines[] = "• " . $r['name'] . " (" . $qty . " पीस ऑर्डर करें)";
+                    }
+                    $answer = "आपकी बिक्री गति के आधार पर {$count} सामान दोबारा ऑर्डर करने की सिफारिश है:\n" . implode("\n", $lines) . "\n\nसप्लायर को ऑर्डर देने के लिए नीचे 'रीऑर्डर सूची खोलें' पर टैप करें।";
+                    $actions = [['label' => 'रीऑर्डर सूची खोलें', 'target' => 'reorder']];
+                    $suggestions = [['label' => 'कम स्टॉक', 'message' => 'कम स्टॉक वाले सामान दिखाएं']];
+                } elseif ($lang === 'ta') {
+                    $lines = [];
+                    foreach ($top as $r) {
+                        $qty = $r['suggested_quantity'] ?? $r['recommended_order_quantity'] ?? 10;
+                        $lines[] = "• " . $r['name'] . " (" . $qty . " பொருட்கள் ஆர்டர் செய்யவும்)";
+                    }
+                    $answer = "உங்கள் விற்பனையின் அடிப்படையில் {$count} பொருட்களை மீண்டும் ஆர்டர் செய்ய பரிந்துரைக்கப்படுகிறது:\n" . implode("\n", $lines) . "\n\nஆர்டர் செய்ய கீழே உள்ள 'மீண்டும் ஆர்டர் பட்டியல்' பார்க்கவும்.";
+                    $actions = [['label' => 'மீண்டும் ஆர்டர் பட்டியல்', 'target' => 'reorder']];
+                    $suggestions = [['label' => 'குறைவான இருப்பு', 'message' => 'குறைவான இருப்பு பொருட்கள்']];
+                } else {
+                    $lines = [];
+                    foreach ($top as $r) {
+                        $qty = $r['suggested_quantity'] ?? $r['recommended_order_quantity'] ?? 10;
+                        $lines[] = "• " . $r['name'] . " (Reorder " . $qty . " units)";
+                    }
+                    $answer = "Here are {$count} reorder recommendations based on your recent sales velocity:\n" . implode("\n", $lines) . "\n\nTap 'Open reorder list' below to create a purchase order, or ask me for details.";
+                    $actions = [['label' => 'Open reorder list', 'target' => 'reorder']];
+                    $suggestions = [['label' => 'Check low stock', 'message' => 'Which items are low on stock?']];
+                }
             } else {
-                $answer = $count > 0 
-                    ? "Here are {$count} reorder recommendations based on your recent sales velocity."
-                    : "No immediate reorders needed right now. Stock levels are healthy.";
-                $actions = $res['actions'];
+                if ($lang === 'hi') {
+                    $answer = "अभी किसी सामान को दोबारा ऑर्डर करने की आवश्यकता नहीं है। स्टॉक ठीक है।";
+                    $actions = [];
+                    $suggestions = [['label' => 'आज की बिक्री', 'message' => 'आज की बिक्री कितनी है?']];
+                } elseif ($lang === 'ta') {
+                    $answer = "தற்போது எந்த பொருளையும் மீண்டும் ஆர்டர் செய்ய வேண்டிய அவசியமில்லை. இருப்பு போதுமானதாக உள்ளது.";
+                    $actions = [];
+                    $suggestions = [['label' => 'இன்றைய விற்பனை', 'message' => 'இன்று விற்பனை எவ்வளவு?']];
+                } else {
+                    $answer = "No immediate reorders needed right now. Stock levels are healthy.";
+                    $actions = [];
+                    $suggestions = [['label' => "Today's sales", 'message' => 'How much did I sell today?']];
+                }
             }
             return [
                 'answer' => $answer,
                 'cards' => $res['cards'],
-                'actions' => $actions
+                'actions' => $actions,
+                'suggestions' => $suggestions
             ];
         }
 
         // 2. Low Stock Intent
         if (self::matchesAnyKeyword($lower, $lowStockKeywords)) {
             $res = AiTools::listLowStock($pdo, $shopId);
-            $count = (int)($res['result']['count'] ?? 0);
-            if ($lang === 'hi') {
-                $answer = $count > 0 
-                    ? "आपकी दुकान में {$count} सामान कम स्टॉक या खत्म होने वाले हैं। नीचे दी गई सूची देखें।"
-                    : "आपकी दुकान में सभी सामान पर्याप्त मात्रा में उपलब्ध हैं।";
-                $actions = [
-                    ['label' => 'कम स्टॉक', 'target' => 'reorder'],
-                    ['label' => 'इन्वेंटरी देखें', 'target' => 'inventory']
-                ];
-            } elseif ($lang === 'ta') {
-                $answer = $count > 0 
-                    ? "உங்கள் கடையில் {$count} பொருட்களின் இருப்பு குறைவாக உள்ளது அல்லது தீர்ந்துவிட்டது. கீழே உள்ள பட்டியலை பார்க்கவும்."
-                    : "உங்கள் கடையில் அனைத்து பொருட்களும் போதுமான அளவில் உள்ளன.";
-                $actions = [
-                    ['label' => 'குறைவான இருப்பு', 'target' => 'reorder'],
-                    ['label' => 'இருப்பு பட்டியல்', 'target' => 'inventory']
-                ];
+            $items = $res['result']['low_stock_products'] ?? [];
+            $count = count($items);
+            if ($count > 0) {
+                $top = array_slice($items, 0, 5);
+                if ($lang === 'hi') {
+                    $lines = [];
+                    foreach ($top as $it) {
+                        $lines[] = "• " . $it['name'] . " (" . $it['units'] . " पीस बचे हैं)";
+                    }
+                    $answer = "आपकी दुकान में {$count} सामान कम स्टॉक या खत्म होने वाले हैं:\n" . implode("\n", $lines) . "\n\nनया ऑर्डर बनाने के लिए नीचे 'रीऑर्डर सूची' देखें या मुझसे रीऑर्डर सलाह पूछें।";
+                    $actions = [
+                        ['label' => 'रीऑर्डर सूची खोलें', 'target' => 'reorder'],
+                        ['label' => 'इन्वेंटरी देखें', 'target' => 'inventory']
+                    ];
+                    $suggestions = [
+                        ['label' => 'दोबारा ऑर्डर', 'message' => 'क्या दोबारा ऑर्डर करना है?'],
+                        ['label' => 'आज की बिक्री', 'message' => 'आज की बिक्री कितनी है?']
+                    ];
+                } elseif ($lang === 'ta') {
+                    $lines = [];
+                    foreach ($top as $it) {
+                        $lines[] = "• " . $it['name'] . " (" . $it['units'] . " பொருட்கள் மீதம்)";
+                    }
+                    $answer = "உங்கள் கடையில் {$count} பொருட்கள் இருப்பு குறைவாக உள்ளன:\n" . implode("\n", $lines) . "\n\nபர்சேஸ் ஆர்டர் செய்ய கீழே உள்ள 'மீண்டும் ஆர்டர் பட்டியல்' பார்க்கவும்.";
+                    $actions = [
+                        ['label' => 'மீண்டும் ஆர்டர் பட்டியல்', 'target' => 'reorder'],
+                        ['label' => 'இருப்பு பட்டியல்', 'target' => 'inventory']
+                    ];
+                    $suggestions = [
+                        ['label' => 'மீண்டும் ஆர்டர்', 'message' => 'மீண்டும் ஆர்டர் செய்ய வேண்டியவை'],
+                        ['label' => 'இன்றைய விற்பனை', 'message' => 'இன்று விற்பனை எவ்வளவு?']
+                    ];
+                } else {
+                    $lines = [];
+                    foreach ($top as $it) {
+                        $lines[] = "• " . $it['name'] . " (" . $it['units'] . " units left)";
+                    }
+                    $answer = "You have {$count} product" . ($count > 1 ? 's' : '') . " running low on stock:\n" . implode("\n", $lines) . "\n\nTap 'Open reorder list' below to create a purchase order, or ask me for reorder suggestions.";
+                    $actions = [
+                        ['label' => 'Open reorder list', 'target' => 'reorder'],
+                        ['label' => 'View inventory', 'target' => 'inventory']
+                    ];
+                    $suggestions = [
+                        ['label' => 'What should I reorder?', 'message' => 'What should I reorder this week?'],
+                        ['label' => "Today's sales", 'message' => 'How much did I sell today?']
+                    ];
+                }
             } else {
-                $answer = $count > 0 
-                    ? "You have {$count} product" . ($count > 1 ? 's' : '') . " running low or out of stock. Check the list below to place reorders."
-                    : "All products in your shop are currently well-stocked above their minimum limits.";
-                $actions = $res['actions'];
+                if ($lang === 'hi') {
+                    $answer = "आपकी दुकान में सभी सामान पर्याप्त मात्रा में उपलब्ध हैं।";
+                    $actions = [];
+                    $suggestions = [['label' => 'आज की बिक्री', 'message' => 'आज की बिक्री कितनी है?']];
+                } elseif ($lang === 'ta') {
+                    $answer = "உங்கள் கடையில் அனைத்து பொருட்களும் போதுமான அளவில் உள்ளன.";
+                    $actions = [];
+                    $suggestions = [['label' => 'இன்றைய விற்பனை', 'message' => 'இன்று விற்பனை எவ்வளவு?']];
+                } else {
+                    $answer = "All products in your shop are currently well-stocked above their minimum limits.";
+                    $actions = [];
+                    $suggestions = [['label' => "Today's sales", 'message' => 'How much did I sell today?']];
+                }
             }
             return [
                 'answer' => $answer,
                 'cards' => $res['cards'],
-                'actions' => $actions
+                'actions' => $actions,
+                'suggestions' => $suggestions
             ];
         }
 
         // 3. Slow Moving Intent
         if (self::matchesAnyKeyword($lower, $slowMovingKeywords)) {
             $res = AiTools::getSlowMovingProducts($pdo, $shopId);
-            $count = (int)($res['result']['count'] ?? 0);
-            if ($lang === 'hi') {
-                $answer = $count > 0 
-                    ? "आपकी दुकान में {$count} धीमे बिकने वाले सामान हैं। उन्हें नीचे देखें और उचित कदम उठाएं।"
-                    : "कोई धीमा बिकने वाला सामान नहीं है! सभी सामान अच्छी गति से बिक रहे हैं।";
-                $actions = [
-                    ['label' => 'धीमे बिकने वाले', 'target' => 'slow_moving'],
-                    ['label' => 'इन्वेंटरी देखें', 'target' => 'inventory']
-                ];
-            } elseif ($lang === 'ta') {
-                $answer = $count > 0 
-                    ? "உங்கள் கடையில் மெதுவாக விற்பனையாகும் {$count} பொருட்கள் உள்ளன. அவற்றை கீழே சரிபார்க்கவும்."
-                    : "மெதுவாக விற்பனையாகும் பொருட்கள் எதுவும் இல்லை! அனைத்து பொருட்களும் வேகமாக விற்பனையாகின்றன.";
-                $actions = [
-                    ['label' => 'மெதுவான பொருட்கள்', 'target' => 'slow_moving'],
-                    ['label' => 'இருப்பு பட்டியல்', 'target' => 'inventory']
-                ];
+            $items = $res['result']['slow_moving_products'] ?? [];
+            $count = count($items);
+            if ($count > 0) {
+                $top = array_slice($items, 0, 5);
+                if ($lang === 'hi') {
+                    $lines = [];
+                    foreach ($top as $it) {
+                        $lines[] = "• " . $it['name'] . " (" . $it['units_in_stock'] . " पीस बचे हैं, " . $it['stock_cover_days'] . " दिन का स्टॉक)";
+                    }
+                    $answer = "आपकी दुकान में {$count} धीमे बिकने वाले सामान हैं जो पूंजी रोके हुए हैं:\n" . implode("\n", $lines) . "\n\nसलाह: इन्हें जल्दी निकालने के लिए काउंटर के पास रखें या बंडल ऑफर लगाएं।";
+                    $actions = [['label' => 'इन्वेंटरी देखें', 'target' => 'inventory']];
+                    $suggestions = [['label' => 'डेड स्टॉक कैसे कम करें?', 'message' => 'डेड स्टॉक कैसे कम करें?']];
+                } elseif ($lang === 'ta') {
+                    $lines = [];
+                    foreach ($top as $it) {
+                        $lines[] = "• " . $it['name'] . " (" . $it['units_in_stock'] . " பொருட்கள் மீதம், " . $it['stock_cover_days'] . " நாட்கள் இருப்பு)";
+                    }
+                    $answer = "உங்கள் கடையில் மெதுவாக விற்பனையாகும் {$count} பொருட்கள் உள்ளன:\n" . implode("\n", $lines) . "\n\nஆலோசனை: இவற்றை விரைவாக விற்க சிறப்பு சலுகை வழங்கலாம்.";
+                    $actions = [['label' => 'இருப்பு பட்டியல்', 'target' => 'inventory']];
+                    $suggestions = [['label' => 'விற்காத சரக்கு டிப்ஸ்', 'message' => 'விற்காத சரக்கை எப்படி விற்பது?']];
+                } else {
+                    $lines = [];
+                    foreach ($top as $it) {
+                        $lines[] = "• " . $it['name'] . " (" . $it['units_in_stock'] . " units in stock, " . $it['stock_cover_days'] . " days cover)";
+                    }
+                    $answer = "You have {$count} slow-moving products tying up capital:\n" . implode("\n", $lines) . "\n\nGeneral tip: Consider a discount promotion or bundle with fast sellers to clear shelves.";
+                    $actions = [['label' => 'View inventory', 'target' => 'inventory']];
+                    $suggestions = [['label' => 'How to reduce dead stock?', 'message' => 'How can I reduce dead stock?']];
+                }
             } else {
-                $answer = $count > 0 
-                    ? "You have {$count} slow-moving products tying up capital. Review them below to take action."
-                    : "No slow-moving products detected! All active inventory has healthy sales velocity.";
-                $actions = $res['actions'];
+                if ($lang === 'hi') {
+                    $answer = "कोई धीमा बिकने वाला सामान नहीं है! सभी सामान अच्छी गति से बिक रहे हैं।";
+                    $actions = [];
+                    $suggestions = [['label' => 'आज की बिक्री', 'message' => 'आज की बिक्री कितनी है?']];
+                } elseif ($lang === 'ta') {
+                    $answer = "மெதுவாக விற்பனையாகும் பொருட்கள் எதுவும் இல்லை! அனைத்து பொருட்களும் வேகமாக விற்பனையாகின்றன.";
+                    $actions = [];
+                    $suggestions = [['label' => 'இன்றைய விற்பனை', 'message' => 'இன்று விற்பனை எவ்வளவு?']];
+                } else {
+                    $answer = "No slow-moving products detected! All active inventory has healthy sales velocity.";
+                    $actions = [];
+                    $suggestions = [['label' => "Today's sales", 'message' => 'How much did I sell today?']];
+                }
             }
             return [
                 'answer' => $answer,
                 'cards' => $res['cards'],
-                'actions' => $actions
+                'actions' => $actions,
+                'suggestions' => $suggestions
             ];
         }
 
@@ -790,26 +1394,47 @@ EOT;
                 $period = 'month';
             }
             $res = AiTools::topSellingProducts($pdo, $shopId, $period);
-            if ($lang === 'hi') {
-                $answer = "चयनित अवधि के लिए आपके सबसे ज्यादा बिकने वाले सामान:";
-                $actions = [
-                    ['label' => 'आज की बिक्री', 'target' => 'sales'],
-                    ['label' => 'इन्वेंटरी देखें', 'target' => 'inventory']
-                ];
-            } elseif ($lang === 'ta') {
-                $answer = "குறிப்பிட்ட காலத்திற்கு அதிகம் விற்பனையான பொருட்கள்:";
-                $actions = [
-                    ['label' => 'இன்றைய விற்பனை', 'target' => 'sales'],
-                    ['label' => 'இருப்பு பட்டியல்', 'target' => 'inventory']
-                ];
+            $items = $res['result']['products'] ?? [];
+            $count = count($items);
+            if ($count > 0) {
+                $top = array_slice($items, 0, 5);
+                if ($lang === 'hi') {
+                    $lines = [];
+                    foreach ($top as $t) {
+                        $lines[] = "• " . $t['name'] . " (" . $t['units_sold'] . " पीस बिके, " . $t['revenue'] . ")";
+                    }
+                    $answer = "चयनित अवधि के लिए आपके सबसे ज्यादा बिकने वाले सामान:\n" . implode("\n", $lines) . "\n\nक्या आप बिक्री रिपोर्ट या कम स्टॉक देखना चाहते हैं?";
+                    $actions = [['label' => 'बिक्री रिपोर्ट देखें', 'target' => 'sales']];
+                    $suggestions = [['label' => 'कम स्टॉक', 'message' => 'कम स्टॉक वाले सामान दिखाएं']];
+                } elseif ($lang === 'ta') {
+                    $lines = [];
+                    foreach ($top as $t) {
+                        $lines[] = "• " . $t['name'] . " (" . $t['units_sold'] . " பொருட்கள், " . $t['revenue'] . ")";
+                    }
+                    $answer = "குறிப்பிட்ட காலத்திற்கு அதிகம் விற்பனையான பொருட்கள்:\n" . implode("\n", $lines) . "\n\nகுறைவான இருப்பு அல்லது விற்பனை அறிக்கையை பார்க்கலாமா?";
+                    $actions = [['label' => 'விற்பனை அறிக்கை', 'target' => 'sales']];
+                    $suggestions = [['label' => 'குறைவான இருப்பு', 'message' => 'குறைவான இருப்பு பொருட்கள்']];
+                } else {
+                    $lines = [];
+                    foreach ($top as $t) {
+                        $lines[] = "• " . $t['name'] . " (" . $t['units_sold'] . " units sold, " . $t['revenue'] . ")";
+                    }
+                    $answer = "Here are your top-selling products for the selected period:\n" . implode("\n", $lines) . "\n\nWould you like to view the full sales report or check low stock?";
+                    $actions = [['label' => 'View sales report', 'target' => 'sales']];
+                    $suggestions = [['label' => 'Check low stock', 'message' => 'Which items are low on stock?']];
+                }
             } else {
-                $answer = "Here are your top-selling products for the selected period:";
-                $actions = $res['actions'];
+                $answer = $lang === 'hi' 
+                    ? "इस अवधि के लिए कोई बिक्री दर्ज नहीं हुई है।"
+                    : ($lang === 'ta' ? "இந்த காலத்தில் விற்பனை எதுவும் பதிவாகவில்லை." : "No sales recorded for this period yet.");
+                $actions = [];
+                $suggestions = [['label' => 'Check low stock', 'message' => 'Which items are low on stock?']];
             }
             return [
                 'answer' => $answer,
                 'cards' => $res['cards'],
-                'actions' => $actions
+                'actions' => $actions,
+                'suggestions' => $suggestions
             ];
         }
 
@@ -819,30 +1444,28 @@ EOT;
             $count = (int)($res['result']['count'] ?? 0);
             if ($lang === 'hi') {
                 $answer = $count > 0 
-                    ? "सप्लायर से डिलीवरी के लिए {$count} ऑर्डर पेंडिंग हैं।"
-                    : "वर्तमान में कोई पेंडिंग परचेज ऑर्डर नहीं है।";
-                $actions = [
-                    ['label' => 'परचेज ऑर्डर', 'target' => 'purchase_orders'],
-                    ['label' => 'रीऑर्डर सूची', 'target' => 'reorder']
-                ];
+                    ? "सप्लायर से डिलीवरी के लिए {$count} परचेज ऑर्डर पेंडिंग हैं। नीचे विवरण देखें।"
+                    : "वर्तमान में कोई पेंडिंग परचेज ऑर्डर नहीं है। सभी ऑर्डर प्राप्त हो चुके हैं।";
+                $actions = $count > 0 ? [['label' => 'परचेज ऑर्डर खोलें', 'target' => 'purchase_orders']] : [];
+                $suggestions = [['label' => 'रीऑर्डर सलाह', 'message' => 'क्या दोबारा ऑर्डर करना है?']];
             } elseif ($lang === 'ta') {
                 $answer = $count > 0 
                     ? "டெலிவரிக்காக {$count} பர்சேஸ் ஆர்டர்கள் நிலுவையில் உள்ளன."
                     : "தற்போது நிலுவையில் உள்ள பர்சேஸ் ஆர்டர்கள் எதுவும் இல்லை.";
-                $actions = [
-                    ['label' => 'பர்சேஸ் ஆர்டர்கள்', 'target' => 'purchase_orders'],
-                    ['label' => 'மீண்டும் ஆர்டர்', 'target' => 'reorder']
-                ];
+                $actions = $count > 0 ? [['label' => 'பர்சேஸ் ஆர்டர்கள்', 'target' => 'purchase_orders']] : [];
+                $suggestions = [['label' => 'மீண்டும் ஆர்டர்', 'message' => 'மீண்டும் ஆர்டர் செய்ய வேண்டியவை']];
             } else {
                 $answer = $count > 0 
                     ? "You have {$count} open purchase order" . ($count > 1 ? 's' : '') . " awaiting delivery."
                     : "There are no pending purchase orders awaiting delivery right now.";
-                $actions = $res['actions'];
+                $actions = $count > 0 ? [['label' => 'Open purchase orders', 'target' => 'purchase_orders']] : [];
+                $suggestions = [['label' => 'What to reorder', 'message' => 'What should I reorder this week?']];
             }
             return [
                 'answer' => $answer,
                 'cards' => $res['cards'],
-                'actions' => $actions
+                'actions' => $actions,
+                'suggestions' => $suggestions
             ];
         }
 
@@ -861,128 +1484,166 @@ EOT;
             $bills = (int)($summary['total_bills'] ?? 0);
             $units = (int)($summary['total_units_sold'] ?? 0);
 
+            // Get top seller for additional insight if available
+            $topRes = AiTools::topSellingProducts($pdo, $shopId, $period);
+            $topItems = $topRes['result']['products'] ?? [];
+            $topName = !empty($topItems[0]) ? $topItems[0]['name'] : null;
+            $topUnits = !empty($topItems[0]) ? (int)$topItems[0]['units_sold'] : 0;
+
             if ($lang === 'hi') {
                 if ($period === 'week') {
-                    $answer = "इस हफ्ते की बिक्री: {$rev} ({$bills} बिल).";
+                    $pText = "इस हफ्ते की बिक्री";
                 } elseif ($period === 'month') {
-                    $answer = "इस महीने की बिक्री: {$rev} ({$bills} बिल).";
+                    $pText = "इस महीने की बिक्री";
                 } else {
-                    $answer = "आज की बिक्री: {$rev} ({$bills} बिल).";
+                    $pText = "आज की बिक्री";
                 }
-                $actions = [
-                    ['label' => 'कम स्टॉक', 'target' => 'reorder'],
-                    ['label' => 'इन्वेंटरी देखें', 'target' => 'inventory']
+                $answer = "{$pText}: {$rev} ({$bills} बिल, {$units} पीस बिके)।";
+                if ($topName) {
+                    $answer .= "\nसबसे ज्यादा बिका: {$topName} ({$topUnits} पीस)।";
+                }
+                $answer .= "\n\nक्या आप कम स्टॉक या धीमे बिकने वाले सामान देखना चाहते हैं?";
+                $actions = [['label' => 'बिक्री रिपोर्ट देखें', 'target' => 'sales']];
+                $suggestions = [
+                    ['label' => 'कम स्टॉक', 'message' => 'कम स्टॉक वाले सामान दिखाएं'],
+                    ['label' => 'धीमे बिकने वाले', 'message' => 'कौन से उत्पाद नहीं बिक रहे हैं?']
                 ];
             } elseif ($lang === 'ta') {
                 if ($period === 'week') {
-                    $answer = "இந்த வார விற்பனை: {$rev} ({$bills} பில்கள்).";
+                    $pText = "இந்த வார விற்பனை";
                 } elseif ($period === 'month') {
-                    $answer = "இந்த மாத விற்பனை: {$rev} ({$bills} பில்கள்).";
+                    $pText = "இந்த மாத விற்பனை";
                 } else {
-                    $answer = "இன்றைய விற்பனை: {$rev} ({$bills} பில்கள்).";
+                    $pText = "இன்றைய விற்பனை";
                 }
-                $actions = [
-                    ['label' => 'குறைவான இருப்பு', 'target' => 'reorder'],
-                    ['label' => 'இருப்பு பட்டியல்', 'target' => 'inventory']
+                $answer = "{$pText}: {$rev} ({$bills} பில்கள், {$units} பொருட்கள் விற்றன).";
+                if ($topName) {
+                    $answer .= "\nஅதிகம் விற்றது: {$topName} ({$topUnits} பொருட்கள்).";
+                }
+                $answer .= "\n\nகுறைவான இருப்பு அல்லது மெதுவான பொருட்களை பார்க்கலாமா?";
+                $actions = [['label' => 'விற்பனை அறிக்கை', 'target' => 'sales']];
+                $suggestions = [
+                    ['label' => 'குறைவான இருப்பு', 'message' => 'குறைவான இருப்பு பொருட்கள்'],
+                    ['label' => 'விற்காத பொருட்கள்', 'message' => 'விற்காத பொருட்கள் எவை?']
                 ];
             } else {
                 $periodName = ucfirst($period);
                 $answer = "{$periodName}'s sales: {$rev} across {$bills} bill" . ($bills == 1 ? '' : 's') . " ({$units} units sold).";
-                $actions = $res['actions'];
+                if ($topName) {
+                    $answer .= "\nTop seller: {$topName} ({$topUnits} units).";
+                }
+                $answer .= "\n\nWould you like to check your low stock or reorder list?";
+                $actions = [['label' => 'View sales report', 'target' => 'sales']];
+                $suggestions = [
+                    ['label' => 'Check low stock', 'message' => 'Which items are low on stock?'],
+                    ['label' => 'What to reorder', 'message' => 'What should I reorder this week?']
+                ];
             }
 
             return [
                 'answer' => $answer,
                 'cards' => $res['cards'],
-                'actions' => $actions
+                'actions' => $actions,
+                'suggestions' => $suggestions
             ];
         }
 
         // 7. Specific product stock query
-        if (preg_match('/\b(?:stock\s*(?:of|for)?|how\s*much|how\s*many|units\s*of)\s+([a-zA-Z0-9\s\-]+)/i', $lower, $m)) {
+        if (preg_match('/\b(?:stock\s*(?:of|for)?|units\s*of|how\s*many\s+units\s+of|how\s*much\s+stock\s+of)\s+([a-zA-Z0-9\s\-]+)/i', $lower, $m)) {
             $query = trim($m[1]);
             $res = AiTools::getProductStock($pdo, $shopId, $query);
             if (!empty($res['result']['found'])) {
                 $p = $res['result']['products'][0] ?? [];
-                $answer = "You have " . ($p['units'] ?? 0) . " units of " . ($p['name'] ?? 'product') . " in stock (Status: " . ($p['status'] ?? 'In stock') . ").";
+                $answer = "You have " . ($p['units'] ?? 0) . " units of " . ($p['name'] ?? 'product') . " in stock (Status: " . ($p['status'] ?? 'In stock') . ").\n\nWould you like to view product details or check low stock?";
                 return [
                     'answer' => $answer,
                     'cards' => $res['cards'],
-                    'actions' => $res['actions']
+                    'actions' => [
+                        ['label' => 'View product detail', 'target' => 'product_detail', 'product_id' => $p['product_id'] ?? null]
+                    ],
+                    'suggestions' => [
+                        ['label' => 'Check low stock', 'message' => 'Which items are low on stock?'],
+                        ['label' => "Today's sales", 'message' => 'How much did I sell today?']
+                    ]
                 ];
             } else {
                 return [
                     'answer' => "I could not find '{$query}' in your shop records. Please check the product name or SKU in Inventory.",
                     'cards' => [],
                     'actions' => [
-                        ['label' => 'View inventory', 'target' => 'inventory'],
-                        ['label' => 'Check low stock', 'target' => 'reorder']
+                        ['label' => 'View inventory', 'target' => 'inventory']
+                    ],
+                    'suggestions' => [
+                        ['label' => 'Check low stock', 'message' => 'Which items are low on stock?'],
+                        ['label' => "Today's sales", 'message' => 'How much did I sell today?']
                     ]
                 ];
             }
         }
 
-        // 8. Greeting (hello-type messages only)
-        $trimmed = trim($message);
+        // 8. Greeting (hello-type messages only or first message - suggestions ONLY, no navigation actions)
         $isPureGreeting = preg_match('/^(hi|hello|hey|namaste|vanakkam|namaskar|pranam|வணக்கம்|வந்தனம்|ஹலோ|नमस्ते|नमस्कार|प्रणाम|हाय|हेलो)[\s!\.,\?]*$/iu', $trimmed);
-        if ($isPureGreeting || self::matchesAnyKeyword($lower, $greetingKeywords)) {
+        $isFirstMessageGreeting = (empty($history) && self::matchesAnyKeyword($lower, $greetingKeywords));
+        if ($isPureGreeting || $isFirstMessageGreeting) {
             if ($lang === 'hi') {
                 $answer = "नमस्ते! मैं दुकान मित्र हूँ, आपका शॉप असिस्टेंट। आज आपकी दुकान के लिए मैं क्या मदद कर सकता हूँ?";
-                $actions = [
-                    ['label' => 'आज की बिक्री', 'target' => 'sales'],
-                    ['label' => 'कम स्टॉक', 'target' => 'reorder'],
-                    ['label' => 'इन्वेंटरी देखें', 'target' => 'inventory']
+                $suggestions = [
+                    ['label' => 'आज की बिक्री', 'message' => 'आज की बिक्री कितनी है?'],
+                    ['label' => 'कम स्टॉक', 'message' => 'कम स्टॉक वाले सामान दिखाएं'],
+                    ['label' => 'दोबारा ऑर्डर', 'message' => 'क्या दोबारा ऑर्डर करना है?']
                 ];
             } elseif ($lang === 'ta') {
                 $answer = "வணக்கம்! நான் உங்கள் கடை உதவியாளர் தகான் மித்ரா (Dukaan Mitra). இன்று உங்கள் கடைக்கு நான் எவ்வாறு உதவ முடியும்?";
-                $actions = [
-                    ['label' => 'இன்றைய விற்பனை', 'target' => 'sales'],
-                    ['label' => 'குறைவான இருப்பு', 'target' => 'reorder'],
-                    ['label' => 'இருப்பு பட்டியல்', 'target' => 'inventory']
+                $suggestions = [
+                    ['label' => 'இன்றைய விற்பனை', 'message' => 'இன்று விற்பனை எவ்வளவு?'],
+                    ['label' => 'குறைவான இருப்பு', 'message' => 'குறைவான இருப்பு பொருட்கள்'],
+                    ['label' => 'மீண்டும் ஆர்டர்', 'message' => 'மீண்டும் ஆர்டர் செய்ய வேண்டியவை']
                 ];
             } else {
                 $answer = "Hello! I am Dukaan Mitra, your StockSense shop assistant. How can I assist your shop today?";
-                $actions = [
-                    ['label' => 'Check low stock', 'target' => 'reorder'],
-                    ['label' => "Today's sales", 'target' => 'sales'],
-                    ['label' => 'View inventory', 'target' => 'inventory']
+                $suggestions = [
+                    ['label' => 'Check low stock', 'message' => 'Which items are low on stock?'],
+                    ['label' => "Today's sales", 'message' => 'How much did I sell today?'],
+                    ['label' => 'What to reorder', 'message' => 'What should I reorder this week?']
                 ];
             }
             return [
                 'answer' => $answer,
                 'cards' => [],
-                'actions' => $actions
+                'actions' => [],
+                'suggestions' => $suggestions
             ];
         }
 
-        // 9. Unrecognized non-greeting query fallback (NEVER answer with only greeting)
+        // 9. Unrecognized non-greeting query fallback (NEVER answer with only greeting, suggestions ONLY)
         if ($lang === 'hi') {
             $answer = "मुझे इसके बारे में जानकारी नहीं मिली। आप आज की बिक्री, कम स्टॉक, दोबारा ऑर्डर या सबसे ज्यादा बिकने वाले सामान के बारे में पूछ सकते हैं।";
-            $actions = [
-                ['label' => 'आज की बिक्री', 'target' => 'sales'],
-                ['label' => 'कम स्टॉक', 'target' => 'reorder'],
-                ['label' => 'इन्वेंटरी देखें', 'target' => 'inventory']
+            $suggestions = [
+                ['label' => 'आज की बिक्री', 'message' => 'आज की बिक्री कितनी है?'],
+                ['label' => 'कम स्टॉक', 'message' => 'कम स्टॉक वाले सामान दिखाएं'],
+                ['label' => 'दोबारा ऑर्डर', 'message' => 'क्या दोबारा ऑर्डर करना है?']
             ];
         } elseif ($lang === 'ta') {
             $answer = "இதற்கான தகவல் கிடைக்கவில்லை. இன்றைய விற்பனை, குறைவான இருப்பு, மீண்டும் ஆர்டர் அல்லது மெதுவாக விற்பனையாகும் பொருட்கள் பற்றி கேட்கலாம்.";
-            $actions = [
-                ['label' => 'இன்றைய விற்பனை', 'target' => 'sales'],
-                ['label' => 'குறைவான இருப்பு', 'target' => 'reorder'],
-                ['label' => 'இருப்பு பட்டியல்', 'target' => 'inventory']
+            $suggestions = [
+                ['label' => 'இன்றைய விற்பனை', 'message' => 'இன்று விற்பனை எவ்வளவு?'],
+                ['label' => 'குறைவான இருப்பு', 'message' => 'குறைவான இருப்பு பொருட்கள்'],
+                ['label' => 'மீண்டும் ஆர்டர்', 'message' => 'மீண்டும் ஆர்டர் செய்ய வேண்டியவை']
             ];
         } else {
             $answer = "I could not find information for that in your shop records. You can ask about today's sales, low stock, reorder recommendations, or top selling products.";
-            $actions = [
-                ['label' => 'Check low stock', 'target' => 'reorder'],
-                ['label' => "Today's sales", 'target' => 'sales'],
-                ['label' => 'View inventory', 'target' => 'inventory']
+            $suggestions = [
+                ['label' => 'Check low stock', 'message' => 'Which items are low on stock?'],
+                ['label' => "Today's sales", 'message' => 'How much did I sell today?'],
+                ['label' => 'What to reorder', 'message' => 'What should I reorder this week?']
             ];
         }
 
         return [
             'answer' => $answer,
             'cards' => [],
-            'actions' => $actions
+            'actions' => [],
+            'suggestions' => $suggestions
         ];
     }
 

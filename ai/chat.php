@@ -52,9 +52,10 @@ if ($message === "") {
 }
 
 $languageHint = isset($input["language_hint"]) ? trim((string)$input["language_hint"]) : null;
+$history = isset($input["history"]) && is_array($input["history"]) ? $input["history"] : [];
 
 try {
-    $result = AiEngine::chat($pdo, $shopId, $message, $languageHint);
+    $result = AiEngine::chat($pdo, $shopId, $message, $languageHint, $history);
 
     echo json_encode([
         "status" => true,
@@ -73,7 +74,7 @@ try {
     }
 
     // Never return HTTP 500 for AI chat - serve fallback
-    $fallback = AiEngine::executeRuleBasedFallback($pdo, $shopId, $message);
+    $fallback = AiEngine::executeRuleBasedFallback($pdo, $shopId, $message, $history, $languageHint);
     echo json_encode([
         "status" => true,
         "message" => "Success",

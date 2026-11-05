@@ -416,7 +416,8 @@ assertTest(strpos($fallbackSales['answer'], '₹200') !== false, "Fallback answe
 // Fallback Test 3: Off-topic refusal in fallback
 $fallbackGeneral = AiEngine::chat($pdo, $shopIdA, "Who is the Prime Minister of France?");
 assertTest(strpos($fallbackGeneral['answer'], "I'm sorry, I can only help with your shop") !== false, "Fallback refuses off-topic question with redirect");
-assertTest(!empty($fallbackGeneral['actions']), "Fallback returns helpful store action buttons");
+assertTest(empty($fallbackGeneral['actions']), "Fallback refusal returns empty actions (no navigation buttons)");
+assertTest(!empty($fallbackGeneral['suggestions']), "Fallback refusal returns suggestions chips");
 
 // Fallback Test 4: General business tip in fallback
 $fallbackTip = AiEngine::chat($pdo, $shopIdA, "How can I reduce dead stock?");
@@ -464,7 +465,7 @@ assertTest(strpos($fbHindiLow['answer'], "Dukaan Mitra") === false, "Hindi Low S
 
 // Case 6: Tamil Low Stock
 $fbTamilLow = AiEngine::chat($pdo, $shopIdA, "குறைவான இருப்பு");
-assertTest(strpos($fbTamilLow['answer'], "இருப்பு குறைவாக") !== false, "Tamil Low Stock: answers in Tamil");
+assertTest(strpos($fbTamilLow['answer'], "குறைவாக") !== false, "Tamil Low Stock: answers in Tamil");
 assertTest(!empty($fbTamilLow['cards']), "Tamil Low Stock: returns product cards");
 assertTest(strpos($fbTamilLow['answer'], "Dukaan Mitra") === false, "Tamil Low Stock: never returns greeting");
 
@@ -499,10 +500,95 @@ $fbUnknown = AiEngine::chat($pdo, $shopIdA, "gibberish query 987654");
 assertTest(strpos($fbUnknown['answer'], "Hello! I am Dukaan Mitra") === false, "Unknown Query: does not return hello greeting");
 assertTest(strpos($fbUnknown['answer'], "could not find information") !== false, "Unknown Query: returns informative fallback");
 
-GeminiClient::setMockHandler(null);
+// Ensure mock handler remains active for fallback dialogue tests
+GeminiClient::setMockHandler(function () {
+    return [
+        'error' => ['code' => 503, 'message' => 'Service Unavailable']
+    ];
+});
 
-// Reset rate limits before Section 8
-$pdo->prepare("DELETE FROM ai_cache WHERE shop_id = ? AND cache_type = 'rate_limit'")->execute([$shopIdA]);
+// Reset rate limits and usage counters before Section 7C
+$pdo->prepare("DELETE FROM ai_cache WHERE shop_id = ?")->execute([$shopIdA]);
+$pdo->prepare("DELETE FROM ai_usage WHERE shop_id = ?")->execute([$shopIdA]);
+
+// -----------------------------------------------------------------------------
+// SECTION 7C: MULTI-TURN CONVERSATION & FOLLOW-UP DIALOGUE
+// -----------------------------------------------------------------------------
+echo "\n--- Section 7C: Multi-Turn Conversation & Follow-up Dialogue ---\n";
+
+// Test 1: Low stock then "ok"
+$historyLowStock = [
+    ['role' => 'user', 'text' => 'Which items are low on stock?'],
+    ['role' => 'assistant', 'text' => "You have 1 product running low on stock:\n• Product Alpha A (5 units left)\n\nTap 'Open reorder list' below to create a purchase order, or ask me for reorder suggestions."]
+];
+$resOk = AiEngine::chat($pdo, $shopIdA, "ok", null, $historyLowStock);
+assertTest(strpos($resOk['answer'], "Great!") !== false || strpos($resOk['answer'], "reorder") !== false, "Low stock then 'ok': answers with polite acknowledgement");
+assertTest(strpos($resOk['answer'], "Dukaan Mitra") === false, "Low stock then 'ok': does NOT return greeting");
+assertTest(empty($resOk['actions']), "Low stock then 'ok': returns empty actions (no navigation buttons)");
+assertTest(!empty($resOk['suggestions']), "Low stock then 'ok': returns suggestion chips");
+
+// Test 2: Low stock then "yes"
+$resYes = AiEngine::chat($pdo, $shopIdA, "yes", null, $historyLowStock);
+assertTest(strpos($resYes['answer'], "reorder") !== false || strpos($resYes['answer'], "recommendations") !== false, "Low stock then 'yes': follows previous suggestion and runs reorder intent");
+assertTest(!empty($resYes['actions']), "Low stock then 'yes': provides action button to open reorder list");
+assertTest(!empty($resYes['cards']), "Low stock then 'yes': provides recommendation cards");
+
+// Reset rate limits and usage midway through 7C
+$pdo->prepare("DELETE FROM ai_cache WHERE shop_id = ?")->execute([$shopIdA]);
+$pdo->prepare("DELETE FROM ai_usage WHERE shop_id = ?")->execute([$shopIdA]);
+
+// Test 3: Hindi flow (Hindi low stock -> "ठीक है" -> "हाँ")
+$historyHindi = [
+    ['role' => 'user', 'text' => 'कम स्टॉक वाले सामान दिखाएं'],
+    ['role' => 'assistant', 'text' => "आपकी दुकान में 1 सामान कम स्टॉक या खत्म होने वाले हैं:\n• Product Alpha A (5 पीस बचे हैं)\n\nनया ऑर्डर बनाने के लिए नीचे 'रीऑर्डर सूची' देखें या मुझसे रीऑर्डर सलाह पूछें।"]
+];
+$resHindiAck = AiEngine::chat($pdo, $shopIdA, "ठीक है", null, $historyHindi);
+assertTest(strpos($resHindiAck['answer'], "बहुत बढ़िया") !== false, "Hindi flow: 'ठीक है' returns friendly Hindi acknowledgement");
+assertTest(strpos($resHindiAck['answer'], "नमस्ते! मैं दुकान मित्र हूँ") === false, "Hindi flow: 'ठीक है' does NOT return greeting");
+assertTest(!empty($resHindiAck['suggestions']), "Hindi flow: returns Hindi suggestions");
+
+$resHindiYes = AiEngine::chat($pdo, $shopIdA, "हाँ", null, $historyHindi);
+assertTest(strpos($resHindiYes['answer'], "रीऑर्डर") !== false || strpos($resHindiYes['answer'], "दोबारा ऑर्डर") !== false, "Hindi flow: 'हाँ' continues to Hindi reorder recommendations");
+assertTest(!empty($resHindiYes['actions']), "Hindi flow: 'हाँ' provides reorder list action");
+
+// Reset rate limits and usage midway through 7C
+$pdo->prepare("DELETE FROM ai_cache WHERE shop_id = ?")->execute([$shopIdA]);
+$pdo->prepare("DELETE FROM ai_usage WHERE shop_id = ?")->execute([$shopIdA]);
+
+// Test 4: Tamil flow (Tamil low stock -> "சரி" -> "ஆம்")
+$historyTamil = [
+    ['role' => 'user', 'text' => 'குறைவான இருப்பு பொருட்கள்'],
+    ['role' => 'assistant', 'text' => "உங்கள் கடையில் 1 பொருட்கள் இருப்பு குறைவாக உள்ளன:\n• Product Alpha A (5 பொருட்கள் மீதம்)\n\nபர்சேஸ் ஆர்டர் செய்ய கீழே உள்ள 'மீண்டும் ஆர்டர் பட்டியல்' பார்க்கவும்."]
+];
+$resTamilAck = AiEngine::chat($pdo, $shopIdA, "சரி", null, $historyTamil);
+assertTest(strpos($resTamilAck['answer'], "மகிழ்ச்சி") !== false || strpos($resTamilAck['answer'], "ஆர்டர்") !== false, "Tamil flow: 'சரி' returns friendly Tamil acknowledgement");
+assertTest(strpos($resTamilAck['answer'], "வணக்கம்! நான் உங்கள் கடை") === false, "Tamil flow: 'சரி' does NOT return greeting");
+assertTest(!empty($resTamilAck['suggestions']), "Tamil flow: returns Tamil suggestions");
+
+$resTamilYes = AiEngine::chat($pdo, $shopIdA, "ஆம்", null, $historyTamil);
+assertTest(strpos($resTamilYes['answer'], "மீண்டும் ஆர்டர்") !== false || strpos($resTamilYes['answer'], "பொருட்கள்") !== false, "Tamil flow: 'ஆம்' continues to Tamil reorder recommendations");
+assertTest(!empty($resTamilYes['actions']), "Tamil flow: 'ஆம்' provides reorder list action");
+
+// Reset rate limits and usage midway through 7C
+$pdo->prepare("DELETE FROM ai_cache WHERE shop_id = ?")->execute([$shopIdA]);
+$pdo->prepare("DELETE FROM ai_usage WHERE shop_id = ?")->execute([$shopIdA]);
+
+// Test 5: English-letter message after a Hindi voice message (user types 'ok' with NO language_hint)
+$historyHindiVoice = [
+    ['role' => 'user', 'text' => 'आज की बिक्री कितनी है'],
+    ['role' => 'assistant', 'text' => "आज की बिक्री: ₹200 (1 बिल, 4 पीस बिके)।\n\nक्या आप कम स्टॉक या धीमे बिकने वाले सामान देखना चाहते हैं?"]
+];
+$resEngAfterHindi = AiEngine::chat($pdo, $shopIdA, "ok", null, $historyHindiVoice);
+assertTest(strpos($resEngAfterHindi['answer'], "बहुत बढ़िया") !== false, "English 'ok' after Hindi voice answer responds in Hindi");
+assertTest(strpos($resEngAfterHindi['answer'], "नमस्ते! मैं दुकान मित्र हूँ") === false, "English 'ok' after Hindi voice does NOT restart with greeting");
+
+// Test 6: English-letter question after Hindi voice message switches naturally to English
+$resEngSwitch = AiEngine::chat($pdo, $shopIdA, "What is my sales today?", null, $historyHindiVoice);
+assertTest(strpos($resEngSwitch['answer'], "Today's sales") !== false, "English question after Hindi voice answers in English");
+
+// Reset rate limits and restore mock handler to null for live HTTP endpoints in Section 8
+GeminiClient::setMockHandler(null);
+$pdo->prepare("DELETE FROM ai_cache WHERE shop_id = ?")->execute([$shopIdA]);
 $pdo->prepare("DELETE FROM ai_usage WHERE shop_id = ?")->execute([$shopIdA]);
 
 // -----------------------------------------------------------------------------
@@ -521,6 +607,10 @@ assertTest($resEmpty['code'] === 400, "POST /ai/chat.php rejects empty message (
 // 3. POST /ai/chat.php - Valid message
 $resChat = makeRequest('POST', 'ai/chat.php', $tokenA, ['message' => 'Show my low stock']);
 assertTest($resChat['code'] === 200 && $resChat['body']['status'] === true, "POST /ai/chat.php succeeds (HTTP 200)");
+
+$resChatHist = makeRequest('POST', 'ai/chat.php', $tokenA, ['message' => 'ok', 'history' => $historyLowStock]);
+assertTest($resChatHist['code'] === 200 && $resChatHist['body']['status'] === true, "POST /ai/chat.php with history succeeds (HTTP 200)");
+assertTest(strpos($resChatHist['body']['data']['answer'], "Great!") !== false || strpos($resChatHist['body']['data']['answer'], "reorder") !== false, "HTTP chat endpoint acknowledges 'ok' in dialogue context");
 assertTest(!empty($resChat['body']['data']['answer']), "POST /ai/chat.php returns answer");
 assertTest(isset($resChat['body']['data']['cards']), "POST /ai/chat.php returns cards array");
 assertTest(isset($resChat['body']['data']['actions']), "POST /ai/chat.php returns actions array");

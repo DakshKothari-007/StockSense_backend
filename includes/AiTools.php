@@ -231,9 +231,9 @@ class AiTools {
 
         $actions = [];
         if (count($items) === 1) {
-            $actions[] = ['label' => 'View Product Detail', 'target' => 'product_detail', 'product_id' => $items[0]['product_id']];
+            $actions[] = ['label' => 'View product detail', 'target' => 'product_detail', 'product_id' => $items[0]['product_id']];
         } else {
-            $actions[] = ['label' => 'View in Inventory', 'target' => 'inventory'];
+            $actions[] = ['label' => 'View inventory', 'target' => 'inventory'];
         }
 
         return [
@@ -243,7 +243,10 @@ class AiTools {
                 'products' => $items
             ],
             'cards' => $cards,
-            'actions' => $actions
+            'actions' => $actions,
+            'suggestions' => [
+                ['label' => 'Check low stock', 'message' => 'Which items are low on stock?']
+            ]
         ];
     }
 
@@ -302,8 +305,12 @@ class AiTools {
             ],
             'cards' => $cards,
             'actions' => [
-                ['label' => 'Open Reorder List', 'target' => 'reorder'],
-                ['label' => 'View Inventory', 'target' => 'inventory']
+                ['label' => 'Open reorder list', 'target' => 'reorder'],
+                ['label' => 'View inventory', 'target' => 'inventory']
+            ],
+            'suggestions' => [
+                ['label' => 'What should I reorder?', 'message' => 'What should I reorder this week?'],
+                ['label' => 'How much did I sell today?', 'message' => 'How much did I sell today?']
             ]
         ];
     }
@@ -428,8 +435,11 @@ class AiTools {
             ],
             'cards' => $cards,
             'actions' => [
-                ['label' => 'Open Reorder Screen', 'target' => 'reorder'],
-                ['label' => 'View Purchase Orders', 'target' => 'purchase_orders']
+                ['label' => 'Open reorder list', 'target' => 'reorder'],
+                ['label' => 'View purchase orders', 'target' => 'purchase_orders']
+            ],
+            'suggestions' => [
+                ['label' => 'Check low stock', 'message' => 'Which items are low on stock?']
             ]
         ];
     }
@@ -494,7 +504,11 @@ class AiTools {
             ],
             'cards' => [],
             'actions' => [
-                ['label' => 'View Sales Analytics', 'target' => 'sales_analytics']
+                ['label' => 'View sales report', 'target' => 'sales']
+            ],
+            'suggestions' => [
+                ['label' => 'Check low stock', 'message' => 'Which items are low on stock?'],
+                ['label' => 'Top sellers', 'message' => 'What are my top selling products?']
             ]
         ];
     }
@@ -572,7 +586,10 @@ class AiTools {
             ],
             'cards' => $cards,
             'actions' => [
-                ['label' => 'View Sales Analytics', 'target' => 'sales_analytics']
+                ['label' => 'View sales report', 'target' => 'sales']
+            ],
+            'suggestions' => [
+                ['label' => 'Check low stock', 'message' => 'Which items are low on stock?']
             ]
         ];
     }
@@ -655,7 +672,10 @@ class AiTools {
             ],
             'cards' => $cards,
             'actions' => [
-                ['label' => 'View Slow Moving Products', 'target' => 'slow_moving']
+                ['label' => 'View inventory', 'target' => 'inventory']
+            ],
+            'suggestions' => [
+                ['label' => 'How to reduce dead stock?', 'message' => 'How can I reduce dead stock?']
             ]
         ];
     }
@@ -710,7 +730,10 @@ class AiTools {
             ],
             'cards' => [],
             'actions' => [
-                ['label' => 'Open Purchase Orders', 'target' => 'purchase_orders']
+                ['label' => 'Open purchase orders', 'target' => 'purchase_orders']
+            ],
+            'suggestions' => [
+                ['label' => 'What to reorder?', 'message' => 'What should I reorder this week?']
             ]
         ];
     }
@@ -816,7 +839,10 @@ class AiTools {
             ],
             'cards' => [$card],
             'actions' => [
-                ['label' => 'View Product Detail', 'target' => 'product_detail', 'product_id' => $pid]
+                ['label' => 'View product detail', 'target' => 'product_detail', 'product_id' => $pid]
+            ],
+            'suggestions' => [
+                ['label' => 'Check low stock', 'message' => 'Which items are low on stock?']
             ]
         ];
     }

@@ -1326,30 +1326,50 @@ Dukaan Mitra is the app's built-in intelligent AI assistant for shop owners. It 
   - **Length**: 2 to 5 short lines, concise and easy to read on mobile.
   - **Language**: Responds naturally in the language or dialect used by the shop owner (English, Tamil, Hindi, Tanglish, Hinglish).
   - **Numbers & Currency**: Formats currency with the rupee symbol and Indian numbering system (e.g., `₹1,500`, `₹1.5L`).
-  - **Call to Action**: Concludes with one clear, relevant next step or action whenever appropriate.
+  - **Structured Written Text**:
+    - *Low Stock*: Exact count of low/out of stock products, names with units left for top 3–5 items, followed by a next-step suggestion.
+    - *Sales*: Total revenue (₹), bill count, total units sold, top selling product with units, followed by a next-step suggestion.
+    - *Reorder*: Count of recommended products, names with recommended order quantities for top 3–5 items, followed by next-step advice.
+    - *Slow Moving*: Count of slow-moving products, names with units in stock and cover days for top 3–5 items, followed by actionable advice.
+  - **Actions vs. Suggestions**:
+    - **`actions`**: Array of `[{"label": "...", "target": "...", "product_id"?: int}]`. Returned ONLY when a real answer provides a direct screen navigation shortcut (e.g., `"reorder"`, `"inventory"`, `"sales"`). Default greetings, refusals, and general advice return empty `actions: []`.
+    - **`suggestions`**: Array of `[{"label": "...", "message": "..."}]`. Returned for greetings, refusals, advice, and conversation follow-ups. The mobile app renders these as clickable suggestion chips that post a normal chat message (e.g. `"How much did I sell today?"`) instead of navigating.
 
 #### 11.1 Chat Query
 - **Method & Path**: `POST /ai/chat.php`
 - **Token Required**: Yes (`Authorization: Bearer <token>`)
 - **Headers**: `Content-Type: application/json`
 - **Rate Limits**: 100 questions per day per shop; 15 questions per minute per shop (`HTTP 429` on exceed).
-- **Caching**: 5-minute cache for identical queries (`chat_{hash}`).
+- **Caching**: 5-minute cache for identical queries (`chat_{hash}` taking query, history context, and language into account).
 - **Input Sanitization**: Truncated to 500 characters, control characters stripped.
 - **Request Body**:
   ```json
   {
-    "message": "What products are running low on stock?",
-    "language_hint": "English"
+    "message": "Which items are low on stock?",
+    "language_hint": "English",
+    "history": [
+      {
+        "role": "user",
+        "text": "What are my top selling products?"
+      },
+      {
+        "role": "assistant",
+        "text": "Your top sellers are Product Alpha A (20 units) and Product Beta B (15 units)."
+      }
+    ]
   }
   ```
-  *(Note: `language_hint` is optional. Dukaan Mitra automatically responds in the user's input language, including Tamil, Hindi, Tanglish, Hinglish, etc.).*
+  *(Notes:*
+  - *`language_hint` is optional and only provided by the mobile app for messages originating from the voice sheet.*
+  - *`history` is optional (max 6 items, roles `"user"` or `"assistant"`, text up to 300 chars, no cards). Passed to Gemini and rule-based fallback for conversation continuity.*
+  - *Small-talk & Follow-ups: Acknowledgements (e.g., `"ok"`, `"thanks"`, `"theek hai"`, `"சரி"`) reply with a polite line in the conversation language and suggestion chips without restarting with a greeting. Affirmations (`"yes"`, `"haan"`, `"ஆம்"`) carry forward the previous assistant answer's suggestion, e.g. opening reorders).*
 - **Success Response (`200 OK`)**:
   ```json
   {
     "status": true,
     "message": "Success",
     "data": {
-      "answer": "You have 2 products running low on stock. Product Alpha A is down to 5 units. Consider placing a reorder soon.",
+      "answer": "You have 2 products running low on stock:\n• Product Alpha A (5 units left)\n• Product Beta B (3 units left)\n\nTap 'Open reorder list' below to create a purchase order, or ask me for reorder suggestions.",
       "cards": [
         {
           "product_id": 14,
@@ -1364,12 +1384,22 @@ Dukaan Mitra is the app's built-in intelligent AI assistant for shop owners. It 
       ],
       "actions": [
         {
-          "label": "Open Reorder List",
+          "label": "Open reorder list",
           "target": "reorder"
         },
         {
-          "label": "View Inventory",
+          "label": "View inventory",
           "target": "inventory"
+        }
+      ],
+      "suggestions": [
+        {
+          "label": "What should I reorder?",
+          "message": "What should I reorder this week?"
+        },
+        {
+          "label": "Today's sales",
+          "message": "How much did I sell today?"
         }
       ]
     }
