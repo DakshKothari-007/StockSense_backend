@@ -11,8 +11,8 @@ return [
     // Gemini API key JSON file path (located outside htdocs)
     'key_file_path' => 'C:\\xampp\\StockSense_private\\gemini.json',
 
-    // Default Gemini Flash model (configurable, e.g. gemini-2.5-flash)
-    'model' => 'gemini-2.5-flash',
+    // Default Gemini Flash model (gemini-3.5-flash)
+    'model' => 'gemini-3.5-flash',
 
     // Public assistant identity (shown to users as the app's own AI)
     'assistant_name' => 'Dukaan Mitra',

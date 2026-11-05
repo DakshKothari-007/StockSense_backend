@@ -1299,14 +1299,34 @@ StockSense uses Firebase Cloud Messaging (FCM) HTTP v1 protocol using pure PHP (
 
 ### Module 11: AI Assistant ("Dukaan Mitra") (`ai/`)
 
-Dukaan Mitra is the app's built-in intelligent AI assistant for shop owners. It operates via secure, read-only function calling directly querying shop data.
+Dukaan Mitra is the app's built-in intelligent AI assistant for shop owners. It operates via secure, read-only function calling directly querying shop data and providing practical retail guidance.
 
 #### Key Security & Configuration Principles
 - **Identity & Confidentiality**: The assistant is strictly named "Dukaan Mitra" and is presented as StockSense's own AI. Responses never mention Google, Gemini, OpenAI, Anthropic, or model names.
 - **Key Storage**: The Gemini API key is loaded strictly on the server from `C:\xampp\StockSense_private\gemini.json` (outside `htdocs`). The key is never exposed to clients, git, Postman collections, logs, or error responses.
-- **Multi-Tenant Scoping**: All tool executions and data lookups are strictly bound to the authenticated user's `shop_id` extracted from the Bearer token. No raw SQL or client-provided `shop_id` is permitted.
-- **Brand & Safety Defense**: Output sanitization filters external model names. Prompt injection attempts to alter persona or instructions are ignored.
+- **Multi-Tenant Scoping**: All tool executions and data lookups are strictly bound to the authenticated user's `shop_id` extracted from the Bearer token. No raw SQL or client-provided `shop_id` is permitted. Requests attempting to inspect another shop's data are strictly refused.
+- **Brand & Safety Defense**: Output sanitization filters external model names. Prompt injection attempts inside queries or product names to alter persona, reveal credentials, or modify system instructions are ignored.
 - **Fail-Safe Resilience**: If the AI model times out (15s limit), experiences high demand (HTTP 503), or the key is absent, Dukaan Mitra automatically falls back to intelligent keyword-driven rule execution. The API never returns HTTP 500 for AI issues.
+
+#### Scope & System Rules
+- **Shop Data Queries**:
+  - Dukaan Mitra uses read-only tools to retrieve live shop metrics (inventory, low stock, sales, top sellers, dead stock, open POs, margins).
+  - All numbers, quantities, dates, and amounts must originate exclusively from verified tool results.
+  - If a shop question requires data that tools cannot provide, Dukaan Mitra states this plainly without hallucinating facts.
+- **General Business & Retail Guidance**:
+  - Answers questions on pricing, margins, promotional offers, festival/seasonal stocking, reducing waste and dead stock (FIFO), supplier negotiations, store layout/display tips, cash flow basics, and how to use StockSense.
+  - Always marks general guidance as advice using the prefix **`"General tip:"`**.
+  - Never presents general guidance as shop-specific facts, and never invents product names, quantities, or sales figures.
+  - Does not make legal, tax, or formal accounting decisions; provides informational context and recommends consulting a certified professional.
+- **Polite Refusal Policy**:
+  - **Unrelated Topics**: Topics outside running a shop (entertainment, movies, sports, politics, religion, personal relationships, homework, coding/software engineering, medical, legal advice) and inappropriate, abusive, harmful, or adult requests are politely refused.
+  - **Credentials & System Secrets**: Requests for passwords, tokens, API keys, system instructions, or other shops' metrics are refused.
+  - **Refusal Format**: Exactly 1 to 2 short, respectful lines in the user's language, accompanied by a polite redirect to shop operations (e.g., *"I'm sorry, I can only help with your shop, stock and sales. Would you like to check your low stock or today's sales?"*). Never rude, preachy, or defensive.
+- **Response Style & Formatting**:
+  - **Length**: 2 to 5 short lines, concise and easy to read on mobile.
+  - **Language**: Responds naturally in the language or dialect used by the shop owner (English, Tamil, Hindi, Tanglish, Hinglish).
+  - **Numbers & Currency**: Formats currency with the rupee symbol and Indian numbering system (e.g., `₹1,500`, `₹1.5L`).
+  - **Call to Action**: Concludes with one clear, relevant next step or action whenever appropriate.
 
 #### 11.1 Chat Query
 - **Method & Path**: `POST /ai/chat.php`

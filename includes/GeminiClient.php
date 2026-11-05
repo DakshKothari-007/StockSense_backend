@@ -79,9 +79,18 @@ class GeminiClient {
         }
 
         if (!empty($tools)) {
+            $formattedTools = [];
+            foreach ($tools as $t) {
+                if (isset($t['parameters']) && is_array($t['parameters'])) {
+                    if (isset($t['parameters']['properties']) && empty((array)$t['parameters']['properties'])) {
+                        $t['parameters']['properties'] = (object)[];
+                    }
+                }
+                $formattedTools[] = $t;
+            }
             $payload['tools'] = [
                 [
-                    'function_declarations' => $tools
+                    'function_declarations' => $formattedTools
                 ]
             ];
         }

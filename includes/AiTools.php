@@ -37,7 +37,7 @@ class AiTools {
                 'description' => 'List all active products in the shop that are currently running low on stock (at or below minimum threshold) or completely out of stock.',
                 'parameters' => [
                     'type' => 'OBJECT',
-                    'properties' => []
+                    'properties' => (object)[]
                 ]
             ],
             [
@@ -45,7 +45,7 @@ class AiTools {
                 'description' => 'Get intelligent purchase reorder recommendations calculated using sales velocity, lead time, safety buffer, and pending purchase orders.',
                 'parameters' => [
                     'type' => 'OBJECT',
-                    'properties' => []
+                    'properties' => (object)[]
                 ]
             ],
             [
@@ -83,7 +83,7 @@ class AiTools {
                 'description' => 'List products with slow sales velocity and high stock cover days that tie up shop capital, along with suggested clearance actions.',
                 'parameters' => [
                     'type' => 'OBJECT',
-                    'properties' => []
+                    'properties' => (object)[]
                 ]
             ],
             [
@@ -91,7 +91,7 @@ class AiTools {
                 'description' => 'List currently open / pending purchase orders that have been placed with suppliers but not yet received.',
                 'parameters' => [
                     'type' => 'OBJECT',
-                    'properties' => []
+                    'properties' => (object)[]
                 ]
             ],
             [
@@ -526,7 +526,7 @@ class AiTools {
                 p.price,
                 p.min_stock_threshold,
                 COALESCE(SUM(si.quantity), 0) AS units_sold,
-                COALESCE(SUM(si.total_price), 0) AS revenue
+                COALESCE(SUM(si.line_total), 0) AS revenue
             FROM sales_items si
             JOIN sales s ON si.sale_id = s.id
             JOIN products p ON si.product_id = p.id
@@ -567,7 +567,8 @@ class AiTools {
             'result' => [
                 'period' => $period,
                 'count' => count($items),
-                'top_products' => $items
+                'top_products' => $items,
+                'products' => $items
             ],
             'cards' => $cards,
             'actions' => [
@@ -666,7 +667,7 @@ class AiTools {
         $stmt = $pdo->prepare("
             SELECT po.id, po.order_no, po.status, po.created_at,
                    COALESCE(SUM(poi.quantity), 0) AS total_units,
-                   COALESCE(SUM(poi.total_cost), 0) AS estimated_total
+                   COALESCE(SUM(poi.line_estimated_cost), 0) AS estimated_total
             FROM purchase_orders po
             LEFT JOIN purchase_order_items poi ON po.id = poi.purchase_order_id
             WHERE po.shop_owner_id = ? AND po.status = 'placed'
@@ -703,6 +704,7 @@ class AiTools {
 
         return [
             'result' => [
+                'count' => count($results),
                 'open_orders_count' => count($results),
                 'orders' => $results
             ],
@@ -819,7 +821,7 @@ class AiTools {
         ];
     }
 
-    private static function getAvgDailySales(PDO $pdo, int $shopId, int $productId): float {
+    public static function getAvgDailySales(PDO $pdo, int $shopId, int $productId): float {
         $stmt = $pdo->prepare("
             SELECT COALESCE(SUM(si.quantity), 0)
             FROM sales_items si
