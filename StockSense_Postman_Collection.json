@@ -2395,6 +2395,102 @@
                     "response": []
                 }
             ]
+        },
+        {
+            "name": "11. AI Assistant (Dukaan Mitra)",
+            "item": [
+                {
+                    "name": "Chat with Dukaan Mitra",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{auth_token}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"message\": \"What products are running low on stock?\",\n  \"language_hint\": \"English\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/ai/chat.php",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "ai",
+                                "chat.php"
+                            ]
+                        },
+                        "description": "Interactive chat query to Dukaan Mitra with read-only shop function calling."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Explain Product Recommendation / Insight",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{auth_token}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"type\": \"reorder\",\n  \"product_id\": 1\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/ai/explain.php",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "ai",
+                                "explain.php"
+                            ]
+                        },
+                        "description": "Generates natural explanations for reorders, slow-moving items, or product pairs."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get Daily AI Summary",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{auth_token}}",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/ai/daily_summary.php",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "ai",
+                                "daily_summary.php"
+                            ]
+                        },
+                        "description": "Returns 2 concise lines summarizing yesterday's sales performance and today's stock."
+                    },
+                    "response": []
+                }
+            ]
         }
     ]
 }

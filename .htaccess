@@ -28,7 +28,7 @@ SetEnvIf Authorization "(.*)" HTTP_AUTHORIZATION=$1
 </IfModule>
 
 # Block access to test scripts, check scripts, scratch files, schemas, and docs from the browser
-<FilesMatch "^(test_.*\.php|send_test_push\.php|check_.*\.php|reproduce_.*\.php|desc_.*\.php|seed_.*\.php|temp_.*\.php|.*\.sql|.*\.md|.*\.json|.*\.csv|.*\.xlsx|.*\.bat)$">
+<FilesMatch "^(test_.*\.php|send_test_push\.php|send_test_ai\.php|check_.*\.php|reproduce_.*\.php|desc_.*\.php|seed_.*\.php|temp_.*\.php|.*\.sql|.*\.md|.*\.json|.*\.csv|.*\.xlsx|.*\.bat)$">
     Require all denied
 </FilesMatch>
 

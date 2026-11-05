@@ -1295,4 +1295,116 @@ StockSense uses Firebase Cloud Messaging (FCM) HTTP v1 protocol using pure PHP (
 - **Number Formatting**:
   - Currency values are formatted using Indian number grouping (e.g., `₹1,480`, `₹1,20,500`, `₹1,00,00,000`).
 
+---
+
+### Module 11: AI Assistant ("Dukaan Mitra") (`ai/`)
+
+Dukaan Mitra is the app's built-in intelligent AI assistant for shop owners. It operates via secure, read-only function calling directly querying shop data.
+
+#### Key Security & Configuration Principles
+- **Identity & Confidentiality**: The assistant is strictly named "Dukaan Mitra" and is presented as StockSense's own AI. Responses never mention Google, Gemini, OpenAI, Anthropic, or model names.
+- **Key Storage**: The Gemini API key is loaded strictly on the server from `C:\xampp\StockSense_private\gemini.json` (outside `htdocs`). The key is never exposed to clients, git, Postman collections, logs, or error responses.
+- **Multi-Tenant Scoping**: All tool executions and data lookups are strictly bound to the authenticated user's `shop_id` extracted from the Bearer token. No raw SQL or client-provided `shop_id` is permitted.
+- **Brand & Safety Defense**: Output sanitization filters external model names. Prompt injection attempts to alter persona or instructions are ignored.
+- **Fail-Safe Resilience**: If the AI model times out (15s limit), experiences high demand (HTTP 503), or the key is absent, Dukaan Mitra automatically falls back to intelligent keyword-driven rule execution. The API never returns HTTP 500 for AI issues.
+
+#### 11.1 Chat Query
+- **Method & Path**: `POST /ai/chat.php`
+- **Token Required**: Yes (`Authorization: Bearer <token>`)
+- **Headers**: `Content-Type: application/json`
+- **Rate Limits**: 100 questions per day per shop; 15 questions per minute per shop (`HTTP 429` on exceed).
+- **Caching**: 5-minute cache for identical queries (`chat_{hash}`).
+- **Input Sanitization**: Truncated to 500 characters, control characters stripped.
+- **Request Body**:
+  ```json
+  {
+    "message": "What products are running low on stock?",
+    "language_hint": "English"
+  }
+  ```
+  *(Note: `language_hint` is optional. Dukaan Mitra automatically responds in the user's input language, including Tamil, Hindi, Tanglish, Hinglish, etc.).*
+- **Success Response (`200 OK`)**:
+  ```json
+  {
+    "status": true,
+    "message": "Success",
+    "data": {
+      "answer": "You have 2 products running low on stock. Product Alpha A is down to 5 units. Consider placing a reorder soon.",
+      "cards": [
+        {
+          "product_id": 14,
+          "name": "Product Alpha A",
+          "sku": "SKU-A-01",
+          "units_left": 5,
+          "avg_daily_sales": 2.5,
+          "status": "Low stock",
+          "price": 50.0,
+          "min_stock": 10
+        }
+      ],
+      "actions": [
+        {
+          "label": "Open Reorder List",
+          "target": "reorder"
+        },
+        {
+          "label": "View Inventory",
+          "target": "inventory"
+        }
+      ]
+    }
+  }
+  ```
+- **Error Responses**:
+  - `400 Bad Request`: Missing `message` or invalid JSON.
+  - `401 Unauthorized`: Missing or invalid Bearer token.
+  - `429 Too Many Requests`: Daily limit (100) or minute limit (15) exceeded.
+
+#### 11.2 Explain Insight / Product Recommendation
+- **Method & Path**: `POST /ai/explain.php`
+- **Token Required**: Yes (`Authorization: Bearer <token>`)
+- **Headers**: `Content-Type: application/json`
+- **Caching**: 24-hour cache per product per day (`explain_{type}_{productId}_{date}`).
+- **Request Body**:
+  ```json
+  {
+    "type": "reorder",
+    "product_id": 14
+  }
+  ```
+  *(Supported `type` values: `"reorder"`, `"slow_moving"`, `"pair"`. Also accepts `"id"` as alias for `"product_id"`).*
+- **Success Response (`200 OK`)**:
+  ```json
+  {
+    "status": true,
+    "message": "Success",
+    "data": {
+      "explanation": "Only 5 units of Product Alpha A remain. At your current sales rate of 2.5 units/day and typical 2-day supplier delivery, stock will be exhausted in 2.0 days. We recommend reordering now."
+    }
+  }
+  ```
+- **Error Responses**:
+  - `400 Bad Request`: Invalid type or missing `product_id`.
+  - `401 Unauthorized`: Missing or invalid token.
+  - `404 Not Found`: Product does not exist or belongs to another shop.
+
+#### 11.3 Daily AI Summary
+- **Method & Path**: `GET /ai/daily_summary.php`
+- **Token Required**: Yes (`Authorization: Bearer <token>`)
+- **Caching**: 24-hour cache per shop per day (`daily_summary_{shopId}_{date}`).
+- **Behavior**: Generates 2 concise lines summarizing yesterday's sales performance and today's stock/reorder priorities.
+- **Success Response (`200 OK`)**:
+  ```json
+  {
+    "status": true,
+    "message": "Success",
+    "data": {
+      "summary": "Yesterday's sales: ₹4,850 across 18 bills (Top seller: Amul Milk - 500 ml with 12 units).\nToday: 3 items are running low on stock. Check Reorder recommendations."
+    }
+  }
+  ```
+- **Error Responses**:
+  - `401 Unauthorized`: Missing or invalid token.
+
+
 
