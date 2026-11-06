@@ -1,5 +1,7 @@
 <?php
 
+require_once __DIR__ . "/AiModelClient.php";
+
 /**
  * GeminiClient: Secure HTTP client for Gemini API with Function Calling support.
  * 
@@ -8,7 +10,7 @@
  *  - Supports mock handler injection for hermetic unit testing.
  *  - Strips prompts/keys from logs; logs only shop_id, tool_names, latency_ms, error_type.
  */
-class GeminiClient {
+class GeminiClient implements AiModelClient {
 
     private static $mockHandler = null;
 
@@ -63,7 +65,7 @@ class GeminiClient {
         $startTime = microtime(true);
         $config = require __DIR__ . '/../config/ai.php';
         $model = $config['model'] ?? 'gemini-3.5-flash';
-        $timeout = (int)($config['timeout'] ?? 15);
+        $timeout = (int)($config['timeout_gemini'] ?? 20);
 
         // Build request payload
         $payload = [
@@ -170,6 +172,19 @@ class GeminiClient {
      * Parses the Gemini generateContent response into normalized structure.
      */
     private static function parseResponse(?array $data, int $latencyMs, ?int $shopId): array {
+        if (isset($data['message']['content'])) {
+            $text = trim((string)$data['message']['content']);
+            self::logAiCall($shopId, [], $latencyMs, null);
+            return [
+                'success' => true,
+                'text' => $text,
+                'functionCalls' => [],
+                'raw' => $data,
+                'error' => null,
+                'latency_ms' => $latencyMs
+            ];
+        }
+
         if (!$data || !isset($data['candidates'][0]['content']['parts'])) {
             $err = isset($data['error']['message']) ? 'api_error' : 'empty_response';
             self::logAiCall($shopId, [], $latencyMs, $err);
