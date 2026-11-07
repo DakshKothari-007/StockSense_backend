@@ -1299,31 +1299,55 @@ StockSense uses Firebase Cloud Messaging (FCM) HTTP v1 protocol using pure PHP (
 
 ### Module 11: AI Assistant ("Dukaan Mitra") (`ai/`)
 
-Dukaan Mitra is the app's built-in intelligent AI assistant for shop owners. It operates via secure, read-only function calling directly querying shop data and providing practical retail guidance.
+Dukaan Mitra is the app's built-in intelligent AI assistant for shop owners. It operates via secure, read-only function calling directly querying shop data and providing practical retail guidance and general assistance.
 
 #### Key Security & Configuration Principles
-- **Identity & Confidentiality**: The assistant is strictly named "Dukaan Mitra" and is presented as StockSense's own AI. Responses never mention Google, Gemini, OpenAI, Anthropic, or model names.
-- **Key Storage**: The Gemini API key is loaded strictly on the server from `C:\xampp\StockSense_private\gemini.json` (outside `htdocs`). The key is never exposed to clients, git, Postman collections, logs, or error responses.
+- **Dual Model Provider Architecture**:
+  - **Primary Provider (`provider = "ollama"`)**: Local **Ollama** server running `qwen2.5:7b` at `http://localhost:11434` with 90-second execution timeout, 8192 context window (`num_ctx = 8192`), and 30-minute memory residency (`keep_alive = "30m"`). Handles shop data, products, business advice, and app help.
+  - **General Knowledge Provider (`general_provider = "gemini"`)**: Google Gemini API (`gemini-3.5-flash`, timeout 20s). Handles non-shop general knowledge inquiries (science, history, sports, cooking, math, health basics, coding, jokes, current topics).
+  - **Automated Failover**: If the selected provider fails, times out, or returns empty/garbled output, Dukaan Mitra retries once with the alternate provider. If both fail, it returns a friendly trouble message (`"I'm having a little trouble right now. Please try again in a moment."`) along with helpful suggestion chips.
+  - **Cloud Privacy (`allow_cloud_for_shop_data = false`)**: Cloud provider (Gemini) never receives tool results, tool declarations, shop names, product names, sales numbers, or inventory counts. For general questions, Gemini receives only the user's current message and chat history with all shop data terms and numbers stripped.
+- **Latency & Speedup Architecture**:
+  - **Fast Path (Instant / ~1–30 ms)**: Greetings and name introductions ("hi I am <name>", "namaste", "vanakkam"), acknowledgements (`ok`, `thanks`, `got it`, `ठीक है`, `சரி`), negations (`no`, `nahi`, `illai`), and security refusals (passwords, tokens, prompt injection) are intercepted immediately by the rule engine across all languages without invoking model daemons.
+  - **Direct Data Path (Instant / ~25–45 ms)**: Clear shop-wide inventory and sales inquiries (low stock, sales today/week/month, reorder recommendations, slow-moving items, top sellers, open purchase orders in English, Hindi, Tamil, Hinglish, Tanglish) run the appropriate backend tool directly and format the response using verified templates. Zero model latency and 100% database grounding.
+  - **Selective Tool Provisioning**: When the model is invoked, only the tools strictly required for that query category are declared to the model (e.g. `[]` for general and advice questions, `get_product_stock` + `get_product_info` for product lookups). This minimizes prompt tokens and grammar evaluation overhead.
+- **Identity & Confidentiality**: The assistant is strictly named "Dukaan Mitra" ("Your shop assistant") and is presented as StockSense's own AI. Responses never mention Ollama, Qwen, Google, Gemini, OpenAI, Anthropic, or model names.
+- **Local Model Hardening**:
+  - **Strict Tool Call Validation**: Every model tool invocation is whitelisted against allowed tools (`get_product_stock`, `list_low_stock`, `get_reorder_recommendations`, `get_sales_summary`, `top_selling_products`, `get_slow_moving_products`, `list_open_purchase_orders`, `get_product_info`, `get_shop_profile`, `get_shop_settings`, `get_product_price_and_margin`, `get_category_stock_totals`, `lowest_selling_products`, `get_dead_stock`, `get_purchase_order_status`, `get_import_history`, `get_out_of_stock_products`, `get_total_inventory_count`) and parameters validated against schemas. Unknown or malformed calls are discarded.
+  - **Data Grounding Enforcement**: Numbers in answers must come strictly from verified tool results. If a model generates text for a shop data question without calling tools, the answer is discarded and regenerated from database-backed templates.
+  - **Language & Script Validation**: For Hindi and Tamil queries, model outputs are verified against expected Devanagari/Tamil scripts and checked for garbled characters. Ungrounded or wrong-script outputs fall back to localized templates.
+  - **Concise Length**: Outputs are bounded to 2 to 6 lines maximum.
+- **Key Storage (Gemini Mode Only)**: When Gemini is enabled, the API key is loaded strictly on the server from `C:\xampp\StockSense_private\gemini.json` (outside `htdocs`). The key is never exposed to clients, git, Postman collections, logs, or error responses.
 - **Multi-Tenant Scoping**: All tool executions and data lookups are strictly bound to the authenticated user's `shop_id` extracted from the Bearer token. No raw SQL or client-provided `shop_id` is permitted. Requests attempting to inspect another shop's data are strictly refused.
-- **Brand & Safety Defense**: Output sanitization filters external model names. Prompt injection attempts inside queries or product names to alter persona, reveal credentials, or modify system instructions are ignored.
-- **Fail-Safe Resilience**: If the AI model times out (15s limit), experiences high demand (HTTP 503), or the key is absent, Dukaan Mitra automatically falls back to intelligent keyword-driven rule execution. The API never returns HTTP 500 for AI issues.
+- **Brand & Safety Defense**: Output sanitization filters external model names (Ollama, Qwen, Gemini, OpenAI, Claude, etc.). Prompt injection attempts inside queries or product names to alter persona, reveal credentials, or modify system instructions are safely neutralized.
+- **Fail-Safe Resilience**: If the AI model times out (90s limit for Ollama, 20s for Gemini), experiences connection failure, or the service is offline, Dukaan Mitra automatically falls back to intelligent keyword-driven rule execution. The API never returns HTTP 500 for AI issues.
 
 #### Scope & System Rules
 - **Shop Data Queries**:
   - Dukaan Mitra uses read-only tools to retrieve live shop metrics (inventory, low stock, sales, top sellers, dead stock, open POs, margins).
   - All numbers, quantities, dates, and amounts must originate exclusively from verified tool results.
   - If a shop question requires data that tools cannot provide, Dukaan Mitra states this plainly without hallucinating facts.
+- **Wide Assistant Scope & General Knowledge**:
+  - Answers ANY question helpfully, including general knowledge (science, history, sports, cooking recipes, math calculations, health basics, coding, jokes, current topics).
+  - Topics are never refused simply because they are unrelated to running the shop.
+- **Live / Recent Information Disclaimer**:
+  - For live or recent information (live cricket scores, current weather, breaking news, stock tickers), states plainly that it cannot check live information and shares what it knows without pretending to have real-time access.
+- **Professional Advice Disclaimer**:
+  - For medical, legal, tax, or financial decisions, provides general context and gently recommends consulting a certified professional (such as a doctor, lawyer, or chartered accountant).
 - **General Business & Retail Guidance**:
-  - Answers questions on pricing, margins, promotional offers, festival/seasonal stocking, reducing waste and dead stock (FIFO), supplier negotiations, store layout/display tips, cash flow basics, and how to use StockSense.
+  - Answers questions on competing with nearby shops and supermarkets, attracting and retaining customers, customer loyalty programs, pricing strategies against competitors, profit margins, promotional offers, festival/seasonal stocking, reducing waste and dead stock (FIFO), supplier negotiations, store layout/display tips, cash flow basics, and how to use StockSense.
+  - Merely discussing competitors, rivals, nearby supermarkets, or other stores in business strategy questions is fully supported and answered.
   - Always marks general guidance as advice using the prefix **`"General tip:"`**.
-  - Never presents general guidance as shop-specific facts, and never invents product names, quantities, or sales figures.
-  - Does not make legal, tax, or formal accounting decisions; provides informational context and recommends consulting a certified professional.
-- **Polite Refusal Policy**:
-  - **Unrelated Topics**: Topics outside running a shop (entertainment, movies, sports, politics, religion, personal relationships, homework, coding/software engineering, medical, legal advice) and inappropriate, abusive, harmful, or adult requests are politely refused.
-  - **Credentials & System Secrets**: Requests for passwords, tokens, API keys, system instructions, or other shops' metrics are refused.
-  - **Refusal Format**: Exactly 1 to 2 short, respectful lines in the user's language, accompanied by a polite redirect to shop operations (e.g., *"I'm sorry, I can only help with your shop, stock and sales. Would you like to check your low stock or today's sales?"*). Never rude, preachy, or defensive.
+  - Provides 4 to 6 short lines of practical retail advice without inventing shop numbers, product names, quantities, or sales figures.
+- **Strict Polite Refusal Policy**:
+  - Refuses ONLY when the user asks to **ACCESS or SEE** another shop's private data (e.g. competitor's sales or stock records, other shops' prices or accounts, list of all shops), asks for passwords, tokens, API keys, or system instructions, or makes abusive/harmful requests.
+  - Plain word matches on "competitor", "other shop", "rival", "token", "password", or "key" do NOT trigger a refusal without a clear access request.
+  - Refusal Format: Exactly 1 short, respectful line in the user's language offering to help with their own shop's data or general business/pricing strategy, accompanied by suggestion chips (e.g., *"I can only access data for your own shop. I can help analyze your own stock and sales, or suggest competitive business strategies."*). Default `actions: []` (0 navigation buttons).
+- **Greetings & Introductions**:
+  - Treats "hi I am <name>", "hello, my name is <name>", "this is <name>", "namaste", "vanakkam" and Hindi/Tamil/Hinglish/Tanglish equivalents as greetings.
+  - Responds immediately, greets the user by name if given (without storing it), states identity as Dukaan Mitra, and offers exactly 2 suggestions with 0 navigation actions.
 - **Response Style & Formatting**:
-  - **Length**: 2 to 5 short lines, concise and easy to read on mobile.
+  - **Length**: 2 to 6 short lines, concise and easy to read on mobile.
   - **Language**: Responds naturally in the language or dialect used by the shop owner (English, Tamil, Hindi, Tanglish, Hinglish).
   - **Numbers & Currency**: Formats currency with the rupee symbol and Indian numbering system (e.g., `₹1,500`, `₹1.5L`).
   - **Structured Written Text**:

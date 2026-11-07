@@ -387,3 +387,1288 @@
 [2026-11-05 10:25:58] shop_id=97 tools=none latency_ms=125 error=http_400
 [2026-11-05 10:26:00] shop_id=97 tools=none latency_ms=1933 error=none
 [2026-11-05 10:26:04] shop_id=97 tools=none latency_ms=3153 error=none
+[2026-11-06 04:21:50] provider=ollama shop_id=2 tools=none latency_ms=29881 error=http_500
+[2026-11-06 04:22:27] provider=ollama shop_id=2 tools=none latency_ms=37041 error=http_500
+[2026-11-06 04:26:07] provider=ollama shop_id=2 tools=none latency_ms=16180 error=none
+[2026-11-06 04:27:03] provider=ollama shop_id=2 tools=none latency_ms=2611 error=none
+[2026-11-06 04:27:36] provider=ollama shop_id=2 tools=none latency_ms=14153 error=http_500
+[2026-11-06 04:28:06] provider=ollama shop_id=2 tools=none latency_ms=29241 error=http_500
+[2026-11-06 04:28:16] provider=ollama shop_id=2 tools=none latency_ms=10041 error=http_500
+[2026-11-06 04:28:27] provider=ollama shop_id=2 tools=none latency_ms=10492 error=http_500
+[2026-11-06 04:28:49] provider=ollama shop_id=2 tools=none latency_ms=21798 error=http_500
+[2026-11-06 04:29:28] provider=ollama shop_id=2 tools=none latency_ms=38865 error=http_500
+[2026-11-06 04:29:40] provider=ollama shop_id=2 tools=none latency_ms=12038 error=http_500
+[2026-11-06 04:32:49] provider=ollama shop_id=102 tools=get_product_stock latency_ms=0 error=none
+[2026-11-06 04:32:49] provider=ollama shop_id=102 tools=none latency_ms=0 error=none
+[2026-11-06 04:32:49] provider=ollama shop_id=102 tools=none latency_ms=0 error=none
+[2026-11-06 04:32:49] provider=ollama shop_id=102 tools=none latency_ms=0 error=none
+[2026-11-06 04:32:49] provider=ollama shop_id=102 tools=none latency_ms=0 error=none
+[2026-11-06 04:32:49] provider=ollama shop_id=102 tools=none latency_ms=0 error=none
+[2026-11-06 04:32:49] provider=ollama shop_id=102 tools=none latency_ms=0 error=none
+[2026-11-06 04:32:49] provider=ollama shop_id=102 tools=none latency_ms=0 error=none
+[2026-11-06 04:32:49] provider=ollama shop_id=102 tools=none latency_ms=0 error=none
+[2026-11-06 04:32:49] provider=ollama shop_id=102 tools=none latency_ms=0 error=ollama_error
+[2026-11-06 04:32:49] provider=ollama shop_id=102 tools=none latency_ms=0 error=ollama_error
+[2026-11-06 04:32:49] provider=ollama shop_id=102 tools=none latency_ms=0 error=ollama_error
+[2026-11-06 04:32:49] provider=ollama shop_id=102 tools=none latency_ms=0 error=ollama_error
+[2026-11-06 04:32:49] provider=ollama shop_id=102 tools=none latency_ms=0 error=ollama_error
+[2026-11-06 04:32:49] provider=ollama shop_id=102 tools=none latency_ms=0 error=ollama_error
+[2026-11-06 04:32:49] provider=ollama shop_id=102 tools=none latency_ms=0 error=ollama_error
+[2026-11-06 04:32:49] provider=ollama shop_id=102 tools=none latency_ms=0 error=ollama_error
+[2026-11-06 04:32:49] provider=ollama shop_id=102 tools=none latency_ms=0 error=ollama_error
+[2026-11-06 04:32:49] provider=ollama shop_id=102 tools=none latency_ms=0 error=ollama_error
+[2026-11-06 04:32:49] provider=ollama shop_id=102 tools=none latency_ms=0 error=ollama_error
+[2026-11-06 04:32:49] provider=ollama shop_id=102 tools=none latency_ms=0 error=ollama_error
+[2026-11-06 04:32:49] provider=ollama shop_id=102 tools=none latency_ms=0 error=ollama_error
+[2026-11-06 04:32:49] provider=ollama shop_id=102 tools=none latency_ms=0 error=ollama_error
+[2026-11-06 04:32:49] provider=ollama shop_id=102 tools=none latency_ms=0 error=ollama_error
+[2026-11-06 04:32:49] provider=ollama shop_id=102 tools=none latency_ms=0 error=ollama_error
+[2026-11-06 04:32:49] provider=ollama shop_id=102 tools=none latency_ms=0 error=ollama_error
+[2026-11-06 04:32:49] provider=ollama shop_id=102 tools=none latency_ms=0 error=ollama_error
+[2026-11-06 04:32:49] provider=ollama shop_id=102 tools=none latency_ms=0 error=ollama_error
+[2026-11-06 04:32:50] provider=ollama shop_id=102 tools=none latency_ms=0 error=ollama_error
+[2026-11-06 04:32:50] provider=ollama shop_id=102 tools=none latency_ms=0 error=ollama_error
+[2026-11-06 04:32:50] provider=ollama shop_id=102 tools=none latency_ms=0 error=ollama_error
+[2026-11-06 04:32:50] provider=ollama shop_id=102 tools=none latency_ms=0 error=ollama_error
+[2026-11-06 04:32:50] provider=ollama shop_id=102 tools=none latency_ms=0 error=ollama_error
+[2026-11-06 04:32:50] provider=ollama shop_id=102 tools=none latency_ms=0 error=ollama_error
+[2026-11-06 04:33:32] provider=ollama shop_id=102 tools=none latency_ms=19840 error=http_500
+[2026-11-06 04:37:33] provider=ollama shop_id=104 tools=get_product_stock latency_ms=0 error=none
+[2026-11-06 04:37:33] provider=ollama shop_id=104 tools=none latency_ms=0 error=none
+[2026-11-06 04:37:33] provider=ollama shop_id=104 tools=none latency_ms=0 error=none
+[2026-11-06 04:37:33] provider=ollama shop_id=104 tools=none latency_ms=0 error=none
+[2026-11-06 04:37:33] provider=ollama shop_id=104 tools=none latency_ms=0 error=none
+[2026-11-06 04:37:33] provider=ollama shop_id=104 tools=none latency_ms=0 error=none
+[2026-11-06 04:37:33] provider=ollama shop_id=104 tools=none latency_ms=0 error=none
+[2026-11-06 04:37:33] provider=ollama shop_id=104 tools=none latency_ms=0 error=none
+[2026-11-06 04:37:33] provider=ollama shop_id=104 tools=none latency_ms=0 error=none
+[2026-11-06 04:37:56] provider=ollama shop_id=104 tools=none latency_ms=22511 error=http_500
+[2026-11-06 04:37:56] provider=ollama shop_id=104 tools=none latency_ms=0 error=ollama_error
+[2026-11-06 04:37:56] provider=ollama shop_id=104 tools=none latency_ms=0 error=ollama_error
+[2026-11-06 04:37:56] provider=ollama shop_id=104 tools=none latency_ms=0 error=ollama_error
+[2026-11-06 04:37:56] provider=ollama shop_id=104 tools=none latency_ms=0 error=ollama_error
+[2026-11-06 04:37:56] provider=ollama shop_id=104 tools=none latency_ms=0 error=ollama_error
+[2026-11-06 04:37:56] provider=ollama shop_id=104 tools=none latency_ms=0 error=ollama_error
+[2026-11-06 04:37:56] provider=ollama shop_id=104 tools=none latency_ms=0 error=ollama_error
+[2026-11-06 04:37:56] provider=ollama shop_id=104 tools=none latency_ms=0 error=ollama_error
+[2026-11-06 04:37:56] provider=ollama shop_id=104 tools=none latency_ms=0 error=ollama_error
+[2026-11-06 04:37:56] provider=ollama shop_id=104 tools=none latency_ms=0 error=ollama_error
+[2026-11-06 04:37:56] provider=ollama shop_id=104 tools=none latency_ms=0 error=ollama_error
+[2026-11-06 04:37:56] provider=ollama shop_id=104 tools=none latency_ms=0 error=ollama_error
+[2026-11-06 04:37:56] provider=ollama shop_id=104 tools=none latency_ms=0 error=ollama_error
+[2026-11-06 04:37:56] provider=ollama shop_id=104 tools=none latency_ms=0 error=ollama_error
+[2026-11-06 04:37:56] provider=ollama shop_id=104 tools=none latency_ms=0 error=ollama_error
+[2026-11-06 04:37:56] provider=ollama shop_id=104 tools=none latency_ms=0 error=ollama_error
+[2026-11-06 04:37:56] provider=ollama shop_id=104 tools=none latency_ms=0 error=ollama_error
+[2026-11-06 04:37:57] provider=ollama shop_id=104 tools=none latency_ms=0 error=ollama_error
+[2026-11-06 04:37:57] provider=ollama shop_id=104 tools=none latency_ms=0 error=ollama_error
+[2026-11-06 04:37:57] provider=ollama shop_id=104 tools=none latency_ms=0 error=ollama_error
+[2026-11-06 04:37:57] provider=ollama shop_id=104 tools=none latency_ms=0 error=ollama_error
+[2026-11-06 04:37:57] provider=ollama shop_id=104 tools=none latency_ms=0 error=ollama_error
+[2026-11-06 04:37:57] provider=ollama shop_id=104 tools=none latency_ms=0 error=ollama_error
+[2026-11-06 04:37:57] provider=ollama shop_id=104 tools=none latency_ms=0 error=ollama_error
+[2026-11-06 04:37:57] provider=ollama shop_id=104 tools=none latency_ms=0 error=ollama_error
+[2026-11-06 04:38:18] provider=ollama shop_id=104 tools=none latency_ms=10568 error=http_500
+[2026-11-06 04:38:18] provider=ollama shop_id=104 tools=none latency_ms=20577 error=http_500
+[2026-11-06 04:38:51] provider=ollama shop_id=104 tools=none latency_ms=33379 error=http_500
+[2026-11-06 04:39:29] provider=ollama shop_id=106 tools=get_product_stock latency_ms=0 error=none
+[2026-11-06 04:39:29] provider=ollama shop_id=106 tools=none latency_ms=0 error=none
+[2026-11-06 04:39:29] provider=ollama shop_id=106 tools=none latency_ms=0 error=none
+[2026-11-06 04:39:29] provider=ollama shop_id=106 tools=none latency_ms=0 error=none
+[2026-11-06 04:39:29] provider=ollama shop_id=106 tools=none latency_ms=0 error=none
+[2026-11-06 04:39:29] provider=ollama shop_id=106 tools=none latency_ms=0 error=none
+[2026-11-06 04:39:29] provider=ollama shop_id=106 tools=none latency_ms=0 error=none
+[2026-11-06 04:39:29] provider=ollama shop_id=106 tools=none latency_ms=0 error=none
+[2026-11-06 04:39:29] provider=ollama shop_id=106 tools=none latency_ms=0 error=none
+[2026-11-06 04:39:29] provider=ollama shop_id=106 tools=none latency_ms=0 error=ollama_error
+[2026-11-06 04:39:29] provider=ollama shop_id=106 tools=none latency_ms=0 error=ollama_error
+[2026-11-06 04:39:29] provider=ollama shop_id=106 tools=none latency_ms=0 error=ollama_error
+[2026-11-06 04:39:29] provider=ollama shop_id=106 tools=none latency_ms=0 error=ollama_error
+[2026-11-06 04:39:29] provider=ollama shop_id=106 tools=none latency_ms=0 error=ollama_error
+[2026-11-06 04:39:29] provider=ollama shop_id=106 tools=none latency_ms=0 error=ollama_error
+[2026-11-06 04:39:29] provider=ollama shop_id=106 tools=none latency_ms=0 error=ollama_error
+[2026-11-06 04:39:29] provider=ollama shop_id=106 tools=none latency_ms=0 error=ollama_error
+[2026-11-06 04:39:29] provider=ollama shop_id=106 tools=none latency_ms=0 error=ollama_error
+[2026-11-06 04:39:29] provider=ollama shop_id=106 tools=none latency_ms=0 error=ollama_error
+[2026-11-06 04:39:29] provider=ollama shop_id=106 tools=none latency_ms=0 error=ollama_error
+[2026-11-06 04:39:29] provider=ollama shop_id=106 tools=none latency_ms=0 error=ollama_error
+[2026-11-06 04:39:29] provider=ollama shop_id=106 tools=none latency_ms=0 error=ollama_error
+[2026-11-06 04:39:29] provider=ollama shop_id=106 tools=none latency_ms=0 error=ollama_error
+[2026-11-06 04:39:30] provider=ollama shop_id=106 tools=none latency_ms=0 error=ollama_error
+[2026-11-06 04:39:30] provider=ollama shop_id=106 tools=none latency_ms=0 error=ollama_error
+[2026-11-06 04:39:30] provider=ollama shop_id=106 tools=none latency_ms=0 error=ollama_error
+[2026-11-06 04:39:30] provider=ollama shop_id=106 tools=none latency_ms=0 error=ollama_error
+[2026-11-06 04:39:30] provider=ollama shop_id=106 tools=none latency_ms=0 error=ollama_error
+[2026-11-06 04:39:30] provider=ollama shop_id=106 tools=none latency_ms=0 error=ollama_error
+[2026-11-06 04:39:30] provider=ollama shop_id=106 tools=none latency_ms=0 error=ollama_error
+[2026-11-06 04:39:30] provider=ollama shop_id=106 tools=none latency_ms=0 error=ollama_error
+[2026-11-06 04:39:30] provider=ollama shop_id=106 tools=none latency_ms=0 error=ollama_error
+[2026-11-06 04:39:30] provider=ollama shop_id=106 tools=none latency_ms=0 error=ollama_error
+[2026-11-06 04:39:30] provider=ollama shop_id=106 tools=none latency_ms=0 error=ollama_error
+[2026-11-06 04:39:48] provider=ollama shop_id=106 tools=none latency_ms=18329 error=http_500
+[2026-11-06 04:40:08] provider=ollama shop_id=106 tools=none latency_ms=19439 error=http_500
+[2026-11-06 04:40:29] provider=ollama shop_id=106 tools=none latency_ms=20482 error=http_500
+[2026-11-06 04:40:45] provider=ollama shop_id=108 tools=get_product_stock latency_ms=0 error=none
+[2026-11-06 04:40:45] provider=ollama shop_id=108 tools=none latency_ms=0 error=none
+[2026-11-06 04:40:45] provider=ollama shop_id=108 tools=none latency_ms=0 error=none
+[2026-11-06 04:40:45] provider=ollama shop_id=108 tools=none latency_ms=0 error=none
+[2026-11-06 04:40:45] provider=ollama shop_id=108 tools=none latency_ms=0 error=none
+[2026-11-06 04:40:45] provider=ollama shop_id=108 tools=none latency_ms=0 error=none
+[2026-11-06 04:40:45] provider=ollama shop_id=108 tools=none latency_ms=0 error=none
+[2026-11-06 04:40:45] provider=ollama shop_id=108 tools=none latency_ms=0 error=none
+[2026-11-06 04:40:45] provider=ollama shop_id=108 tools=none latency_ms=0 error=none
+[2026-11-06 04:40:45] provider=ollama shop_id=108 tools=none latency_ms=0 error=ollama_error
+[2026-11-06 04:40:45] provider=ollama shop_id=108 tools=none latency_ms=0 error=ollama_error
+[2026-11-06 04:40:46] provider=ollama shop_id=108 tools=none latency_ms=0 error=ollama_error
+[2026-11-06 04:40:46] provider=ollama shop_id=108 tools=none latency_ms=0 error=ollama_error
+[2026-11-06 04:40:46] provider=ollama shop_id=108 tools=none latency_ms=0 error=ollama_error
+[2026-11-06 04:40:46] provider=ollama shop_id=108 tools=none latency_ms=0 error=ollama_error
+[2026-11-06 04:40:46] provider=ollama shop_id=108 tools=none latency_ms=0 error=ollama_error
+[2026-11-06 04:40:46] provider=ollama shop_id=108 tools=none latency_ms=0 error=ollama_error
+[2026-11-06 04:40:46] provider=ollama shop_id=108 tools=none latency_ms=0 error=ollama_error
+[2026-11-06 04:40:46] provider=ollama shop_id=108 tools=none latency_ms=0 error=ollama_error
+[2026-11-06 04:40:46] provider=ollama shop_id=108 tools=none latency_ms=0 error=ollama_error
+[2026-11-06 04:40:46] provider=ollama shop_id=108 tools=none latency_ms=0 error=ollama_error
+[2026-11-06 04:40:46] provider=ollama shop_id=108 tools=none latency_ms=0 error=ollama_error
+[2026-11-06 04:40:47] provider=ollama shop_id=108 tools=none latency_ms=0 error=ollama_error
+[2026-11-06 04:40:47] provider=ollama shop_id=108 tools=none latency_ms=0 error=ollama_error
+[2026-11-06 04:40:47] provider=ollama shop_id=108 tools=none latency_ms=0 error=ollama_error
+[2026-11-06 04:40:47] provider=ollama shop_id=108 tools=none latency_ms=0 error=ollama_error
+[2026-11-06 04:40:47] provider=ollama shop_id=108 tools=none latency_ms=0 error=ollama_error
+[2026-11-06 04:40:47] provider=ollama shop_id=108 tools=none latency_ms=0 error=ollama_error
+[2026-11-06 04:40:47] provider=ollama shop_id=108 tools=none latency_ms=0 error=ollama_error
+[2026-11-06 04:40:47] provider=ollama shop_id=108 tools=none latency_ms=0 error=ollama_error
+[2026-11-06 04:40:47] provider=ollama shop_id=108 tools=none latency_ms=0 error=ollama_error
+[2026-11-06 04:40:47] provider=ollama shop_id=108 tools=none latency_ms=0 error=ollama_error
+[2026-11-06 04:40:47] provider=ollama shop_id=108 tools=none latency_ms=0 error=ollama_error
+[2026-11-06 04:40:48] provider=ollama shop_id=108 tools=none latency_ms=0 error=ollama_error
+[2026-11-06 04:41:08] provider=ollama shop_id=108 tools=none latency_ms=19695 error=http_500
+[2026-11-06 04:41:18] provider=ollama shop_id=108 tools=none latency_ms=10778 error=http_500
+[2026-11-06 04:41:29] provider=ollama shop_id=108 tools=none latency_ms=10319 error=http_500
+[2026-11-06 04:55:15] provider=ollama shop_id=23 tools=none latency_ms=81519 error=http_500
+[2026-11-06 04:59:05] provider=ollama shop_id=23 tools=none latency_ms=72260 error=http_500
+[2026-11-06 05:15:47] provider=ollama shop_id=113 tools=get_product_stock latency_ms=1 error=none
+[2026-11-06 05:15:47] provider=ollama shop_id=113 tools=none latency_ms=0 error=none
+[2026-11-06 05:15:47] provider=ollama shop_id=113 tools=none latency_ms=0 error=none
+[2026-11-06 05:15:47] provider=ollama shop_id=113 tools=none latency_ms=0 error=none
+[2026-11-06 05:15:47] provider=ollama shop_id=113 tools=none latency_ms=0 error=none
+[2026-11-06 05:15:47] provider=ollama shop_id=113 tools=none latency_ms=0 error=ollama_error
+[2026-11-06 05:15:47] provider=ollama shop_id=113 tools=none latency_ms=0 error=ollama_error
+[2026-11-06 05:15:47] provider=ollama shop_id=113 tools=none latency_ms=0 error=ollama_error
+[2026-11-06 05:15:48] provider=ollama shop_id=113 tools=none latency_ms=0 error=none
+[2026-11-06 05:15:48] provider=ollama shop_id=113 tools=none latency_ms=0 error=none
+[2026-11-06 05:16:09] provider=ollama shop_id=113 tools=none latency_ms=20816 error=http_500
+[2026-11-06 05:20:07] provider=ollama shop_id=115 tools=get_product_stock latency_ms=0 error=none
+[2026-11-06 05:20:07] provider=ollama shop_id=115 tools=none latency_ms=0 error=none
+[2026-11-06 05:20:07] provider=ollama shop_id=115 tools=none latency_ms=0 error=none
+[2026-11-06 05:20:07] provider=ollama shop_id=115 tools=none latency_ms=0 error=none
+[2026-11-06 05:20:07] provider=ollama shop_id=115 tools=none latency_ms=0 error=none
+[2026-11-06 05:20:07] provider=ollama shop_id=115 tools=none latency_ms=0 error=ollama_error
+[2026-11-06 05:20:07] provider=ollama shop_id=115 tools=none latency_ms=0 error=ollama_error
+[2026-11-06 05:20:08] provider=ollama shop_id=115 tools=none latency_ms=0 error=ollama_error
+[2026-11-06 05:20:08] provider=ollama shop_id=115 tools=none latency_ms=0 error=none
+[2026-11-06 05:20:08] provider=ollama shop_id=115 tools=none latency_ms=0 error=none
+[2026-11-06 05:20:30] provider=ollama shop_id=115 tools=none latency_ms=21238 error=http_500
+[2026-11-06 05:21:22] provider=ollama shop_id=2 tools=none latency_ms=20285 error=http_500
+[2026-11-06 05:21:39] provider=ollama shop_id=117 tools=get_product_stock latency_ms=1 error=none
+[2026-11-06 05:21:39] provider=ollama shop_id=117 tools=none latency_ms=0 error=none
+[2026-11-06 05:21:39] provider=ollama shop_id=117 tools=none latency_ms=0 error=none
+[2026-11-06 05:21:39] provider=ollama shop_id=117 tools=none latency_ms=0 error=none
+[2026-11-06 05:21:39] provider=ollama shop_id=117 tools=none latency_ms=0 error=none
+[2026-11-06 05:21:39] provider=ollama shop_id=117 tools=none latency_ms=0 error=ollama_error
+[2026-11-06 05:21:39] provider=ollama shop_id=117 tools=none latency_ms=0 error=ollama_error
+[2026-11-06 05:21:39] provider=ollama shop_id=117 tools=none latency_ms=0 error=ollama_error
+[2026-11-06 05:21:40] provider=ollama shop_id=117 tools=none latency_ms=0 error=none
+[2026-11-06 05:21:40] provider=ollama shop_id=117 tools=none latency_ms=0 error=none
+[2026-11-06 05:22:08] provider=ollama shop_id=117 tools=none latency_ms=27628 error=http_500
+[2026-11-06 05:35:53] provider=ollama shop_id=23 tools=none latency_ms=33830 error=http_500
+[2026-11-06 06:04:53] provider=ollama shop_id=122 tools=get_product_stock latency_ms=1 error=none
+[2026-11-06 06:04:53] provider=ollama shop_id=122 tools=none latency_ms=0 error=none
+[2026-11-06 06:04:53] shop_id=122 tools=none latency_ms=0 error=empty_response
+[2026-11-06 06:04:53] provider=ollama shop_id=122 tools=none latency_ms=0 error=none
+[2026-11-06 06:04:53] provider=ollama shop_id=122 tools=none latency_ms=0 error=none
+[2026-11-06 06:04:53] provider=ollama shop_id=122 tools=none latency_ms=0 error=none
+[2026-11-06 06:04:53] shop_id=122 tools=none latency_ms=0 error=empty_response
+[2026-11-06 06:04:53] provider=ollama shop_id=122 tools=none latency_ms=0 error=none
+[2026-11-06 06:04:53] shop_id=122 tools=none latency_ms=0 error=empty_response
+[2026-11-06 06:04:53] provider=ollama shop_id=122 tools=none latency_ms=0 error=none
+[2026-11-06 06:04:53] shop_id=122 tools=none latency_ms=0 error=none
+[2026-11-06 06:04:53] shop_id=122 tools=none latency_ms=0 error=none
+[2026-11-06 06:04:53] provider=ollama shop_id=122 tools=none latency_ms=0 error=Connection refused by Ollama daemon
+[2026-11-06 06:04:53] shop_id=122 tools=none latency_ms=0 error=none
+[2026-11-06 06:04:53] shop_id=122 tools=none latency_ms=0 error=empty_response
+[2026-11-06 06:04:53] provider=ollama shop_id=122 tools=none latency_ms=0 error=none
+[2026-11-06 06:04:53] shop_id=122 tools=none latency_ms=0 error=empty_response
+[2026-11-06 06:04:53] provider=ollama shop_id=122 tools=none latency_ms=0 error=Timeout after 90s
+[2026-11-06 06:04:53] shop_id=122 tools=none latency_ms=0 error=none
+[2026-11-06 06:04:53] shop_id=122 tools=none latency_ms=0 error=none
+[2026-11-06 06:04:53] shop_id=122 tools=none latency_ms=0 error=none
+[2026-11-06 06:04:53] provider=ollama shop_id=122 tools=none latency_ms=0 error=Timeout after 90s
+[2026-11-06 06:04:53] shop_id=122 tools=none latency_ms=0 error=none
+[2026-11-06 06:05:13] provider=ollama shop_id=122 tools=none latency_ms=19283 error=http_500
+[2026-11-06 06:05:16] shop_id=122 tools=none latency_ms=3136 error=none
+[2026-11-06 06:05:16] shop_id=122 tools=none latency_ms=376 error=http_429
+[2026-11-06 06:05:16] provider=ollama shop_id=122 tools=none latency_ms=0 error=ollama_error
+[2026-11-06 06:05:16] shop_id=122 tools=none latency_ms=0 error=api_error
+[2026-11-06 06:05:16] shop_id=122 tools=none latency_ms=0 error=api_error
+[2026-11-06 06:05:16] provider=ollama shop_id=122 tools=none latency_ms=0 error=ollama_error
+[2026-11-06 06:05:16] provider=ollama shop_id=122 tools=none latency_ms=0 error=ollama_error
+[2026-11-06 06:05:16] shop_id=122 tools=none latency_ms=0 error=api_error
+[2026-11-06 06:05:17] provider=ollama shop_id=122 tools=none latency_ms=0 error=ollama_error
+[2026-11-06 06:05:17] shop_id=122 tools=none latency_ms=0 error=api_error
+[2026-11-06 06:05:18] provider=ollama shop_id=122 tools=none latency_ms=0 error=none
+[2026-11-06 06:05:18] provider=ollama shop_id=122 tools=none latency_ms=0 error=none
+[2026-11-06 06:06:21] shop_id=1 tools=none latency_ms=0 error=none
+[2026-11-06 06:10:29] provider=ollama shop_id=124 tools=get_product_stock latency_ms=0 error=none
+[2026-11-06 06:10:29] provider=ollama shop_id=124 tools=none latency_ms=0 error=none
+[2026-11-06 06:10:29] shop_id=124 tools=none latency_ms=0 error=empty_response
+[2026-11-06 06:10:29] provider=ollama shop_id=124 tools=none latency_ms=0 error=none
+[2026-11-06 06:10:29] provider=ollama shop_id=124 tools=none latency_ms=0 error=none
+[2026-11-06 06:10:30] provider=ollama shop_id=124 tools=none latency_ms=0 error=none
+[2026-11-06 06:10:30] shop_id=124 tools=none latency_ms=0 error=empty_response
+[2026-11-06 06:10:30] provider=ollama shop_id=124 tools=none latency_ms=0 error=none
+[2026-11-06 06:10:30] shop_id=124 tools=none latency_ms=0 error=empty_response
+[2026-11-06 06:10:30] provider=ollama shop_id=124 tools=none latency_ms=0 error=none
+[2026-11-06 06:10:30] shop_id=124 tools=none latency_ms=0 error=none
+[2026-11-06 06:10:30] shop_id=124 tools=none latency_ms=0 error=none
+[2026-11-06 06:10:30] provider=ollama shop_id=124 tools=none latency_ms=0 error=Connection refused by Ollama daemon
+[2026-11-06 06:10:30] shop_id=124 tools=none latency_ms=0 error=none
+[2026-11-06 06:10:30] shop_id=124 tools=none latency_ms=0 error=empty_response
+[2026-11-06 06:10:30] provider=ollama shop_id=124 tools=none latency_ms=0 error=none
+[2026-11-06 06:10:30] shop_id=124 tools=none latency_ms=0 error=empty_response
+[2026-11-06 06:10:30] provider=ollama shop_id=124 tools=none latency_ms=0 error=Timeout after 90s
+[2026-11-06 06:10:30] shop_id=124 tools=none latency_ms=0 error=none
+[2026-11-06 06:10:30] shop_id=124 tools=none latency_ms=0 error=none
+[2026-11-06 06:10:30] shop_id=124 tools=none latency_ms=0 error=none
+[2026-11-06 06:10:52] provider=ollama shop_id=124 tools=none latency_ms=21881 error=http_500
+[2026-11-06 06:10:52] shop_id=124 tools=none latency_ms=502 error=http_429
+[2026-11-06 06:10:52] provider=ollama shop_id=124 tools=none latency_ms=0 error=ollama_error
+[2026-11-06 06:10:52] shop_id=124 tools=none latency_ms=0 error=api_error
+[2026-11-06 06:10:52] shop_id=124 tools=none latency_ms=0 error=api_error
+[2026-11-06 06:10:52] provider=ollama shop_id=124 tools=none latency_ms=0 error=ollama_error
+[2026-11-06 06:10:53] provider=ollama shop_id=124 tools=none latency_ms=0 error=ollama_error
+[2026-11-06 06:10:53] shop_id=124 tools=none latency_ms=0 error=api_error
+[2026-11-06 06:10:53] provider=ollama shop_id=124 tools=none latency_ms=0 error=ollama_error
+[2026-11-06 06:10:53] shop_id=124 tools=none latency_ms=0 error=api_error
+[2026-11-06 06:10:54] provider=ollama shop_id=124 tools=none latency_ms=0 error=none
+[2026-11-06 06:10:54] provider=ollama shop_id=124 tools=none latency_ms=0 error=none
+[2026-11-06 06:13:02] provider=ollama shop_id=126 tools=get_product_stock latency_ms=0 error=none
+[2026-11-06 06:13:02] provider=ollama shop_id=126 tools=none latency_ms=0 error=none
+[2026-11-06 06:13:02] shop_id=126 tools=none latency_ms=0 error=empty_response
+[2026-11-06 06:13:02] provider=ollama shop_id=126 tools=none latency_ms=0 error=none
+[2026-11-06 06:13:02] provider=ollama shop_id=126 tools=none latency_ms=0 error=none
+[2026-11-06 06:13:02] provider=ollama shop_id=126 tools=none latency_ms=0 error=none
+[2026-11-06 06:13:02] shop_id=126 tools=none latency_ms=0 error=empty_response
+[2026-11-06 06:13:02] provider=ollama shop_id=126 tools=none latency_ms=0 error=none
+[2026-11-06 06:13:02] shop_id=126 tools=none latency_ms=0 error=empty_response
+[2026-11-06 06:13:02] provider=ollama shop_id=126 tools=none latency_ms=0 error=none
+[2026-11-06 06:13:02] shop_id=126 tools=none latency_ms=0 error=none
+[2026-11-06 06:13:02] shop_id=126 tools=none latency_ms=0 error=none
+[2026-11-06 06:13:02] provider=ollama shop_id=126 tools=none latency_ms=0 error=Connection refused by Ollama daemon
+[2026-11-06 06:13:02] shop_id=126 tools=none latency_ms=0 error=none
+[2026-11-06 06:13:02] shop_id=126 tools=none latency_ms=0 error=empty_response
+[2026-11-06 06:13:02] provider=ollama shop_id=126 tools=none latency_ms=0 error=none
+[2026-11-06 06:13:02] shop_id=126 tools=none latency_ms=0 error=empty_response
+[2026-11-06 06:13:02] provider=ollama shop_id=126 tools=none latency_ms=0 error=Timeout after 90s
+[2026-11-06 06:13:02] shop_id=126 tools=none latency_ms=0 error=none
+[2026-11-06 06:13:02] shop_id=126 tools=none latency_ms=0 error=none
+[2026-11-06 06:13:02] shop_id=126 tools=none latency_ms=0 error=none
+[2026-11-06 06:13:22] provider=ollama shop_id=126 tools=none latency_ms=19768 error=http_500
+[2026-11-06 06:13:23] shop_id=126 tools=none latency_ms=498 error=http_429
+[2026-11-06 06:13:23] provider=ollama shop_id=126 tools=none latency_ms=0 error=ollama_error
+[2026-11-06 06:13:23] shop_id=126 tools=none latency_ms=0 error=api_error
+[2026-11-06 06:13:23] provider=ollama shop_id=126 tools=none latency_ms=0 error=ollama_error
+[2026-11-06 06:13:23] shop_id=126 tools=none latency_ms=0 error=api_error
+[2026-11-06 06:13:23] shop_id=126 tools=none latency_ms=0 error=api_error
+[2026-11-06 06:13:23] provider=ollama shop_id=126 tools=none latency_ms=0 error=ollama_error
+[2026-11-06 06:13:23] provider=ollama shop_id=126 tools=none latency_ms=0 error=ollama_error
+[2026-11-06 06:13:23] shop_id=126 tools=none latency_ms=0 error=api_error
+[2026-11-06 06:13:23] provider=ollama shop_id=126 tools=none latency_ms=0 error=ollama_error
+[2026-11-06 06:13:23] shop_id=126 tools=none latency_ms=0 error=api_error
+[2026-11-06 06:13:24] provider=ollama shop_id=126 tools=none latency_ms=0 error=none
+[2026-11-06 06:13:24] provider=ollama shop_id=126 tools=none latency_ms=0 error=none
+[2026-11-06 06:34:10] provider=ollama shop_id=128 tools=get_product_stock latency_ms=0 error=none
+[2026-11-06 06:34:10] provider=ollama shop_id=128 tools=none latency_ms=0 error=none
+[2026-11-06 06:34:10] shop_id=128 tools=none latency_ms=0 error=empty_response
+[2026-11-06 06:34:10] provider=ollama shop_id=128 tools=none latency_ms=0 error=none
+[2026-11-06 06:34:10] provider=ollama shop_id=128 tools=none latency_ms=0 error=none
+[2026-11-06 06:34:10] provider=ollama shop_id=128 tools=none latency_ms=0 error=none
+[2026-11-06 06:34:10] shop_id=128 tools=none latency_ms=0 error=empty_response
+[2026-11-06 06:34:10] provider=ollama shop_id=128 tools=none latency_ms=0 error=none
+[2026-11-06 06:34:10] shop_id=128 tools=none latency_ms=0 error=empty_response
+[2026-11-06 06:34:10] provider=ollama shop_id=128 tools=none latency_ms=0 error=none
+[2026-11-06 06:34:10] shop_id=128 tools=none latency_ms=0 error=none
+[2026-11-06 06:34:10] shop_id=128 tools=none latency_ms=0 error=none
+[2026-11-06 06:34:10] provider=ollama shop_id=128 tools=none latency_ms=0 error=Connection refused by Ollama daemon
+[2026-11-06 06:34:10] shop_id=128 tools=none latency_ms=0 error=none
+[2026-11-06 06:34:10] shop_id=128 tools=none latency_ms=0 error=empty_response
+[2026-11-06 06:34:10] provider=ollama shop_id=128 tools=none latency_ms=0 error=none
+[2026-11-06 06:34:11] shop_id=128 tools=none latency_ms=0 error=empty_response
+[2026-11-06 06:34:11] provider=ollama shop_id=128 tools=none latency_ms=0 error=Timeout after 90s
+[2026-11-06 06:34:11] shop_id=128 tools=none latency_ms=0 error=none
+[2026-11-06 06:34:11] shop_id=128 tools=none latency_ms=0 error=none
+[2026-11-06 06:34:11] shop_id=128 tools=none latency_ms=0 error=none
+[2026-11-06 06:34:43] provider=ollama shop_id=128 tools=none latency_ms=32309 error=http_500
+[2026-11-06 06:34:44] shop_id=128 tools=none latency_ms=595 error=http_429
+[2026-11-06 06:34:44] provider=ollama shop_id=128 tools=none latency_ms=0 error=ollama_error
+[2026-11-06 06:34:44] shop_id=128 tools=none latency_ms=0 error=api_error
+[2026-11-06 06:34:44] shop_id=128 tools=none latency_ms=0 error=api_error
+[2026-11-06 06:34:44] provider=ollama shop_id=128 tools=none latency_ms=0 error=ollama_error
+[2026-11-06 06:34:44] provider=ollama shop_id=128 tools=none latency_ms=0 error=ollama_error
+[2026-11-06 06:34:44] shop_id=128 tools=none latency_ms=0 error=api_error
+[2026-11-06 06:34:45] provider=ollama shop_id=128 tools=none latency_ms=0 error=ollama_error
+[2026-11-06 06:34:45] shop_id=128 tools=none latency_ms=0 error=api_error
+[2026-11-06 06:34:47] provider=ollama shop_id=128 tools=none latency_ms=0 error=none
+[2026-11-06 06:34:47] provider=ollama shop_id=128 tools=none latency_ms=0 error=none
+[2026-11-06 07:25:26] provider=ollama shop_id=2 tools=none latency_ms=26501 error=http_500
+[2026-11-06 07:25:27] shop_id=2 tools=none latency_ms=963 error=http_429
+[2026-11-06 07:25:27] shop_id=2 tools=none latency_ms=310 error=http_429
+[2026-11-06 07:25:57] provider=ollama shop_id=2 tools=none latency_ms=29349 error=http_500
+[2026-11-06 07:25:57] shop_id=2 tools=none latency_ms=393 error=http_429
+[2026-11-06 07:28:55] provider=ollama shop_id=130 tools=get_product_stock latency_ms=0 error=none
+[2026-11-06 07:28:55] provider=ollama shop_id=130 tools=none latency_ms=0 error=none
+[2026-11-06 07:28:55] shop_id=130 tools=none latency_ms=0 error=empty_response
+[2026-11-06 07:28:55] provider=ollama shop_id=130 tools=none latency_ms=0 error=none
+[2026-11-06 07:28:56] provider=ollama shop_id=130 tools=none latency_ms=0 error=none
+[2026-11-06 07:28:56] provider=ollama shop_id=130 tools=none latency_ms=0 error=none
+[2026-11-06 07:28:56] shop_id=130 tools=none latency_ms=0 error=empty_response
+[2026-11-06 07:28:56] provider=ollama shop_id=130 tools=none latency_ms=0 error=none
+[2026-11-06 07:28:56] shop_id=130 tools=none latency_ms=0 error=empty_response
+[2026-11-06 07:28:56] provider=ollama shop_id=130 tools=none latency_ms=0 error=none
+[2026-11-06 07:28:56] shop_id=130 tools=none latency_ms=0 error=none
+[2026-11-06 07:28:56] shop_id=130 tools=none latency_ms=0 error=none
+[2026-11-06 07:28:56] provider=ollama shop_id=130 tools=none latency_ms=0 error=Connection refused by Ollama daemon
+[2026-11-06 07:28:56] shop_id=130 tools=none latency_ms=0 error=none
+[2026-11-06 07:28:56] shop_id=130 tools=none latency_ms=0 error=empty_response
+[2026-11-06 07:28:56] provider=ollama shop_id=130 tools=none latency_ms=0 error=none
+[2026-11-06 07:28:56] shop_id=130 tools=none latency_ms=0 error=empty_response
+[2026-11-06 07:28:56] provider=ollama shop_id=130 tools=none latency_ms=0 error=Timeout after 90s
+[2026-11-06 07:28:56] shop_id=130 tools=none latency_ms=0 error=none
+[2026-11-06 07:28:56] shop_id=130 tools=none latency_ms=0 error=none
+[2026-11-06 07:28:56] shop_id=130 tools=none latency_ms=0 error=none
+[2026-11-06 07:29:15] provider=ollama shop_id=130 tools=none latency_ms=18455 error=http_500
+[2026-11-06 07:29:15] shop_id=130 tools=none latency_ms=513 error=http_429
+[2026-11-06 07:29:15] provider=ollama shop_id=130 tools=none latency_ms=0 error=ollama_error
+[2026-11-06 07:29:15] shop_id=130 tools=none latency_ms=0 error=api_error
+[2026-11-06 07:29:15] shop_id=130 tools=none latency_ms=0 error=api_error
+[2026-11-06 07:29:15] provider=ollama shop_id=130 tools=none latency_ms=0 error=ollama_error
+[2026-11-06 07:29:15] provider=ollama shop_id=130 tools=none latency_ms=0 error=ollama_error
+[2026-11-06 07:29:15] shop_id=130 tools=none latency_ms=0 error=api_error
+[2026-11-06 07:29:16] provider=ollama shop_id=130 tools=none latency_ms=0 error=ollama_error
+[2026-11-06 07:29:16] shop_id=130 tools=none latency_ms=0 error=api_error
+[2026-11-06 07:29:17] provider=ollama shop_id=130 tools=none latency_ms=0 error=none
+[2026-11-06 07:29:17] provider=ollama shop_id=130 tools=none latency_ms=0 error=none
+[2026-11-06 08:11:53] provider=ollama shop_id=135 tools=get_product_stock latency_ms=0 error=none
+[2026-11-06 08:11:53] provider=ollama shop_id=135 tools=none latency_ms=0 error=none
+[2026-11-06 08:11:53] shop_id=135 tools=none latency_ms=0 error=empty_response
+[2026-11-06 08:11:53] provider=ollama shop_id=135 tools=none latency_ms=0 error=none
+[2026-11-06 08:11:53] provider=ollama shop_id=135 tools=none latency_ms=0 error=none
+[2026-11-06 08:11:53] provider=ollama shop_id=135 tools=none latency_ms=0 error=none
+[2026-11-06 08:11:53] shop_id=135 tools=none latency_ms=0 error=empty_response
+[2026-11-06 08:11:53] provider=ollama shop_id=135 tools=none latency_ms=0 error=none
+[2026-11-06 08:11:53] shop_id=135 tools=none latency_ms=0 error=empty_response
+[2026-11-06 08:11:53] provider=ollama shop_id=135 tools=none latency_ms=0 error=none
+[2026-11-06 08:11:53] shop_id=135 tools=none latency_ms=0 error=none
+[2026-11-06 08:11:53] shop_id=135 tools=none latency_ms=0 error=none
+[2026-11-06 08:11:53] provider=ollama shop_id=135 tools=none latency_ms=0 error=Connection refused by Ollama daemon
+[2026-11-06 08:11:53] shop_id=135 tools=none latency_ms=0 error=none
+[2026-11-06 08:11:53] shop_id=135 tools=none latency_ms=0 error=empty_response
+[2026-11-06 08:11:53] provider=ollama shop_id=135 tools=none latency_ms=0 error=none
+[2026-11-06 08:11:53] shop_id=135 tools=none latency_ms=0 error=empty_response
+[2026-11-06 08:11:53] provider=ollama shop_id=135 tools=none latency_ms=0 error=Timeout after 90s
+[2026-11-06 08:11:53] shop_id=135 tools=none latency_ms=0 error=none
+[2026-11-06 08:11:53] shop_id=135 tools=none latency_ms=0 error=none
+[2026-11-06 08:11:54] shop_id=135 tools=none latency_ms=0 error=none
+[2026-11-06 08:12:37] provider=ollama shop_id=135 tools=none latency_ms=43472 error=http_500
+[2026-11-06 08:12:38] shop_id=135 tools=none latency_ms=916 error=http_429
+[2026-11-06 08:12:38] provider=ollama shop_id=135 tools=none latency_ms=0 error=ollama_error
+[2026-11-06 08:12:38] shop_id=135 tools=none latency_ms=0 error=api_error
+[2026-11-06 08:12:38] shop_id=135 tools=none latency_ms=0 error=api_error
+[2026-11-06 08:12:38] provider=ollama shop_id=135 tools=none latency_ms=0 error=ollama_error
+[2026-11-06 08:12:38] provider=ollama shop_id=135 tools=none latency_ms=0 error=ollama_error
+[2026-11-06 08:12:38] shop_id=135 tools=none latency_ms=0 error=api_error
+[2026-11-06 08:12:39] provider=ollama shop_id=135 tools=none latency_ms=0 error=ollama_error
+[2026-11-06 08:12:39] shop_id=135 tools=none latency_ms=0 error=api_error
+[2026-11-06 08:12:40] provider=ollama shop_id=135 tools=none latency_ms=0 error=none
+[2026-11-06 08:12:40] provider=ollama shop_id=135 tools=none latency_ms=0 error=none
+[2026-11-06 08:13:38] provider=ollama shop_id=137 tools=get_product_stock latency_ms=0 error=none
+[2026-11-06 08:13:38] provider=ollama shop_id=137 tools=none latency_ms=0 error=none
+[2026-11-06 08:13:38] shop_id=137 tools=none latency_ms=0 error=empty_response
+[2026-11-06 08:13:38] provider=ollama shop_id=137 tools=none latency_ms=0 error=none
+[2026-11-06 08:13:38] provider=ollama shop_id=137 tools=none latency_ms=0 error=none
+[2026-11-06 08:13:38] shop_id=137 tools=none latency_ms=0 error=empty_response
+[2026-11-06 08:13:38] provider=ollama shop_id=137 tools=none latency_ms=0 error=none
+[2026-11-06 08:13:38] provider=ollama shop_id=137 tools=none latency_ms=0 error=none
+[2026-11-06 08:13:38] provider=ollama shop_id=137 tools=none latency_ms=0 error=none
+[2026-11-06 08:13:38] provider=ollama shop_id=137 tools=none latency_ms=0 error=none
+[2026-11-06 08:13:38] shop_id=137 tools=none latency_ms=0 error=empty_response
+[2026-11-06 08:13:38] provider=ollama shop_id=137 tools=none latency_ms=0 error=none
+[2026-11-06 08:13:38] shop_id=137 tools=none latency_ms=0 error=empty_response
+[2026-11-06 08:13:38] provider=ollama shop_id=137 tools=none latency_ms=0 error=none
+[2026-11-06 08:13:38] shop_id=137 tools=none latency_ms=0 error=none
+[2026-11-06 08:13:38] shop_id=137 tools=none latency_ms=0 error=none
+[2026-11-06 08:13:38] provider=ollama shop_id=137 tools=none latency_ms=0 error=Connection refused by Ollama daemon
+[2026-11-06 08:13:38] shop_id=137 tools=none latency_ms=0 error=none
+[2026-11-06 08:13:38] shop_id=137 tools=none latency_ms=0 error=empty_response
+[2026-11-06 08:13:38] provider=ollama shop_id=137 tools=none latency_ms=0 error=none
+[2026-11-06 08:13:38] shop_id=137 tools=none latency_ms=0 error=empty_response
+[2026-11-06 08:13:38] provider=ollama shop_id=137 tools=none latency_ms=0 error=Timeout after 90s
+[2026-11-06 08:13:38] shop_id=137 tools=none latency_ms=0 error=none
+[2026-11-06 08:13:39] shop_id=137 tools=none latency_ms=0 error=none
+[2026-11-06 08:13:39] shop_id=137 tools=none latency_ms=0 error=none
+[2026-11-06 08:14:02] provider=ollama shop_id=137 tools=none latency_ms=22828 error=http_500
+[2026-11-06 08:14:02] shop_id=137 tools=none latency_ms=617 error=http_429
+[2026-11-06 08:14:03] provider=ollama shop_id=137 tools=none latency_ms=0 error=ollama_error
+[2026-11-06 08:14:03] shop_id=137 tools=none latency_ms=0 error=api_error
+[2026-11-06 08:14:03] shop_id=137 tools=none latency_ms=0 error=api_error
+[2026-11-06 08:14:03] provider=ollama shop_id=137 tools=none latency_ms=0 error=ollama_error
+[2026-11-06 08:14:03] provider=ollama shop_id=137 tools=none latency_ms=0 error=ollama_error
+[2026-11-06 08:14:03] shop_id=137 tools=none latency_ms=0 error=api_error
+[2026-11-06 08:14:04] provider=ollama shop_id=137 tools=none latency_ms=0 error=ollama_error
+[2026-11-06 08:14:04] shop_id=137 tools=none latency_ms=0 error=api_error
+[2026-11-06 08:14:10] provider=ollama shop_id=137 tools=none latency_ms=0 error=none
+[2026-11-06 08:14:10] provider=ollama shop_id=137 tools=none latency_ms=0 error=none
+[2026-11-06 08:27:53] provider=ollama shop_id=23 tools=none latency_ms=25200 error=http_500
+[2026-11-06 08:27:53] shop_id=23 tools=none latency_ms=769 error=http_429
+[2026-11-06 08:31:50] provider=ollama shop_id=23 tools=none latency_ms=19652 error=http_500
+[2026-11-06 08:31:50] shop_id=23 tools=none latency_ms=353 error=http_429
+[2026-11-06 08:32:18] provider=ollama shop_id=23 tools=none latency_ms=19621 error=http_500
+[2026-11-06 08:32:18] shop_id=23 tools=none latency_ms=402 error=http_429
+[2026-11-06 08:41:43] provider=ollama shop_id=143 tools=none latency_ms=0 error=none
+[2026-11-06 08:41:43] shop_id=143 tools=none latency_ms=0 error=empty_response
+[2026-11-06 08:41:43] provider=ollama shop_id=143 tools=none latency_ms=0 error=none
+[2026-11-06 08:41:43] provider=ollama shop_id=143 tools=none latency_ms=0 error=none
+[2026-11-06 08:41:43] provider=ollama shop_id=143 tools=none latency_ms=0 error=none
+[2026-11-06 08:41:43] provider=ollama shop_id=143 tools=none latency_ms=0 error=none
+[2026-11-06 08:41:43] shop_id=143 tools=none latency_ms=0 error=empty_response
+[2026-11-06 08:41:43] provider=ollama shop_id=143 tools=none latency_ms=0 error=none
+[2026-11-06 08:41:43] shop_id=143 tools=none latency_ms=0 error=empty_response
+[2026-11-06 08:41:43] provider=ollama shop_id=143 tools=none latency_ms=0 error=none
+[2026-11-06 08:41:43] shop_id=143 tools=none latency_ms=0 error=empty_response
+[2026-11-06 08:41:43] provider=ollama shop_id=143 tools=none latency_ms=0 error=none
+[2026-11-06 08:41:43] shop_id=143 tools=none latency_ms=0 error=empty_response
+[2026-11-06 08:41:43] provider=ollama shop_id=143 tools=none latency_ms=0 error=none
+[2026-11-06 08:41:43] provider=ollama shop_id=143 tools=none latency_ms=0 error=none
+[2026-11-06 08:41:43] provider=ollama shop_id=143 tools=none latency_ms=0 error=none
+[2026-11-06 08:41:43] shop_id=143 tools=none latency_ms=0 error=empty_response
+[2026-11-06 08:41:43] provider=ollama shop_id=143 tools=none latency_ms=0 error=none
+[2026-11-06 08:41:43] provider=ollama shop_id=143 tools=none latency_ms=0 error=none
+[2026-11-06 08:41:43] provider=ollama shop_id=143 tools=none latency_ms=0 error=none
+[2026-11-06 08:41:43] provider=ollama shop_id=143 tools=none latency_ms=0 error=none
+[2026-11-06 08:41:43] shop_id=143 tools=none latency_ms=0 error=empty_response
+[2026-11-06 08:41:43] provider=ollama shop_id=143 tools=none latency_ms=0 error=none
+[2026-11-06 08:41:43] shop_id=143 tools=none latency_ms=0 error=empty_response
+[2026-11-06 08:41:43] provider=ollama shop_id=143 tools=none latency_ms=0 error=none
+[2026-11-06 08:41:43] shop_id=143 tools=none latency_ms=0 error=empty_response
+[2026-11-06 08:41:43] provider=ollama shop_id=143 tools=none latency_ms=0 error=none
+[2026-11-06 08:41:43] provider=ollama shop_id=143 tools=none latency_ms=0 error=none
+[2026-11-06 08:41:43] shop_id=143 tools=none latency_ms=0 error=empty_response
+[2026-11-06 08:41:43] provider=ollama shop_id=143 tools=none latency_ms=0 error=none
+[2026-11-06 08:41:43] provider=ollama shop_id=143 tools=none latency_ms=0 error=none
+[2026-11-06 08:41:44] provider=ollama shop_id=143 tools=none latency_ms=0 error=none
+[2026-11-06 08:41:44] provider=ollama shop_id=143 tools=none latency_ms=0 error=none
+[2026-11-06 08:41:44] provider=ollama shop_id=143 tools=none latency_ms=0 error=none
+[2026-11-06 08:41:44] provider=ollama shop_id=143 tools=none latency_ms=0 error=none
+[2026-11-06 08:41:44] shop_id=143 tools=none latency_ms=0 error=empty_response
+[2026-11-06 08:41:44] provider=ollama shop_id=143 tools=none latency_ms=0 error=none
+[2026-11-06 08:41:44] shop_id=143 tools=none latency_ms=0 error=empty_response
+[2026-11-06 08:41:44] provider=ollama shop_id=143 tools=none latency_ms=0 error=none
+[2026-11-06 08:41:44] shop_id=143 tools=none latency_ms=0 error=empty_response
+[2026-11-06 08:41:44] provider=ollama shop_id=143 tools=none latency_ms=0 error=none
+[2026-11-06 08:41:44] shop_id=143 tools=none latency_ms=0 error=empty_response
+[2026-11-06 08:41:44] provider=ollama shop_id=143 tools=none latency_ms=0 error=none
+[2026-11-06 08:41:44] shop_id=143 tools=none latency_ms=0 error=empty_response
+[2026-11-06 08:41:44] provider=ollama shop_id=143 tools=none latency_ms=0 error=none
+[2026-11-06 08:41:44] provider=ollama shop_id=143 tools=none latency_ms=0 error=none
+[2026-11-06 08:41:44] provider=ollama shop_id=143 tools=none latency_ms=0 error=none
+[2026-11-06 08:41:44] shop_id=143 tools=none latency_ms=0 error=empty_response
+[2026-11-06 08:41:44] provider=ollama shop_id=143 tools=none latency_ms=0 error=none
+[2026-11-06 08:41:44] provider=ollama shop_id=143 tools=none latency_ms=0 error=none
+[2026-11-06 08:41:44] shop_id=143 tools=none latency_ms=0 error=empty_response
+[2026-11-06 08:41:44] provider=ollama shop_id=143 tools=none latency_ms=0 error=none
+[2026-11-06 08:41:44] shop_id=143 tools=none latency_ms=0 error=empty_response
+[2026-11-06 08:41:44] provider=ollama shop_id=143 tools=none latency_ms=0 error=none
+[2026-11-06 08:41:44] provider=ollama shop_id=143 tools=none latency_ms=0 error=none
+[2026-11-06 08:41:44] shop_id=143 tools=none latency_ms=0 error=empty_response
+[2026-11-06 08:41:44] provider=ollama shop_id=143 tools=none latency_ms=0 error=none
+[2026-11-06 08:41:44] shop_id=143 tools=none latency_ms=0 error=empty_response
+[2026-11-06 08:41:44] provider=ollama shop_id=143 tools=none latency_ms=0 error=none
+[2026-11-06 08:41:44] shop_id=143 tools=none latency_ms=0 error=empty_response
+[2026-11-06 08:41:44] provider=ollama shop_id=143 tools=none latency_ms=0 error=none
+[2026-11-06 08:41:44] shop_id=143 tools=none latency_ms=0 error=empty_response
+[2026-11-06 08:47:15] provider=ollama shop_id=144 tools=get_product_stock latency_ms=0 error=none
+[2026-11-06 08:47:15] provider=ollama shop_id=144 tools=none latency_ms=0 error=none
+[2026-11-06 08:47:15] shop_id=144 tools=none latency_ms=0 error=empty_response
+[2026-11-06 08:47:15] provider=ollama shop_id=144 tools=none latency_ms=0 error=none
+[2026-11-06 08:47:15] provider=ollama shop_id=144 tools=none latency_ms=0 error=none
+[2026-11-06 08:47:15] shop_id=144 tools=none latency_ms=0 error=empty_response
+[2026-11-06 08:47:15] provider=ollama shop_id=144 tools=none latency_ms=0 error=none
+[2026-11-06 08:47:15] provider=ollama shop_id=144 tools=none latency_ms=0 error=none
+[2026-11-06 08:47:15] provider=ollama shop_id=144 tools=none latency_ms=0 error=none
+[2026-11-06 08:47:15] provider=ollama shop_id=144 tools=none latency_ms=0 error=none
+[2026-11-06 08:47:15] shop_id=144 tools=none latency_ms=0 error=empty_response
+[2026-11-06 08:47:15] provider=ollama shop_id=144 tools=none latency_ms=0 error=none
+[2026-11-06 08:47:15] shop_id=144 tools=none latency_ms=0 error=empty_response
+[2026-11-06 08:47:15] provider=ollama shop_id=144 tools=none latency_ms=0 error=none
+[2026-11-06 08:47:15] shop_id=144 tools=none latency_ms=0 error=none
+[2026-11-06 08:47:15] shop_id=144 tools=none latency_ms=0 error=none
+[2026-11-06 08:47:15] provider=ollama shop_id=144 tools=none latency_ms=0 error=Connection refused by Ollama daemon
+[2026-11-06 08:47:15] shop_id=144 tools=none latency_ms=0 error=none
+[2026-11-06 08:47:16] shop_id=144 tools=none latency_ms=0 error=empty_response
+[2026-11-06 08:47:16] provider=ollama shop_id=144 tools=none latency_ms=0 error=none
+[2026-11-06 08:47:16] shop_id=144 tools=none latency_ms=0 error=empty_response
+[2026-11-06 08:47:16] provider=ollama shop_id=144 tools=none latency_ms=0 error=Timeout after 90s
+[2026-11-06 08:47:16] shop_id=144 tools=none latency_ms=0 error=none
+[2026-11-06 08:47:16] shop_id=144 tools=none latency_ms=0 error=none
+[2026-11-06 08:47:16] shop_id=144 tools=none latency_ms=0 error=none
+[2026-11-06 08:47:46] provider=ollama shop_id=144 tools=none latency_ms=30494 error=http_500
+[2026-11-06 08:47:47] shop_id=144 tools=none latency_ms=667 error=http_429
+[2026-11-06 08:47:47] provider=ollama shop_id=144 tools=none latency_ms=0 error=ollama_error
+[2026-11-06 08:47:47] shop_id=144 tools=none latency_ms=0 error=api_error
+[2026-11-06 08:47:48] shop_id=144 tools=none latency_ms=0 error=api_error
+[2026-11-06 08:47:48] provider=ollama shop_id=144 tools=none latency_ms=0 error=ollama_error
+[2026-11-06 08:47:48] provider=ollama shop_id=144 tools=none latency_ms=0 error=ollama_error
+[2026-11-06 08:47:48] shop_id=144 tools=none latency_ms=0 error=api_error
+[2026-11-06 08:47:50] provider=ollama shop_id=144 tools=none latency_ms=0 error=ollama_error
+[2026-11-06 08:47:50] shop_id=144 tools=none latency_ms=0 error=api_error
+[2026-11-06 08:47:53] provider=ollama shop_id=144 tools=none latency_ms=0 error=none
+[2026-11-06 08:47:53] provider=ollama shop_id=144 tools=none latency_ms=0 error=none
+[2026-11-06 09:02:36] provider=ollama shop_id=146 tools=none latency_ms=0 error=none
+[2026-11-06 09:02:36] provider=ollama shop_id=146 tools=none latency_ms=0 error=none
+[2026-11-06 09:02:36] provider=ollama shop_id=146 tools=none latency_ms=0 error=none
+[2026-11-06 09:02:36] provider=ollama shop_id=146 tools=none latency_ms=0 error=none
+[2026-11-06 09:02:36] shop_id=146 tools=none latency_ms=0 error=empty_response
+[2026-11-06 09:02:36] provider=ollama shop_id=146 tools=none latency_ms=0 error=none
+[2026-11-06 09:02:36] shop_id=146 tools=none latency_ms=0 error=empty_response
+[2026-11-06 09:02:38] provider=ollama shop_id=146 tools=none latency_ms=0 error=none
+[2026-11-06 09:02:38] provider=ollama shop_id=146 tools=none latency_ms=0 error=none
+[2026-11-06 09:02:38] shop_id=146 tools=none latency_ms=0 error=empty_response
+[2026-11-06 09:02:38] provider=ollama shop_id=146 tools=none latency_ms=0 error=none
+[2026-11-06 09:02:38] provider=ollama shop_id=146 tools=none latency_ms=0 error=none
+[2026-11-06 09:02:38] provider=ollama shop_id=146 tools=none latency_ms=0 error=none
+[2026-11-06 09:02:38] shop_id=146 tools=none latency_ms=0 error=empty_response
+[2026-11-06 09:02:38] provider=ollama shop_id=146 tools=none latency_ms=0 error=none
+[2026-11-06 09:02:39] provider=ollama shop_id=146 tools=none latency_ms=0 error=none
+[2026-11-06 09:02:39] provider=ollama shop_id=146 tools=none latency_ms=0 error=none
+[2026-11-06 09:02:39] provider=ollama shop_id=146 tools=none latency_ms=0 error=none
+[2026-11-06 09:02:39] provider=ollama shop_id=146 tools=none latency_ms=0 error=none
+[2026-11-06 09:02:39] provider=ollama shop_id=146 tools=none latency_ms=0 error=none
+[2026-11-06 09:02:39] provider=ollama shop_id=146 tools=none latency_ms=0 error=none
+[2026-11-06 09:02:39] provider=ollama shop_id=146 tools=none latency_ms=0 error=none
+[2026-11-06 09:02:39] provider=ollama shop_id=146 tools=none latency_ms=0 error=none
+[2026-11-06 09:02:39] provider=ollama shop_id=146 tools=none latency_ms=0 error=none
+[2026-11-06 09:02:39] provider=ollama shop_id=146 tools=none latency_ms=0 error=none
+[2026-11-06 09:02:39] provider=ollama shop_id=146 tools=none latency_ms=0 error=none
+[2026-11-06 09:02:39] shop_id=146 tools=none latency_ms=0 error=empty_response
+[2026-11-06 09:02:39] provider=ollama shop_id=146 tools=none latency_ms=0 error=none
+[2026-11-06 09:05:49] provider=ollama shop_id=147 tools=none latency_ms=0 error=none
+[2026-11-06 09:05:51] provider=ollama shop_id=147 tools=none latency_ms=0 error=none
+[2026-11-06 09:05:51] provider=ollama shop_id=147 tools=none latency_ms=0 error=none
+[2026-11-06 09:05:51] shop_id=147 tools=none latency_ms=0 error=empty_response
+[2026-11-06 09:05:51] provider=ollama shop_id=147 tools=none latency_ms=0 error=none
+[2026-11-06 09:05:52] provider=ollama shop_id=147 tools=none latency_ms=0 error=none
+[2026-11-06 09:05:52] provider=ollama shop_id=147 tools=none latency_ms=0 error=none
+[2026-11-06 09:05:52] provider=ollama shop_id=147 tools=none latency_ms=0 error=none
+[2026-11-06 09:05:52] provider=ollama shop_id=147 tools=none latency_ms=0 error=none
+[2026-11-06 09:05:52] provider=ollama shop_id=147 tools=none latency_ms=0 error=none
+[2026-11-06 09:05:52] provider=ollama shop_id=147 tools=none latency_ms=0 error=none
+[2026-11-06 09:05:52] provider=ollama shop_id=147 tools=none latency_ms=0 error=none
+[2026-11-06 09:05:52] provider=ollama shop_id=147 tools=none latency_ms=0 error=none
+[2026-11-06 09:05:52] provider=ollama shop_id=147 tools=none latency_ms=0 error=none
+[2026-11-06 09:05:52] provider=ollama shop_id=147 tools=none latency_ms=0 error=none
+[2026-11-06 09:05:52] provider=ollama shop_id=147 tools=none latency_ms=0 error=none
+[2026-11-06 09:05:53] provider=ollama shop_id=147 tools=none latency_ms=0 error=none
+[2026-11-06 09:05:53] provider=ollama shop_id=147 tools=none latency_ms=0 error=none
+[2026-11-06 09:05:53] provider=ollama shop_id=147 tools=none latency_ms=1 error=none
+[2026-11-06 09:05:53] provider=ollama shop_id=147 tools=none latency_ms=0 error=none
+[2026-11-06 09:05:53] provider=ollama shop_id=147 tools=none latency_ms=0 error=none
+[2026-11-06 09:05:53] provider=ollama shop_id=147 tools=none latency_ms=0 error=none
+[2026-11-06 09:05:53] provider=ollama shop_id=147 tools=none latency_ms=0 error=none
+[2026-11-06 09:05:53] provider=ollama shop_id=147 tools=none latency_ms=0 error=none
+[2026-11-06 09:05:53] provider=ollama shop_id=147 tools=none latency_ms=0 error=none
+[2026-11-06 09:05:53] provider=ollama shop_id=147 tools=none latency_ms=0 error=none
+[2026-11-06 09:05:53] provider=ollama shop_id=147 tools=none latency_ms=0 error=none
+[2026-11-06 09:05:53] shop_id=147 tools=none latency_ms=0 error=empty_response
+[2026-11-06 09:05:53] provider=ollama shop_id=147 tools=none latency_ms=0 error=none
+[2026-11-06 09:05:53] shop_id=147 tools=none latency_ms=0 error=empty_response
+[2026-11-06 09:05:53] shop_id=147 tools=none latency_ms=0 error=empty_response
+[2026-11-06 09:05:53] provider=ollama shop_id=147 tools=none latency_ms=0 error=none
+[2026-11-06 09:05:53] shop_id=147 tools=none latency_ms=0 error=empty_response
+[2026-11-06 09:05:53] provider=ollama shop_id=147 tools=none latency_ms=0 error=none
+[2026-11-06 09:05:53] provider=ollama shop_id=147 tools=none latency_ms=0 error=none
+[2026-11-06 09:05:53] provider=ollama shop_id=147 tools=none latency_ms=0 error=none
+[2026-11-06 09:05:53] shop_id=147 tools=none latency_ms=0 error=empty_response
+[2026-11-06 09:05:53] provider=ollama shop_id=147 tools=none latency_ms=0 error=none
+[2026-11-06 09:05:53] shop_id=147 tools=none latency_ms=0 error=empty_response
+[2026-11-06 09:05:53] provider=ollama shop_id=147 tools=none latency_ms=0 error=none
+[2026-11-06 09:05:53] shop_id=147 tools=none latency_ms=0 error=empty_response
+[2026-11-06 09:05:53] provider=ollama shop_id=147 tools=none latency_ms=0 error=none
+[2026-11-06 09:05:54] provider=ollama shop_id=147 tools=none latency_ms=0 error=none
+[2026-11-06 09:05:54] shop_id=147 tools=none latency_ms=0 error=empty_response
+[2026-11-06 09:05:54] provider=ollama shop_id=147 tools=none latency_ms=0 error=none
+[2026-11-06 09:05:54] shop_id=147 tools=none latency_ms=0 error=empty_response
+[2026-11-06 09:05:54] shop_id=147 tools=none latency_ms=0 error=empty_response
+[2026-11-06 09:05:54] provider=ollama shop_id=147 tools=none latency_ms=0 error=none
+[2026-11-06 09:05:54] provider=ollama shop_id=147 tools=none latency_ms=0 error=none
+[2026-11-06 09:05:54] provider=ollama shop_id=147 tools=none latency_ms=0 error=none
+[2026-11-06 09:05:54] provider=ollama shop_id=147 tools=none latency_ms=0 error=none
+[2026-11-06 09:05:54] provider=ollama shop_id=147 tools=none latency_ms=0 error=none
+[2026-11-06 09:05:55] provider=ollama shop_id=147 tools=none latency_ms=0 error=none
+[2026-11-06 09:05:55] provider=ollama shop_id=147 tools=none latency_ms=0 error=none
+[2026-11-06 09:05:55] provider=ollama shop_id=147 tools=none latency_ms=0 error=none
+[2026-11-06 09:05:55] provider=ollama shop_id=147 tools=none latency_ms=0 error=none
+[2026-11-06 09:05:55] provider=ollama shop_id=147 tools=none latency_ms=0 error=none
+[2026-11-06 09:05:55] provider=ollama shop_id=147 tools=none latency_ms=0 error=none
+[2026-11-06 09:05:55] provider=ollama shop_id=147 tools=none latency_ms=0 error=none
+[2026-11-06 09:05:55] provider=ollama shop_id=147 tools=none latency_ms=0 error=none
+[2026-11-06 09:05:55] provider=ollama shop_id=147 tools=none latency_ms=0 error=none
+[2026-11-06 09:05:55] shop_id=147 tools=none latency_ms=0 error=empty_response
+[2026-11-06 09:05:55] provider=ollama shop_id=147 tools=none latency_ms=0 error=none
+[2026-11-06 09:05:56] provider=ollama shop_id=147 tools=none latency_ms=0 error=none
+[2026-11-06 09:05:56] provider=ollama shop_id=147 tools=none latency_ms=0 error=none
+[2026-11-06 09:05:56] provider=ollama shop_id=147 tools=none latency_ms=0 error=none
+[2026-11-06 09:05:56] provider=ollama shop_id=147 tools=none latency_ms=0 error=none
+[2026-11-06 09:05:56] provider=ollama shop_id=147 tools=none latency_ms=0 error=none
+[2026-11-06 09:05:56] provider=ollama shop_id=147 tools=none latency_ms=0 error=none
+[2026-11-06 09:14:09] provider=ollama shop_id=148 tools=none latency_ms=1 error=none
+[2026-11-06 09:14:11] provider=ollama shop_id=148 tools=none latency_ms=0 error=none
+[2026-11-06 09:14:11] provider=ollama shop_id=148 tools=none latency_ms=0 error=none
+[2026-11-06 09:14:11] shop_id=148 tools=none latency_ms=0 error=none
+[2026-11-06 09:14:11] provider=ollama shop_id=148 tools=none latency_ms=0 error=none
+[2026-11-06 09:14:12] provider=ollama shop_id=148 tools=none latency_ms=0 error=none
+[2026-11-06 09:14:12] provider=ollama shop_id=148 tools=none latency_ms=0 error=none
+[2026-11-06 09:14:12] provider=ollama shop_id=148 tools=none latency_ms=0 error=none
+[2026-11-06 09:14:12] provider=ollama shop_id=148 tools=none latency_ms=0 error=none
+[2026-11-06 09:14:12] provider=ollama shop_id=148 tools=none latency_ms=0 error=none
+[2026-11-06 09:14:12] provider=ollama shop_id=148 tools=none latency_ms=0 error=none
+[2026-11-06 09:14:12] provider=ollama shop_id=148 tools=none latency_ms=0 error=none
+[2026-11-06 09:14:12] provider=ollama shop_id=148 tools=none latency_ms=0 error=none
+[2026-11-06 09:14:12] provider=ollama shop_id=148 tools=none latency_ms=0 error=none
+[2026-11-06 09:14:13] provider=ollama shop_id=148 tools=none latency_ms=0 error=none
+[2026-11-06 09:14:13] provider=ollama shop_id=148 tools=none latency_ms=0 error=none
+[2026-11-06 09:14:13] provider=ollama shop_id=148 tools=none latency_ms=0 error=none
+[2026-11-06 09:14:13] provider=ollama shop_id=148 tools=none latency_ms=0 error=none
+[2026-11-06 09:14:13] provider=ollama shop_id=148 tools=none latency_ms=0 error=none
+[2026-11-06 09:14:13] provider=ollama shop_id=148 tools=none latency_ms=0 error=none
+[2026-11-06 09:14:13] provider=ollama shop_id=148 tools=none latency_ms=0 error=none
+[2026-11-06 09:14:13] provider=ollama shop_id=148 tools=none latency_ms=0 error=none
+[2026-11-06 09:14:13] provider=ollama shop_id=148 tools=none latency_ms=0 error=none
+[2026-11-06 09:14:13] provider=ollama shop_id=148 tools=none latency_ms=0 error=none
+[2026-11-06 09:14:13] provider=ollama shop_id=148 tools=none latency_ms=0 error=none
+[2026-11-06 09:14:13] provider=ollama shop_id=148 tools=none latency_ms=0 error=none
+[2026-11-06 09:14:13] provider=ollama shop_id=148 tools=none latency_ms=0 error=none
+[2026-11-06 09:14:13] shop_id=148 tools=none latency_ms=0 error=none
+[2026-11-06 09:14:13] provider=ollama shop_id=148 tools=none latency_ms=0 error=none
+[2026-11-06 09:14:13] shop_id=148 tools=none latency_ms=0 error=none
+[2026-11-06 09:14:13] shop_id=148 tools=none latency_ms=0 error=none
+[2026-11-06 09:14:13] shop_id=148 tools=none latency_ms=0 error=none
+[2026-11-06 09:14:13] provider=ollama shop_id=148 tools=none latency_ms=0 error=none
+[2026-11-06 09:14:14] provider=ollama shop_id=148 tools=none latency_ms=0 error=none
+[2026-11-06 09:14:14] shop_id=148 tools=none latency_ms=0 error=none
+[2026-11-06 09:14:14] shop_id=148 tools=none latency_ms=0 error=none
+[2026-11-06 09:14:14] shop_id=148 tools=none latency_ms=0 error=none
+[2026-11-06 09:14:14] provider=ollama shop_id=148 tools=none latency_ms=0 error=none
+[2026-11-06 09:14:14] shop_id=148 tools=none latency_ms=0 error=none
+[2026-11-06 09:14:14] provider=ollama shop_id=148 tools=none latency_ms=0 error=none
+[2026-11-06 09:14:14] shop_id=148 tools=none latency_ms=0 error=none
+[2026-11-06 09:14:14] shop_id=148 tools=none latency_ms=0 error=none
+[2026-11-06 09:14:14] provider=ollama shop_id=148 tools=none latency_ms=0 error=none
+[2026-11-06 09:14:14] provider=ollama shop_id=148 tools=none latency_ms=0 error=none
+[2026-11-06 09:14:14] provider=ollama shop_id=148 tools=none latency_ms=0 error=none
+[2026-11-06 09:14:14] provider=ollama shop_id=148 tools=none latency_ms=0 error=none
+[2026-11-06 09:14:15] provider=ollama shop_id=148 tools=none latency_ms=0 error=none
+[2026-11-06 09:14:15] provider=ollama shop_id=148 tools=none latency_ms=0 error=none
+[2026-11-06 09:14:15] provider=ollama shop_id=148 tools=none latency_ms=0 error=none
+[2026-11-06 09:14:15] provider=ollama shop_id=148 tools=none latency_ms=0 error=none
+[2026-11-06 09:14:15] provider=ollama shop_id=148 tools=none latency_ms=0 error=none
+[2026-11-06 09:14:15] provider=ollama shop_id=148 tools=none latency_ms=0 error=none
+[2026-11-06 09:14:16] provider=ollama shop_id=148 tools=none latency_ms=0 error=none
+[2026-11-06 09:14:16] provider=ollama shop_id=148 tools=none latency_ms=0 error=none
+[2026-11-06 09:14:16] provider=ollama shop_id=148 tools=none latency_ms=0 error=none
+[2026-11-06 09:14:16] provider=ollama shop_id=148 tools=none latency_ms=0 error=none
+[2026-11-06 09:14:16] provider=ollama shop_id=148 tools=none latency_ms=0 error=none
+[2026-11-06 09:19:37] provider=ollama shop_id=23 tools=none latency_ms=90151 error=curl_Operation timed out after 90011 milliseconds with 0 bytes received
+[2026-11-06 09:19:40] shop_id=23 tools=get_shop_details latency_ms=3217 error=none
+[2026-11-06 09:19:59] provider=ollama shop_id=148 tools=none latency_ms=1 error=none
+[2026-11-06 09:19:59] shop_id=148 tools=none latency_ms=0 error=none
+[2026-11-06 09:20:58] provider=ollama shop_id=148 tools=none latency_ms=0 error=none
+[2026-11-06 09:20:58] shop_id=148 tools=none latency_ms=0 error=none
+[2026-11-06 09:22:44] provider=ollama shop_id=148 tools=none latency_ms=4 error=none
+[2026-11-06 09:26:00] provider=ollama shop_id=149 tools=none latency_ms=2 error=none
+[2026-11-06 09:26:03] provider=ollama shop_id=149 tools=none latency_ms=0 error=none
+[2026-11-06 09:26:03] provider=ollama shop_id=149 tools=none latency_ms=0 error=none
+[2026-11-06 09:26:03] shop_id=149 tools=none latency_ms=0 error=none
+[2026-11-06 09:26:03] provider=ollama shop_id=149 tools=none latency_ms=0 error=none
+[2026-11-06 09:26:03] provider=ollama shop_id=149 tools=none latency_ms=0 error=none
+[2026-11-06 09:26:03] provider=ollama shop_id=149 tools=none latency_ms=0 error=none
+[2026-11-06 09:26:03] provider=ollama shop_id=149 tools=none latency_ms=0 error=none
+[2026-11-06 09:26:04] provider=ollama shop_id=149 tools=none latency_ms=0 error=none
+[2026-11-06 09:26:04] provider=ollama shop_id=149 tools=none latency_ms=0 error=none
+[2026-11-06 09:26:04] provider=ollama shop_id=149 tools=none latency_ms=0 error=none
+[2026-11-06 09:26:04] provider=ollama shop_id=149 tools=none latency_ms=0 error=none
+[2026-11-06 09:26:04] provider=ollama shop_id=149 tools=none latency_ms=0 error=none
+[2026-11-06 09:26:04] provider=ollama shop_id=149 tools=none latency_ms=0 error=none
+[2026-11-06 09:26:04] provider=ollama shop_id=149 tools=none latency_ms=0 error=none
+[2026-11-06 09:26:04] provider=ollama shop_id=149 tools=none latency_ms=0 error=none
+[2026-11-06 09:26:04] provider=ollama shop_id=149 tools=none latency_ms=0 error=none
+[2026-11-06 09:26:04] provider=ollama shop_id=149 tools=none latency_ms=0 error=none
+[2026-11-06 09:26:04] provider=ollama shop_id=149 tools=none latency_ms=0 error=none
+[2026-11-06 09:26:04] provider=ollama shop_id=149 tools=none latency_ms=0 error=none
+[2026-11-06 09:26:04] provider=ollama shop_id=149 tools=none latency_ms=0 error=none
+[2026-11-06 09:26:04] provider=ollama shop_id=149 tools=none latency_ms=0 error=none
+[2026-11-06 09:26:04] provider=ollama shop_id=149 tools=none latency_ms=0 error=none
+[2026-11-06 09:26:04] provider=ollama shop_id=149 tools=none latency_ms=0 error=none
+[2026-11-06 09:26:04] provider=ollama shop_id=149 tools=none latency_ms=0 error=none
+[2026-11-06 09:26:05] provider=ollama shop_id=149 tools=none latency_ms=0 error=none
+[2026-11-06 09:26:05] provider=ollama shop_id=149 tools=none latency_ms=0 error=none
+[2026-11-06 09:26:05] provider=ollama shop_id=149 tools=none latency_ms=0 error=none
+[2026-11-06 09:26:05] shop_id=149 tools=none latency_ms=0 error=none
+[2026-11-06 09:26:05] shop_id=149 tools=none latency_ms=0 error=none
+[2026-11-06 09:26:05] provider=ollama shop_id=149 tools=none latency_ms=0 error=none
+[2026-11-06 09:26:05] provider=ollama shop_id=149 tools=none latency_ms=0 error=none
+[2026-11-06 09:26:05] shop_id=149 tools=none latency_ms=0 error=none
+[2026-11-06 09:26:05] shop_id=149 tools=none latency_ms=0 error=none
+[2026-11-06 09:26:05] shop_id=149 tools=none latency_ms=0 error=none
+[2026-11-06 09:26:05] provider=ollama shop_id=149 tools=none latency_ms=0 error=none
+[2026-11-06 09:26:05] provider=ollama shop_id=149 tools=none latency_ms=0 error=none
+[2026-11-06 09:26:05] shop_id=149 tools=none latency_ms=0 error=none
+[2026-11-06 09:26:05] provider=ollama shop_id=149 tools=none latency_ms=0 error=none
+[2026-11-06 09:26:05] provider=ollama shop_id=149 tools=none latency_ms=0 error=none
+[2026-11-06 09:26:06] provider=ollama shop_id=149 tools=none latency_ms=0 error=none
+[2026-11-06 09:26:06] provider=ollama shop_id=149 tools=none latency_ms=0 error=none
+[2026-11-06 09:26:06] provider=ollama shop_id=149 tools=none latency_ms=0 error=none
+[2026-11-06 09:26:06] provider=ollama shop_id=149 tools=none latency_ms=0 error=none
+[2026-11-06 09:26:06] provider=ollama shop_id=149 tools=none latency_ms=0 error=none
+[2026-11-06 09:26:06] provider=ollama shop_id=149 tools=none latency_ms=0 error=none
+[2026-11-06 09:26:06] provider=ollama shop_id=149 tools=none latency_ms=0 error=none
+[2026-11-06 09:26:06] provider=ollama shop_id=149 tools=none latency_ms=0 error=none
+[2026-11-06 09:26:07] provider=ollama shop_id=149 tools=none latency_ms=0 error=none
+[2026-11-06 09:26:07] provider=ollama shop_id=149 tools=none latency_ms=0 error=none
+[2026-11-06 09:26:07] provider=ollama shop_id=149 tools=none latency_ms=0 error=none
+[2026-11-06 09:26:07] provider=ollama shop_id=149 tools=none latency_ms=0 error=none
+[2026-11-06 09:26:07] provider=ollama shop_id=149 tools=none latency_ms=0 error=none
+[2026-11-06 09:30:55] provider=ollama shop_id=150 tools=none latency_ms=0 error=none
+[2026-11-06 09:30:57] provider=ollama shop_id=150 tools=none latency_ms=0 error=none
+[2026-11-06 09:30:57] provider=ollama shop_id=150 tools=none latency_ms=0 error=none
+[2026-11-06 09:30:57] shop_id=150 tools=none latency_ms=0 error=none
+[2026-11-06 09:30:57] provider=ollama shop_id=150 tools=none latency_ms=0 error=none
+[2026-11-06 09:30:58] provider=ollama shop_id=150 tools=none latency_ms=0 error=none
+[2026-11-06 09:30:58] provider=ollama shop_id=150 tools=none latency_ms=0 error=none
+[2026-11-06 09:30:58] provider=ollama shop_id=150 tools=none latency_ms=0 error=none
+[2026-11-06 09:30:58] provider=ollama shop_id=150 tools=none latency_ms=0 error=none
+[2026-11-06 09:30:58] provider=ollama shop_id=150 tools=none latency_ms=0 error=none
+[2026-11-06 09:30:58] provider=ollama shop_id=150 tools=none latency_ms=0 error=none
+[2026-11-06 09:30:58] provider=ollama shop_id=150 tools=none latency_ms=0 error=none
+[2026-11-06 09:30:58] provider=ollama shop_id=150 tools=none latency_ms=0 error=none
+[2026-11-06 09:30:58] provider=ollama shop_id=150 tools=none latency_ms=0 error=none
+[2026-11-06 09:30:58] provider=ollama shop_id=150 tools=none latency_ms=0 error=none
+[2026-11-06 09:30:58] provider=ollama shop_id=150 tools=none latency_ms=0 error=none
+[2026-11-06 09:30:59] provider=ollama shop_id=150 tools=none latency_ms=0 error=none
+[2026-11-06 09:30:59] provider=ollama shop_id=150 tools=none latency_ms=0 error=none
+[2026-11-06 09:30:59] provider=ollama shop_id=150 tools=none latency_ms=0 error=none
+[2026-11-06 09:30:59] provider=ollama shop_id=150 tools=none latency_ms=0 error=none
+[2026-11-06 09:30:59] provider=ollama shop_id=150 tools=none latency_ms=0 error=none
+[2026-11-06 09:30:59] provider=ollama shop_id=150 tools=none latency_ms=0 error=none
+[2026-11-06 09:30:59] provider=ollama shop_id=150 tools=none latency_ms=0 error=none
+[2026-11-06 09:30:59] provider=ollama shop_id=150 tools=none latency_ms=0 error=none
+[2026-11-06 09:30:59] provider=ollama shop_id=150 tools=none latency_ms=0 error=none
+[2026-11-06 09:30:59] provider=ollama shop_id=150 tools=none latency_ms=0 error=none
+[2026-11-06 09:30:59] provider=ollama shop_id=150 tools=none latency_ms=0 error=none
+[2026-11-06 09:30:59] provider=ollama shop_id=150 tools=none latency_ms=0 error=none
+[2026-11-06 09:30:59] shop_id=150 tools=none latency_ms=0 error=none
+[2026-11-06 09:30:59] shop_id=150 tools=none latency_ms=0 error=none
+[2026-11-06 09:30:59] provider=ollama shop_id=150 tools=none latency_ms=0 error=none
+[2026-11-06 09:30:59] provider=ollama shop_id=150 tools=none latency_ms=0 error=none
+[2026-11-06 09:30:59] shop_id=150 tools=none latency_ms=0 error=none
+[2026-11-06 09:30:59] shop_id=150 tools=none latency_ms=0 error=none
+[2026-11-06 09:30:59] shop_id=150 tools=none latency_ms=0 error=none
+[2026-11-06 09:31:00] provider=ollama shop_id=150 tools=none latency_ms=0 error=none
+[2026-11-06 09:31:00] provider=ollama shop_id=150 tools=none latency_ms=0 error=none
+[2026-11-06 09:31:00] shop_id=150 tools=none latency_ms=0 error=none
+[2026-11-06 09:31:00] provider=ollama shop_id=150 tools=none latency_ms=0 error=none
+[2026-11-06 09:31:00] provider=ollama shop_id=150 tools=none latency_ms=0 error=none
+[2026-11-06 09:31:00] provider=ollama shop_id=150 tools=none latency_ms=0 error=none
+[2026-11-06 09:31:00] provider=ollama shop_id=150 tools=none latency_ms=0 error=none
+[2026-11-06 09:31:01] provider=ollama shop_id=150 tools=none latency_ms=0 error=none
+[2026-11-06 09:31:01] provider=ollama shop_id=150 tools=none latency_ms=0 error=none
+[2026-11-06 09:31:01] provider=ollama shop_id=150 tools=none latency_ms=0 error=none
+[2026-11-06 09:31:01] provider=ollama shop_id=150 tools=none latency_ms=0 error=none
+[2026-11-06 09:31:01] provider=ollama shop_id=150 tools=none latency_ms=0 error=none
+[2026-11-06 09:31:01] provider=ollama shop_id=150 tools=none latency_ms=0 error=none
+[2026-11-06 09:31:02] provider=ollama shop_id=150 tools=none latency_ms=0 error=none
+[2026-11-06 09:31:02] provider=ollama shop_id=150 tools=none latency_ms=0 error=none
+[2026-11-06 09:31:02] provider=ollama shop_id=150 tools=none latency_ms=0 error=none
+[2026-11-06 09:31:02] provider=ollama shop_id=150 tools=none latency_ms=0 error=none
+[2026-11-06 09:31:02] provider=ollama shop_id=150 tools=none latency_ms=0 error=none
+[2026-11-06 09:31:50] provider=ollama shop_id=151 tools=get_product_stock latency_ms=0 error=none
+[2026-11-06 09:31:50] provider=ollama shop_id=151 tools=none latency_ms=0 error=none
+[2026-11-06 09:31:50] shop_id=151 tools=none latency_ms=0 error=none
+[2026-11-06 09:31:50] provider=ollama shop_id=151 tools=none latency_ms=0 error=none
+[2026-11-06 09:31:50] shop_id=151 tools=none latency_ms=0 error=none
+[2026-11-06 09:31:50] provider=ollama shop_id=151 tools=none latency_ms=0 error=none
+[2026-11-06 09:31:50] provider=ollama shop_id=151 tools=none latency_ms=0 error=none
+[2026-11-06 09:31:50] provider=ollama shop_id=151 tools=none latency_ms=0 error=none
+[2026-11-06 09:31:50] shop_id=151 tools=none latency_ms=0 error=none
+[2026-11-06 09:31:50] provider=ollama shop_id=151 tools=none latency_ms=0 error=none
+[2026-11-06 09:31:50] shop_id=151 tools=none latency_ms=0 error=none
+[2026-11-06 09:31:50] provider=ollama shop_id=151 tools=none latency_ms=0 error=none
+[2026-11-06 09:31:50] shop_id=151 tools=none latency_ms=0 error=none
+[2026-11-06 09:31:50] shop_id=151 tools=none latency_ms=0 error=none
+[2026-11-06 09:31:50] provider=ollama shop_id=151 tools=none latency_ms=0 error=Connection refused by Ollama daemon
+[2026-11-06 09:31:50] shop_id=151 tools=none latency_ms=0 error=none
+[2026-11-06 09:31:50] shop_id=151 tools=none latency_ms=0 error=empty_response
+[2026-11-06 09:31:50] provider=ollama shop_id=151 tools=none latency_ms=0 error=none
+[2026-11-06 09:31:50] shop_id=151 tools=none latency_ms=0 error=empty_response
+[2026-11-06 09:31:50] provider=ollama shop_id=151 tools=none latency_ms=0 error=Timeout after 90s
+[2026-11-06 09:31:50] shop_id=151 tools=none latency_ms=0 error=none
+[2026-11-06 09:31:50] shop_id=151 tools=none latency_ms=0 error=none
+[2026-11-06 09:31:51] shop_id=151 tools=none latency_ms=0 error=none
+[2026-11-06 09:32:10] provider=ollama shop_id=151 tools=none latency_ms=19375 error=http_500
+[2026-11-06 09:32:22] shop_id=151 tools=none latency_ms=11811 error=none
+[2026-11-06 09:32:29] shop_id=151 tools=none latency_ms=7269 error=none
+[2026-11-06 09:32:40] shop_id=151 tools=none latency_ms=10596 error=none
+[2026-11-06 09:32:40] shop_id=151 tools=none latency_ms=0 error=api_error
+[2026-11-06 09:32:40] provider=ollama shop_id=151 tools=none latency_ms=0 error=ollama_error
+[2026-11-06 09:32:40] provider=ollama shop_id=151 tools=none latency_ms=0 error=ollama_error
+[2026-11-06 09:32:40] shop_id=151 tools=none latency_ms=0 error=api_error
+[2026-11-06 09:32:41] provider=ollama shop_id=151 tools=none latency_ms=0 error=none
+[2026-11-06 09:32:41] provider=ollama shop_id=151 tools=none latency_ms=0 error=none
+[2026-11-06 09:35:33] provider=ollama shop_id=153 tools=get_product_stock latency_ms=0 error=none
+[2026-11-06 09:35:33] provider=ollama shop_id=153 tools=none latency_ms=0 error=none
+[2026-11-06 09:35:33] shop_id=153 tools=none latency_ms=0 error=none
+[2026-11-06 09:35:33] provider=ollama shop_id=153 tools=none latency_ms=0 error=none
+[2026-11-06 09:35:33] shop_id=153 tools=none latency_ms=0 error=none
+[2026-11-06 09:35:33] provider=ollama shop_id=153 tools=none latency_ms=0 error=none
+[2026-11-06 09:35:33] provider=ollama shop_id=153 tools=none latency_ms=0 error=none
+[2026-11-06 09:35:33] provider=ollama shop_id=153 tools=none latency_ms=0 error=none
+[2026-11-06 09:35:33] shop_id=153 tools=none latency_ms=0 error=none
+[2026-11-06 09:35:33] provider=ollama shop_id=153 tools=none latency_ms=0 error=none
+[2026-11-06 09:35:33] shop_id=153 tools=none latency_ms=0 error=none
+[2026-11-06 09:35:33] provider=ollama shop_id=153 tools=none latency_ms=0 error=none
+[2026-11-06 09:35:33] shop_id=153 tools=none latency_ms=0 error=none
+[2026-11-06 09:35:33] shop_id=153 tools=none latency_ms=0 error=none
+[2026-11-06 09:35:33] provider=ollama shop_id=153 tools=none latency_ms=0 error=Connection refused by Ollama daemon
+[2026-11-06 09:35:33] shop_id=153 tools=none latency_ms=0 error=none
+[2026-11-06 09:35:33] shop_id=153 tools=none latency_ms=0 error=empty_response
+[2026-11-06 09:35:33] provider=ollama shop_id=153 tools=none latency_ms=0 error=none
+[2026-11-06 09:35:33] shop_id=153 tools=none latency_ms=0 error=empty_response
+[2026-11-06 09:35:33] provider=ollama shop_id=153 tools=none latency_ms=0 error=Timeout after 90s
+[2026-11-06 09:35:33] shop_id=153 tools=none latency_ms=0 error=none
+[2026-11-06 09:35:33] shop_id=153 tools=none latency_ms=0 error=none
+[2026-11-06 09:35:33] shop_id=153 tools=none latency_ms=0 error=none
+[2026-11-06 09:35:33] provider=ollama shop_id=153 tools=none latency_ms=0 error=none
+[2026-11-06 09:35:34] shop_id=153 tools=none latency_ms=0 error=api_error
+[2026-11-06 09:35:34] provider=ollama shop_id=153 tools=none latency_ms=0 error=ollama_error
+[2026-11-06 09:35:34] provider=ollama shop_id=153 tools=none latency_ms=0 error=ollama_error
+[2026-11-06 09:35:34] shop_id=153 tools=none latency_ms=0 error=api_error
+[2026-11-06 09:35:34] provider=ollama shop_id=153 tools=none latency_ms=0 error=ollama_error
+[2026-11-06 09:35:34] shop_id=153 tools=none latency_ms=0 error=api_error
+[2026-11-06 09:35:35] provider=ollama shop_id=153 tools=none latency_ms=0 error=none
+[2026-11-06 09:35:35] provider=ollama shop_id=153 tools=none latency_ms=0 error=none
+[2026-11-06 09:35:54] provider=ollama shop_id=155 tools=none latency_ms=1 error=none
+[2026-11-06 09:35:56] provider=ollama shop_id=155 tools=none latency_ms=0 error=none
+[2026-11-06 09:35:56] provider=ollama shop_id=155 tools=none latency_ms=0 error=none
+[2026-11-06 09:35:56] shop_id=155 tools=none latency_ms=0 error=none
+[2026-11-06 09:35:56] provider=ollama shop_id=155 tools=none latency_ms=0 error=none
+[2026-11-06 09:35:57] provider=ollama shop_id=155 tools=none latency_ms=0 error=none
+[2026-11-06 09:35:57] provider=ollama shop_id=155 tools=none latency_ms=0 error=none
+[2026-11-06 09:35:57] provider=ollama shop_id=155 tools=none latency_ms=0 error=none
+[2026-11-06 09:35:57] provider=ollama shop_id=155 tools=none latency_ms=0 error=none
+[2026-11-06 09:35:57] provider=ollama shop_id=155 tools=none latency_ms=0 error=none
+[2026-11-06 09:35:57] provider=ollama shop_id=155 tools=none latency_ms=0 error=none
+[2026-11-06 09:35:57] provider=ollama shop_id=155 tools=none latency_ms=0 error=none
+[2026-11-06 09:35:57] provider=ollama shop_id=155 tools=none latency_ms=0 error=none
+[2026-11-06 09:35:57] provider=ollama shop_id=155 tools=none latency_ms=0 error=none
+[2026-11-06 09:35:57] provider=ollama shop_id=155 tools=none latency_ms=0 error=none
+[2026-11-06 09:35:57] provider=ollama shop_id=155 tools=none latency_ms=0 error=none
+[2026-11-06 09:35:58] provider=ollama shop_id=155 tools=none latency_ms=0 error=none
+[2026-11-06 09:35:58] provider=ollama shop_id=155 tools=none latency_ms=0 error=none
+[2026-11-06 09:35:58] provider=ollama shop_id=155 tools=none latency_ms=0 error=none
+[2026-11-06 09:35:58] provider=ollama shop_id=155 tools=none latency_ms=0 error=none
+[2026-11-06 09:35:58] provider=ollama shop_id=155 tools=none latency_ms=0 error=none
+[2026-11-06 09:35:58] provider=ollama shop_id=155 tools=none latency_ms=0 error=none
+[2026-11-06 09:35:58] provider=ollama shop_id=155 tools=none latency_ms=0 error=none
+[2026-11-06 09:35:58] provider=ollama shop_id=155 tools=none latency_ms=0 error=none
+[2026-11-06 09:35:58] provider=ollama shop_id=155 tools=none latency_ms=0 error=none
+[2026-11-06 09:35:58] provider=ollama shop_id=155 tools=none latency_ms=0 error=none
+[2026-11-06 09:35:58] provider=ollama shop_id=155 tools=none latency_ms=0 error=none
+[2026-11-06 09:35:58] provider=ollama shop_id=155 tools=none latency_ms=0 error=none
+[2026-11-06 09:35:58] provider=ollama shop_id=155 tools=none latency_ms=0 error=none
+[2026-11-06 09:35:58] shop_id=155 tools=none latency_ms=0 error=none
+[2026-11-06 09:35:58] shop_id=155 tools=none latency_ms=0 error=none
+[2026-11-06 09:35:58] provider=ollama shop_id=155 tools=none latency_ms=0 error=none
+[2026-11-06 09:35:58] provider=ollama shop_id=155 tools=none latency_ms=0 error=none
+[2026-11-06 09:35:58] shop_id=155 tools=none latency_ms=0 error=none
+[2026-11-06 09:35:58] shop_id=155 tools=none latency_ms=0 error=none
+[2026-11-06 09:35:59] shop_id=155 tools=none latency_ms=0 error=none
+[2026-11-06 09:35:59] provider=ollama shop_id=155 tools=none latency_ms=0 error=none
+[2026-11-06 09:35:59] provider=ollama shop_id=155 tools=none latency_ms=0 error=none
+[2026-11-06 09:35:59] shop_id=155 tools=none latency_ms=0 error=none
+[2026-11-06 09:35:59] provider=ollama shop_id=155 tools=none latency_ms=0 error=none
+[2026-11-06 09:35:59] provider=ollama shop_id=155 tools=none latency_ms=0 error=none
+[2026-11-06 09:35:59] provider=ollama shop_id=155 tools=none latency_ms=0 error=none
+[2026-11-06 09:35:59] provider=ollama shop_id=155 tools=none latency_ms=0 error=none
+[2026-11-06 09:36:00] provider=ollama shop_id=155 tools=none latency_ms=0 error=none
+[2026-11-06 09:36:00] provider=ollama shop_id=155 tools=none latency_ms=0 error=none
+[2026-11-06 09:36:00] provider=ollama shop_id=155 tools=none latency_ms=0 error=none
+[2026-11-06 09:36:00] provider=ollama shop_id=155 tools=none latency_ms=0 error=none
+[2026-11-06 09:36:00] provider=ollama shop_id=155 tools=none latency_ms=0 error=none
+[2026-11-06 09:36:00] provider=ollama shop_id=155 tools=none latency_ms=0 error=none
+[2026-11-06 09:36:01] provider=ollama shop_id=155 tools=none latency_ms=0 error=none
+[2026-11-06 09:36:01] provider=ollama shop_id=155 tools=none latency_ms=0 error=none
+[2026-11-06 09:36:01] provider=ollama shop_id=155 tools=none latency_ms=0 error=none
+[2026-11-06 09:36:01] provider=ollama shop_id=155 tools=none latency_ms=0 error=none
+[2026-11-06 09:36:01] provider=ollama shop_id=155 tools=none latency_ms=0 error=none
+[2026-11-06 09:48:47] provider=ollama shop_id=156 tools=get_product_stock latency_ms=0 error=none
+[2026-11-06 09:48:47] provider=ollama shop_id=156 tools=none latency_ms=0 error=none
+[2026-11-06 09:48:47] shop_id=156 tools=none latency_ms=0 error=none
+[2026-11-06 09:48:47] provider=ollama shop_id=156 tools=none latency_ms=0 error=none
+[2026-11-06 09:48:47] shop_id=156 tools=none latency_ms=0 error=none
+[2026-11-06 09:48:47] provider=ollama shop_id=156 tools=none latency_ms=0 error=none
+[2026-11-06 09:48:48] provider=ollama shop_id=156 tools=none latency_ms=0 error=none
+[2026-11-06 09:48:48] provider=ollama shop_id=156 tools=none latency_ms=0 error=none
+[2026-11-06 09:48:48] shop_id=156 tools=none latency_ms=0 error=none
+[2026-11-06 09:48:48] provider=ollama shop_id=156 tools=none latency_ms=0 error=none
+[2026-11-06 09:48:48] shop_id=156 tools=none latency_ms=0 error=none
+[2026-11-06 09:48:48] provider=ollama shop_id=156 tools=none latency_ms=0 error=none
+[2026-11-06 09:48:48] shop_id=156 tools=none latency_ms=0 error=none
+[2026-11-06 09:48:48] shop_id=156 tools=none latency_ms=0 error=none
+[2026-11-06 09:48:48] provider=ollama shop_id=156 tools=none latency_ms=0 error=Connection refused by Ollama daemon
+[2026-11-06 09:48:48] shop_id=156 tools=none latency_ms=0 error=none
+[2026-11-06 09:48:48] shop_id=156 tools=none latency_ms=0 error=empty_response
+[2026-11-06 09:48:48] provider=ollama shop_id=156 tools=none latency_ms=0 error=none
+[2026-11-06 09:48:48] shop_id=156 tools=none latency_ms=0 error=empty_response
+[2026-11-06 09:48:48] provider=ollama shop_id=156 tools=none latency_ms=0 error=Timeout after 90s
+[2026-11-06 09:48:48] shop_id=156 tools=none latency_ms=0 error=none
+[2026-11-06 09:48:48] shop_id=156 tools=none latency_ms=0 error=none
+[2026-11-06 09:48:48] shop_id=156 tools=none latency_ms=0 error=none
+[2026-11-06 09:48:48] provider=ollama shop_id=156 tools=none latency_ms=0 error=none
+[2026-11-06 09:48:48] shop_id=156 tools=none latency_ms=0 error=api_error
+[2026-11-06 09:48:48] provider=ollama shop_id=156 tools=none latency_ms=0 error=ollama_error
+[2026-11-06 09:48:48] provider=ollama shop_id=156 tools=none latency_ms=0 error=ollama_error
+[2026-11-06 09:48:48] shop_id=156 tools=none latency_ms=0 error=api_error
+[2026-11-06 09:48:49] provider=ollama shop_id=156 tools=none latency_ms=0 error=ollama_error
+[2026-11-06 09:48:49] shop_id=156 tools=none latency_ms=0 error=api_error
+[2026-11-06 09:48:49] provider=ollama shop_id=156 tools=none latency_ms=0 error=none
+[2026-11-06 09:48:49] provider=ollama shop_id=156 tools=none latency_ms=0 error=none
+[2026-11-06 09:49:54] provider=ollama shop_id=158 tools=get_product_stock latency_ms=0 error=none
+[2026-11-06 09:49:54] provider=ollama shop_id=158 tools=none latency_ms=0 error=none
+[2026-11-06 09:49:54] shop_id=158 tools=none latency_ms=0 error=none
+[2026-11-06 09:49:54] provider=ollama shop_id=158 tools=none latency_ms=0 error=none
+[2026-11-06 09:49:54] shop_id=158 tools=none latency_ms=0 error=none
+[2026-11-06 09:49:54] provider=ollama shop_id=158 tools=none latency_ms=0 error=none
+[2026-11-06 09:49:54] provider=ollama shop_id=158 tools=none latency_ms=0 error=none
+[2026-11-06 09:49:54] provider=ollama shop_id=158 tools=none latency_ms=0 error=none
+[2026-11-06 09:49:54] shop_id=158 tools=none latency_ms=0 error=none
+[2026-11-06 09:49:54] provider=ollama shop_id=158 tools=none latency_ms=0 error=none
+[2026-11-06 09:49:54] shop_id=158 tools=none latency_ms=0 error=none
+[2026-11-06 09:49:54] provider=ollama shop_id=158 tools=none latency_ms=0 error=none
+[2026-11-06 09:49:54] shop_id=158 tools=none latency_ms=0 error=none
+[2026-11-06 09:49:54] shop_id=158 tools=none latency_ms=0 error=none
+[2026-11-06 09:49:54] provider=ollama shop_id=158 tools=none latency_ms=0 error=Connection refused by Ollama daemon
+[2026-11-06 09:49:54] shop_id=158 tools=none latency_ms=0 error=none
+[2026-11-06 09:49:54] shop_id=158 tools=none latency_ms=0 error=empty_response
+[2026-11-06 09:49:54] provider=ollama shop_id=158 tools=none latency_ms=0 error=none
+[2026-11-06 09:49:54] shop_id=158 tools=none latency_ms=0 error=empty_response
+[2026-11-06 09:49:54] provider=ollama shop_id=158 tools=none latency_ms=0 error=Timeout after 90s
+[2026-11-06 09:49:54] shop_id=158 tools=none latency_ms=0 error=none
+[2026-11-06 09:49:54] shop_id=158 tools=none latency_ms=0 error=none
+[2026-11-06 09:49:54] shop_id=158 tools=none latency_ms=0 error=none
+[2026-11-06 09:49:55] provider=ollama shop_id=158 tools=none latency_ms=0 error=none
+[2026-11-06 09:49:55] shop_id=158 tools=none latency_ms=0 error=api_error
+[2026-11-06 09:49:55] provider=ollama shop_id=158 tools=none latency_ms=0 error=ollama_error
+[2026-11-06 09:49:55] provider=ollama shop_id=158 tools=none latency_ms=0 error=ollama_error
+[2026-11-06 09:49:55] shop_id=158 tools=none latency_ms=0 error=api_error
+[2026-11-06 09:49:55] provider=ollama shop_id=158 tools=none latency_ms=0 error=ollama_error
+[2026-11-06 09:49:55] shop_id=158 tools=none latency_ms=0 error=api_error
+[2026-11-06 09:49:56] provider=ollama shop_id=158 tools=none latency_ms=0 error=none
+[2026-11-06 09:49:56] provider=ollama shop_id=158 tools=none latency_ms=0 error=none
+[2026-11-06 09:49:57] provider=ollama shop_id=158 tools=none latency_ms=0 error=none
+[2026-11-06 09:49:59] provider=ollama shop_id=158 tools=none latency_ms=0 error=none
+[2026-11-06 09:49:59] provider=ollama shop_id=158 tools=none latency_ms=0 error=none
+[2026-11-06 09:49:59] provider=ollama shop_id=158 tools=none latency_ms=0 error=none
+[2026-11-06 09:50:00] provider=ollama shop_id=158 tools=none latency_ms=0 error=none
+[2026-11-06 09:50:00] provider=ollama shop_id=158 tools=none latency_ms=0 error=none
+[2026-11-06 09:50:00] provider=ollama shop_id=158 tools=none latency_ms=0 error=none
+[2026-11-06 09:50:00] provider=ollama shop_id=158 tools=none latency_ms=0 error=none
+[2026-11-06 09:50:00] provider=ollama shop_id=158 tools=none latency_ms=0 error=none
+[2026-11-06 09:50:00] provider=ollama shop_id=158 tools=none latency_ms=0 error=none
+[2026-11-06 09:50:00] provider=ollama shop_id=158 tools=none latency_ms=0 error=none
+[2026-11-06 09:50:01] provider=ollama shop_id=158 tools=none latency_ms=0 error=none
+[2026-11-06 09:50:01] provider=ollama shop_id=158 tools=none latency_ms=0 error=none
+[2026-11-06 09:50:01] provider=ollama shop_id=158 tools=none latency_ms=0 error=none
+[2026-11-06 09:50:01] provider=ollama shop_id=158 tools=none latency_ms=0 error=none
+[2026-11-06 09:50:01] provider=ollama shop_id=158 tools=none latency_ms=0 error=none
+[2026-11-06 09:50:01] provider=ollama shop_id=158 tools=none latency_ms=0 error=none
+[2026-11-06 09:50:01] provider=ollama shop_id=158 tools=none latency_ms=0 error=none
+[2026-11-06 09:50:01] provider=ollama shop_id=158 tools=none latency_ms=0 error=none
+[2026-11-06 09:50:01] provider=ollama shop_id=158 tools=none latency_ms=0 error=none
+[2026-11-06 09:50:01] provider=ollama shop_id=158 tools=none latency_ms=0 error=none
+[2026-11-06 09:50:01] provider=ollama shop_id=158 tools=none latency_ms=0 error=none
+[2026-11-06 09:50:01] provider=ollama shop_id=158 tools=none latency_ms=0 error=none
+[2026-11-06 09:50:01] provider=ollama shop_id=158 tools=none latency_ms=0 error=none
+[2026-11-06 09:50:01] provider=ollama shop_id=158 tools=none latency_ms=0 error=none
+[2026-11-06 09:50:01] provider=ollama shop_id=158 tools=none latency_ms=0 error=none
+[2026-11-06 09:50:01] provider=ollama shop_id=158 tools=none latency_ms=0 error=none
+[2026-11-06 09:50:01] provider=ollama shop_id=158 tools=none latency_ms=0 error=none
+[2026-11-06 09:50:01] provider=ollama shop_id=158 tools=none latency_ms=0 error=none
+[2026-11-06 09:50:01] shop_id=158 tools=none latency_ms=0 error=none
+[2026-11-06 09:50:02] shop_id=158 tools=none latency_ms=0 error=none
+[2026-11-06 09:50:02] provider=ollama shop_id=158 tools=none latency_ms=0 error=none
+[2026-11-06 09:50:02] provider=ollama shop_id=158 tools=none latency_ms=0 error=none
+[2026-11-06 09:50:02] shop_id=158 tools=none latency_ms=0 error=none
+[2026-11-06 09:50:02] shop_id=158 tools=none latency_ms=0 error=none
+[2026-11-06 09:50:02] provider=ollama shop_id=158 tools=none latency_ms=0 error=none
+[2026-11-06 09:50:02] provider=ollama shop_id=158 tools=none latency_ms=0 error=none
+[2026-11-06 09:50:02] provider=ollama shop_id=158 tools=none latency_ms=0 error=none
+[2026-11-06 09:50:02] shop_id=158 tools=none latency_ms=0 error=none
+[2026-11-06 09:50:02] provider=ollama shop_id=158 tools=none latency_ms=0 error=none
+[2026-11-06 09:50:02] provider=ollama shop_id=158 tools=none latency_ms=0 error=none
+[2026-11-06 09:50:03] provider=ollama shop_id=158 tools=none latency_ms=0 error=none
+[2026-11-06 09:50:03] provider=ollama shop_id=158 tools=none latency_ms=0 error=none
+[2026-11-06 09:50:03] provider=ollama shop_id=158 tools=none latency_ms=0 error=none
+[2026-11-06 09:50:03] provider=ollama shop_id=158 tools=none latency_ms=0 error=none
+[2026-11-06 09:50:03] provider=ollama shop_id=158 tools=none latency_ms=0 error=none
+[2026-11-06 09:50:03] provider=ollama shop_id=158 tools=none latency_ms=0 error=none
+[2026-11-06 09:50:03] provider=ollama shop_id=158 tools=none latency_ms=0 error=none
+[2026-11-06 09:50:03] provider=ollama shop_id=158 tools=none latency_ms=0 error=none
+[2026-11-06 09:50:04] provider=ollama shop_id=158 tools=none latency_ms=0 error=none
+[2026-11-06 09:50:04] provider=ollama shop_id=158 tools=none latency_ms=0 error=none
+[2026-11-06 09:50:04] provider=ollama shop_id=158 tools=none latency_ms=0 error=none
+[2026-11-06 09:50:04] provider=ollama shop_id=158 tools=none latency_ms=0 error=none
+[2026-11-06 09:50:04] provider=ollama shop_id=158 tools=none latency_ms=0 error=none
+[2026-11-06 09:51:18] provider=ollama shop_id=160 tools=none latency_ms=4 error=none
+[2026-11-06 09:51:21] provider=ollama shop_id=160 tools=none latency_ms=0 error=none
+[2026-11-06 09:51:21] provider=ollama shop_id=160 tools=none latency_ms=0 error=none
+[2026-11-06 09:51:21] shop_id=160 tools=none latency_ms=0 error=none
+[2026-11-06 09:51:21] provider=ollama shop_id=160 tools=none latency_ms=0 error=none
+[2026-11-06 09:51:21] provider=ollama shop_id=160 tools=none latency_ms=0 error=none
+[2026-11-06 09:51:21] provider=ollama shop_id=160 tools=none latency_ms=0 error=none
+[2026-11-06 09:51:21] provider=ollama shop_id=160 tools=none latency_ms=0 error=none
+[2026-11-06 09:51:22] provider=ollama shop_id=160 tools=none latency_ms=0 error=none
+[2026-11-06 09:51:22] provider=ollama shop_id=160 tools=none latency_ms=0 error=none
+[2026-11-06 09:51:22] provider=ollama shop_id=160 tools=none latency_ms=0 error=none
+[2026-11-06 09:51:22] provider=ollama shop_id=160 tools=none latency_ms=0 error=none
+[2026-11-06 09:51:22] provider=ollama shop_id=160 tools=none latency_ms=0 error=none
+[2026-11-06 09:51:22] provider=ollama shop_id=160 tools=none latency_ms=0 error=none
+[2026-11-06 09:51:22] provider=ollama shop_id=160 tools=none latency_ms=0 error=none
+[2026-11-06 09:51:22] provider=ollama shop_id=160 tools=none latency_ms=0 error=none
+[2026-11-06 09:51:22] provider=ollama shop_id=160 tools=none latency_ms=0 error=none
+[2026-11-06 09:51:22] provider=ollama shop_id=160 tools=none latency_ms=0 error=none
+[2026-11-06 09:51:22] provider=ollama shop_id=160 tools=none latency_ms=0 error=none
+[2026-11-06 09:51:22] provider=ollama shop_id=160 tools=none latency_ms=0 error=none
+[2026-11-06 09:51:22] provider=ollama shop_id=160 tools=none latency_ms=0 error=none
+[2026-11-06 09:51:22] provider=ollama shop_id=160 tools=none latency_ms=0 error=none
+[2026-11-06 09:51:22] provider=ollama shop_id=160 tools=none latency_ms=0 error=none
+[2026-11-06 09:51:22] provider=ollama shop_id=160 tools=none latency_ms=0 error=none
+[2026-11-06 09:51:22] provider=ollama shop_id=160 tools=none latency_ms=0 error=none
+[2026-11-06 09:51:22] provider=ollama shop_id=160 tools=none latency_ms=0 error=none
+[2026-11-06 09:51:23] provider=ollama shop_id=160 tools=none latency_ms=0 error=none
+[2026-11-06 09:51:23] provider=ollama shop_id=160 tools=none latency_ms=0 error=none
+[2026-11-06 09:51:23] provider=ollama shop_id=160 tools=none latency_ms=0 error=none
+[2026-11-06 09:51:23] shop_id=160 tools=none latency_ms=0 error=none
+[2026-11-06 09:51:23] shop_id=160 tools=none latency_ms=0 error=none
+[2026-11-06 09:51:23] provider=ollama shop_id=160 tools=none latency_ms=0 error=none
+[2026-11-06 09:51:23] provider=ollama shop_id=160 tools=none latency_ms=0 error=none
+[2026-11-06 09:51:23] shop_id=160 tools=none latency_ms=0 error=none
+[2026-11-06 09:51:23] shop_id=160 tools=none latency_ms=0 error=none
+[2026-11-06 09:51:23] shop_id=160 tools=none latency_ms=0 error=none
+[2026-11-06 09:51:23] provider=ollama shop_id=160 tools=none latency_ms=0 error=none
+[2026-11-06 09:51:23] provider=ollama shop_id=160 tools=none latency_ms=0 error=none
+[2026-11-06 09:51:23] shop_id=160 tools=none latency_ms=0 error=none
+[2026-11-06 09:51:23] provider=ollama shop_id=160 tools=none latency_ms=0 error=none
+[2026-11-06 09:51:23] provider=ollama shop_id=160 tools=none latency_ms=0 error=none
+[2026-11-06 09:51:24] provider=ollama shop_id=160 tools=none latency_ms=0 error=none
+[2026-11-06 09:51:24] provider=ollama shop_id=160 tools=none latency_ms=0 error=none
+[2026-11-06 09:51:24] provider=ollama shop_id=160 tools=none latency_ms=0 error=none
+[2026-11-06 09:51:24] provider=ollama shop_id=160 tools=none latency_ms=0 error=none
+[2026-11-06 09:51:24] provider=ollama shop_id=160 tools=none latency_ms=0 error=none
+[2026-11-06 09:51:24] provider=ollama shop_id=160 tools=none latency_ms=0 error=none
+[2026-11-06 09:51:24] provider=ollama shop_id=160 tools=none latency_ms=0 error=none
+[2026-11-06 09:51:24] provider=ollama shop_id=160 tools=none latency_ms=0 error=none
+[2026-11-06 09:51:25] provider=ollama shop_id=160 tools=none latency_ms=0 error=none
+[2026-11-06 09:51:25] provider=ollama shop_id=160 tools=none latency_ms=0 error=none
+[2026-11-06 09:51:25] provider=ollama shop_id=160 tools=none latency_ms=0 error=none
+[2026-11-06 09:51:25] provider=ollama shop_id=160 tools=none latency_ms=0 error=none
+[2026-11-06 09:51:25] provider=ollama shop_id=160 tools=none latency_ms=0 error=none
+[2026-11-06 10:06:04] provider=ollama shop_id=1 tools=none latency_ms=0 error=ollama_error
+[2026-11-06 10:06:04] shop_id=1 tools=none latency_ms=0 error=api_error
+[2026-11-06 10:06:21] provider=ollama shop_id=1 tools=none latency_ms=0 error=ollama_error
+[2026-11-06 10:06:21] shop_id=1 tools=none latency_ms=0 error=api_error
+[2026-11-06 10:11:07] provider=ollama shop_id=161 tools=get_product_stock latency_ms=0 error=none
+[2026-11-06 10:11:07] provider=ollama shop_id=161 tools=none latency_ms=0 error=none
+[2026-11-06 10:11:07] shop_id=161 tools=none latency_ms=0 error=none
+[2026-11-06 10:11:07] provider=ollama shop_id=161 tools=none latency_ms=0 error=none
+[2026-11-06 10:11:07] shop_id=161 tools=none latency_ms=0 error=none
+[2026-11-06 10:11:07] provider=ollama shop_id=161 tools=none latency_ms=0 error=none
+[2026-11-06 10:11:07] provider=ollama shop_id=161 tools=none latency_ms=0 error=none
+[2026-11-06 10:11:07] provider=ollama shop_id=161 tools=none latency_ms=0 error=none
+[2026-11-06 10:11:07] shop_id=161 tools=none latency_ms=0 error=none
+[2026-11-06 10:11:07] provider=ollama shop_id=161 tools=none latency_ms=0 error=none
+[2026-11-06 10:11:07] shop_id=161 tools=none latency_ms=0 error=none
+[2026-11-06 10:11:07] provider=ollama shop_id=161 tools=none latency_ms=0 error=none
+[2026-11-06 10:11:07] shop_id=161 tools=none latency_ms=0 error=none
+[2026-11-06 10:11:08] shop_id=161 tools=none latency_ms=0 error=none
+[2026-11-06 10:11:08] provider=ollama shop_id=161 tools=none latency_ms=0 error=Connection refused by Ollama daemon
+[2026-11-06 10:11:08] shop_id=161 tools=none latency_ms=0 error=none
+[2026-11-06 10:11:08] shop_id=161 tools=none latency_ms=0 error=empty_response
+[2026-11-06 10:11:08] provider=ollama shop_id=161 tools=none latency_ms=0 error=none
+[2026-11-06 10:11:08] shop_id=161 tools=none latency_ms=0 error=empty_response
+[2026-11-06 10:11:08] provider=ollama shop_id=161 tools=none latency_ms=0 error=Timeout after 90s
+[2026-11-06 10:11:08] shop_id=161 tools=none latency_ms=0 error=none
+[2026-11-06 10:11:08] shop_id=161 tools=none latency_ms=0 error=none
+[2026-11-06 10:11:08] shop_id=161 tools=none latency_ms=0 error=none
+[2026-11-06 10:11:08] provider=ollama shop_id=161 tools=none latency_ms=0 error=none
+[2026-11-06 10:11:08] shop_id=161 tools=none latency_ms=0 error=api_error
+[2026-11-06 10:11:08] provider=ollama shop_id=161 tools=none latency_ms=0 error=ollama_error
+[2026-11-06 10:11:08] provider=ollama shop_id=161 tools=none latency_ms=0 error=ollama_error
+[2026-11-06 10:11:08] shop_id=161 tools=none latency_ms=0 error=api_error
+[2026-11-06 10:11:08] provider=ollama shop_id=161 tools=none latency_ms=0 error=ollama_error
+[2026-11-06 10:11:08] shop_id=161 tools=none latency_ms=0 error=api_error
+[2026-11-06 10:11:09] provider=ollama shop_id=161 tools=none latency_ms=0 error=none
+[2026-11-06 10:11:09] provider=ollama shop_id=161 tools=none latency_ms=0 error=none
+[2026-11-06 10:11:10] provider=ollama shop_id=161 tools=none latency_ms=0 error=ollama_error
+[2026-11-06 10:11:10] shop_id=161 tools=none latency_ms=0 error=api_error
+[2026-11-06 10:11:10] provider=ollama shop_id=161 tools=none latency_ms=0 error=ollama_error
+[2026-11-06 10:11:10] shop_id=161 tools=none latency_ms=0 error=api_error
+[2026-11-06 10:11:10] provider=ollama shop_id=161 tools=none latency_ms=0 error=ollama_error
+[2026-11-06 10:11:10] shop_id=161 tools=none latency_ms=0 error=api_error
+[2026-11-06 10:11:10] provider=ollama shop_id=161 tools=none latency_ms=0 error=ollama_error
+[2026-11-06 10:11:10] shop_id=161 tools=none latency_ms=0 error=api_error
+[2026-11-06 10:11:11] provider=ollama shop_id=161 tools=none latency_ms=0 error=none
+[2026-11-06 10:11:13] provider=ollama shop_id=161 tools=none latency_ms=0 error=none
+[2026-11-06 10:11:13] provider=ollama shop_id=161 tools=none latency_ms=0 error=none
+[2026-11-06 10:11:13] provider=ollama shop_id=161 tools=none latency_ms=0 error=none
+[2026-11-06 10:11:13] provider=ollama shop_id=161 tools=none latency_ms=0 error=none
+[2026-11-06 10:11:14] provider=ollama shop_id=161 tools=none latency_ms=0 error=none
+[2026-11-06 10:11:14] provider=ollama shop_id=161 tools=none latency_ms=0 error=none
+[2026-11-06 10:11:14] provider=ollama shop_id=161 tools=none latency_ms=0 error=none
+[2026-11-06 10:11:14] provider=ollama shop_id=161 tools=none latency_ms=0 error=none
+[2026-11-06 10:11:14] provider=ollama shop_id=161 tools=none latency_ms=0 error=none
+[2026-11-06 10:11:14] provider=ollama shop_id=161 tools=none latency_ms=0 error=none
+[2026-11-06 10:11:14] provider=ollama shop_id=161 tools=none latency_ms=0 error=none
+[2026-11-06 10:11:14] provider=ollama shop_id=161 tools=none latency_ms=0 error=none
+[2026-11-06 10:11:14] provider=ollama shop_id=161 tools=none latency_ms=0 error=none
+[2026-11-06 10:11:14] provider=ollama shop_id=161 tools=none latency_ms=0 error=none
+[2026-11-06 10:11:14] provider=ollama shop_id=161 tools=none latency_ms=0 error=none
+[2026-11-06 10:11:14] provider=ollama shop_id=161 tools=none latency_ms=0 error=none
+[2026-11-06 10:11:14] provider=ollama shop_id=161 tools=none latency_ms=0 error=none
+[2026-11-06 10:11:14] provider=ollama shop_id=161 tools=none latency_ms=0 error=none
+[2026-11-06 10:11:15] provider=ollama shop_id=161 tools=none latency_ms=0 error=none
+[2026-11-06 10:11:15] provider=ollama shop_id=161 tools=none latency_ms=0 error=none
+[2026-11-06 10:11:15] provider=ollama shop_id=161 tools=none latency_ms=0 error=none
+[2026-11-06 10:11:15] provider=ollama shop_id=161 tools=none latency_ms=0 error=none
+[2026-11-06 10:11:15] provider=ollama shop_id=161 tools=none latency_ms=0 error=none
+[2026-11-06 10:11:15] provider=ollama shop_id=161 tools=none latency_ms=0 error=none
+[2026-11-06 10:11:15] provider=ollama shop_id=161 tools=none latency_ms=0 error=none
+[2026-11-06 10:11:15] provider=ollama shop_id=161 tools=none latency_ms=0 error=none
+[2026-11-06 10:11:15] provider=ollama shop_id=161 tools=none latency_ms=0 error=none
+[2026-11-06 10:11:15] provider=ollama shop_id=161 tools=none latency_ms=0 error=none
+[2026-11-06 10:11:15] shop_id=161 tools=none latency_ms=0 error=none
+[2026-11-06 10:11:15] shop_id=161 tools=none latency_ms=0 error=none
+[2026-11-06 10:11:15] provider=ollama shop_id=161 tools=none latency_ms=0 error=none
+[2026-11-06 10:11:15] provider=ollama shop_id=161 tools=none latency_ms=0 error=none
+[2026-11-06 10:11:15] shop_id=161 tools=none latency_ms=0 error=none
+[2026-11-06 10:11:15] shop_id=161 tools=none latency_ms=0 error=none
+[2026-11-06 10:11:15] provider=ollama shop_id=161 tools=none latency_ms=0 error=none
+[2026-11-06 10:11:15] provider=ollama shop_id=161 tools=none latency_ms=0 error=none
+[2026-11-06 10:11:15] provider=ollama shop_id=161 tools=none latency_ms=0 error=none
+[2026-11-06 10:11:15] shop_id=161 tools=none latency_ms=0 error=none
+[2026-11-06 10:11:16] provider=ollama shop_id=161 tools=none latency_ms=0 error=none
+[2026-11-06 10:11:16] provider=ollama shop_id=161 tools=none latency_ms=0 error=none
+[2026-11-06 10:11:16] provider=ollama shop_id=161 tools=none latency_ms=0 error=none
+[2026-11-06 10:11:16] provider=ollama shop_id=161 tools=none latency_ms=0 error=none
+[2026-11-06 10:11:16] provider=ollama shop_id=161 tools=none latency_ms=0 error=none
+[2026-11-06 10:11:16] provider=ollama shop_id=161 tools=none latency_ms=0 error=none
+[2026-11-06 10:11:16] provider=ollama shop_id=161 tools=none latency_ms=0 error=none
+[2026-11-06 10:11:16] provider=ollama shop_id=161 tools=none latency_ms=0 error=none
+[2026-11-06 10:11:17] provider=ollama shop_id=161 tools=none latency_ms=0 error=none
+[2026-11-06 10:11:17] provider=ollama shop_id=161 tools=none latency_ms=0 error=none
+[2026-11-06 10:11:17] provider=ollama shop_id=161 tools=none latency_ms=0 error=none
+[2026-11-06 10:11:17] provider=ollama shop_id=161 tools=none latency_ms=0 error=none
+[2026-11-06 10:11:17] provider=ollama shop_id=161 tools=none latency_ms=0 error=none
+[2026-11-06 10:11:18] provider=ollama shop_id=161 tools=none latency_ms=0 error=none
+[2026-11-06 10:11:18] provider=ollama shop_id=161 tools=none latency_ms=0 error=none
+[2026-11-06 10:11:18] provider=ollama shop_id=161 tools=none latency_ms=0 error=none
+[2026-11-06 10:11:18] shop_id=161 tools=none latency_ms=0 error=none
+[2026-11-06 10:11:18] provider=ollama shop_id=161 tools=none latency_ms=0 error=none
+[2026-11-06 10:11:51] provider=ollama shop_id=163 tools=none latency_ms=0 error=none
+[2026-11-06 10:11:51] shop_id=163 tools=none latency_ms=0 error=none
+[2026-11-06 10:11:53] provider=ollama shop_id=163 tools=none latency_ms=0 error=none
+[2026-11-06 10:11:53] shop_id=163 tools=none latency_ms=0 error=none
+[2026-11-06 10:11:53] provider=ollama shop_id=163 tools=none latency_ms=0 error=none
+[2026-11-06 10:11:53] shop_id=163 tools=none latency_ms=0 error=none
+[2026-11-06 10:11:53] provider=ollama shop_id=163 tools=none latency_ms=0 error=none
+[2026-11-06 10:11:53] provider=ollama shop_id=163 tools=none latency_ms=0 error=none
+[2026-11-06 10:11:53] shop_id=163 tools=none latency_ms=0 error=none
+[2026-11-06 10:11:53] provider=ollama shop_id=163 tools=none latency_ms=0 error=none
+[2026-11-06 10:11:53] provider=ollama shop_id=163 tools=none latency_ms=0 error=none
+[2026-11-06 10:11:53] provider=ollama shop_id=163 tools=none latency_ms=0 error=none
+[2026-11-06 10:11:53] provider=ollama shop_id=163 tools=none latency_ms=0 error=none
+[2026-11-06 10:11:53] provider=ollama shop_id=163 tools=none latency_ms=0 error=none
+[2026-11-06 10:11:53] provider=ollama shop_id=163 tools=none latency_ms=0 error=none
+[2026-11-06 10:11:53] provider=ollama shop_id=163 tools=none latency_ms=0 error=none
+[2026-11-06 10:11:53] provider=ollama shop_id=163 tools=none latency_ms=0 error=none
+[2026-11-06 10:11:54] provider=ollama shop_id=163 tools=none latency_ms=0 error=none
+[2026-11-06 10:11:54] shop_id=163 tools=none latency_ms=0 error=none
+[2026-11-06 10:11:54] provider=ollama shop_id=163 tools=none latency_ms=0 error=none
+[2026-11-06 10:11:54] shop_id=163 tools=none latency_ms=0 error=none
+[2026-11-06 10:11:54] provider=ollama shop_id=163 tools=none latency_ms=0 error=none
+[2026-11-06 10:24:53] provider=ollama shop_id=164 tools=none latency_ms=0 error=none
+[2026-11-06 10:24:55] provider=ollama shop_id=164 tools=none latency_ms=0 error=none
+[2026-11-06 10:24:55] provider=ollama shop_id=164 tools=none latency_ms=0 error=none
+[2026-11-06 10:24:55] shop_id=164 tools=none latency_ms=0 error=none
+[2026-11-06 10:24:55] provider=ollama shop_id=164 tools=none latency_ms=0 error=none
+[2026-11-06 10:24:56] provider=ollama shop_id=164 tools=none latency_ms=0 error=none
+[2026-11-06 10:24:56] provider=ollama shop_id=164 tools=none latency_ms=0 error=none
+[2026-11-06 10:24:56] provider=ollama shop_id=164 tools=none latency_ms=0 error=none
+[2026-11-06 10:24:56] provider=ollama shop_id=164 tools=none latency_ms=0 error=none
+[2026-11-06 10:24:56] provider=ollama shop_id=164 tools=none latency_ms=0 error=none
+[2026-11-06 10:24:56] provider=ollama shop_id=164 tools=none latency_ms=0 error=none
+[2026-11-06 10:24:56] provider=ollama shop_id=164 tools=none latency_ms=0 error=none
+[2026-11-06 10:24:56] provider=ollama shop_id=164 tools=none latency_ms=0 error=none
+[2026-11-06 10:24:56] provider=ollama shop_id=164 tools=none latency_ms=0 error=none
+[2026-11-06 10:24:56] provider=ollama shop_id=164 tools=none latency_ms=0 error=none
+[2026-11-06 10:24:56] provider=ollama shop_id=164 tools=none latency_ms=0 error=none
+[2026-11-06 10:24:56] provider=ollama shop_id=164 tools=none latency_ms=0 error=none
+[2026-11-06 10:24:56] provider=ollama shop_id=164 tools=none latency_ms=0 error=none
+[2026-11-06 10:24:57] provider=ollama shop_id=164 tools=none latency_ms=0 error=none
+[2026-11-06 10:24:57] provider=ollama shop_id=164 tools=none latency_ms=0 error=none
+[2026-11-06 10:24:57] provider=ollama shop_id=164 tools=none latency_ms=0 error=none
+[2026-11-06 10:24:57] provider=ollama shop_id=164 tools=none latency_ms=0 error=none
+[2026-11-06 10:24:57] provider=ollama shop_id=164 tools=none latency_ms=0 error=none
+[2026-11-06 10:24:57] provider=ollama shop_id=164 tools=none latency_ms=0 error=none
+[2026-11-06 10:24:57] provider=ollama shop_id=164 tools=none latency_ms=0 error=none
+[2026-11-06 10:24:57] provider=ollama shop_id=164 tools=none latency_ms=0 error=none
+[2026-11-06 10:24:57] provider=ollama shop_id=164 tools=none latency_ms=0 error=none
+[2026-11-06 10:24:57] provider=ollama shop_id=164 tools=none latency_ms=0 error=none
+[2026-11-06 10:24:57] provider=ollama shop_id=164 tools=none latency_ms=0 error=none
+[2026-11-06 10:24:57] shop_id=164 tools=none latency_ms=0 error=none
+[2026-11-06 10:24:57] shop_id=164 tools=none latency_ms=0 error=none
+[2026-11-06 10:24:57] provider=ollama shop_id=164 tools=none latency_ms=0 error=none
+[2026-11-06 10:24:57] provider=ollama shop_id=164 tools=none latency_ms=0 error=none
+[2026-11-06 10:24:57] shop_id=164 tools=none latency_ms=0 error=none
+[2026-11-06 10:24:57] shop_id=164 tools=none latency_ms=0 error=none
+[2026-11-06 10:24:57] shop_id=164 tools=none latency_ms=0 error=none
+[2026-11-06 10:24:57] provider=ollama shop_id=164 tools=none latency_ms=0 error=none
+[2026-11-06 10:24:57] provider=ollama shop_id=164 tools=none latency_ms=0 error=none
+[2026-11-06 10:24:57] provider=ollama shop_id=164 tools=none latency_ms=0 error=none
+[2026-11-06 10:24:58] shop_id=164 tools=none latency_ms=0 error=none
+[2026-11-06 10:24:58] provider=ollama shop_id=164 tools=none latency_ms=0 error=none
+[2026-11-06 10:24:58] provider=ollama shop_id=164 tools=none latency_ms=0 error=none
+[2026-11-06 10:24:58] provider=ollama shop_id=164 tools=none latency_ms=0 error=none
+[2026-11-06 10:24:58] provider=ollama shop_id=164 tools=none latency_ms=0 error=none
+[2026-11-06 10:24:58] provider=ollama shop_id=164 tools=none latency_ms=0 error=none
+[2026-11-06 10:24:58] provider=ollama shop_id=164 tools=none latency_ms=0 error=none
+[2026-11-06 10:24:58] provider=ollama shop_id=164 tools=none latency_ms=0 error=none
+[2026-11-06 10:24:59] provider=ollama shop_id=164 tools=none latency_ms=0 error=none
+[2026-11-06 10:24:59] provider=ollama shop_id=164 tools=none latency_ms=0 error=none
+[2026-11-06 10:24:59] provider=ollama shop_id=164 tools=none latency_ms=0 error=none
+[2026-11-06 10:24:59] provider=ollama shop_id=164 tools=none latency_ms=0 error=none
+[2026-11-06 10:24:59] provider=ollama shop_id=164 tools=none latency_ms=0 error=none
+[2026-11-06 10:25:00] provider=ollama shop_id=164 tools=none latency_ms=0 error=none
+[2026-11-06 10:25:00] provider=ollama shop_id=164 tools=none latency_ms=0 error=none
+[2026-11-06 10:25:00] provider=ollama shop_id=164 tools=none latency_ms=0 error=none
+[2026-11-06 10:25:00] provider=ollama shop_id=164 tools=none latency_ms=0 error=none
+[2026-11-06 10:25:00] shop_id=164 tools=none latency_ms=0 error=none
+[2026-11-06 10:25:00] provider=ollama shop_id=164 tools=none latency_ms=0 error=none
