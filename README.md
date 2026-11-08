@@ -59,7 +59,7 @@ StockSense_backend
 │   ├── settings_helper.php             # Centralized get_shop_settings() helper
 │   ├── get.php                         # Read-only settings getter with dynamic defaults
 │   ├── update.php                      # Strict-type settings upsert with range checks
-│   ├── change_password.php             # Password change with failed attempt rate limit
+│   ├── change_password.php             # Password change with failed attempt rate limit 
 │   └── reset_defaults.php              # Reset store settings back to default values
 ├── uploads/
 │   └── temp/                           # Temporary spreadsheet storage during import
