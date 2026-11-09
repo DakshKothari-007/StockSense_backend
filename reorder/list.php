@@ -43,7 +43,8 @@ $reorderConfig = [
 $filterPriority = isset($_GET["priority"]) ? strtolower(trim($_GET["priority"])) : "";
 $filterCategory = isset($_GET["category"]) ? trim($_GET["category"]) : "";
 $page = max(1, (int)($_GET["page"] ?? 1));
-$limit = max(1, min(100, (int)($_GET["limit"] ?? 20)));
+$hasLimit = isset($_GET["limit"]) && is_numeric($_GET["limit"]) && (int)$_GET["limit"] > 0;
+$limit = $hasLimit ? (int)$_GET["limit"] : 0;
 
 try {
     // 1. Check Sales History Duration
@@ -259,9 +260,16 @@ try {
 
     // 5. Pagination
     $totalMatching = count($filteredItems);
-    $totalPages = $totalMatching > 0 ? (int)ceil($totalMatching / $limit) : 1;
-    $offset = ($page - 1) * $limit;
-    $pagedItems = array_slice($filteredItems, $offset, $limit);
+    if ($limit > 0) {
+        $totalPages = $totalMatching > 0 ? (int)ceil($totalMatching / $limit) : 1;
+        $offset = ($page - 1) * $limit;
+        $pagedItems = array_slice($filteredItems, $offset, $limit);
+    } else {
+        $totalPages = 1;
+        $offset = 0;
+        $pagedItems = $filteredItems;
+        $limit = $totalMatching;
+    }
 
     // Clean up internal sort key
     foreach ($pagedItems as &$it) {
