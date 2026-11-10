@@ -135,16 +135,55 @@ class ColumnMatcher {
 
     /**
      * Generates a stable, deterministic SKU for a product when no SKU is provided.
+     * Format: SKU-{PREFIX}-{HASH}
+     * PREFIX: First letters of category or product name (uppercase letters & digits only, 3 to 4 characters).
+     * HASH: Short unique value (5 uppercase alphanumeric characters).
      */
-    public static function generateStableSku(int $ownerId, string $productName): string {
-        $cleanPrefix = strtoupper(preg_replace('/[^A-Za-z0-9]/', '', $productName));
-        if (strlen($cleanPrefix) < 3) {
-            $cleanPrefix = str_pad($cleanPrefix, 3, 'X');
+    public static function generateStableSku(int $ownerId, string $productName, string $category = '', int $attempt = 1): string {
+        $cleanCat = strtoupper(preg_replace('/[^A-Za-z0-9]/', '', $category));
+        $cleanName = strtoupper(preg_replace('/[^A-Za-z0-9]/', '', $productName));
+
+        // Take PREFIX from first letters of category or product name (3 to 4 characters)
+        if (strlen($cleanCat) >= 3 && strcasecmp($cleanCat, 'GENERAL') !== 0) {
+            $cleanPrefix = substr($cleanCat, 0, 4);
+        } elseif (strlen($cleanName) >= 3) {
+            $cleanPrefix = substr($cleanName, 0, 4);
+        } elseif (strlen($cleanCat) >= 3) {
+            $cleanPrefix = substr($cleanCat, 0, 4);
+        } elseif (strlen($cleanName) > 0) {
+            $cleanPrefix = str_pad($cleanName, 3, 'X');
+        } elseif (strlen($cleanCat) > 0) {
+            $cleanPrefix = str_pad($cleanCat, 3, 'X');
         } else {
-            $cleanPrefix = substr($cleanPrefix, 0, 4);
+            $cleanPrefix = 'GEN';
         }
-        $hash = strtoupper(substr(md5($ownerId . ":" . strtolower(trim($productName))), 0, 5));
+
+        // Generate short unique HASH
+        if ($attempt <= 1) {
+            $seed = $ownerId . ":" . strtolower(trim($productName)) . ($category !== '' ? ":" . strtolower(trim($category)) : "");
+        } else {
+            // Include attempt and entropy for subsequent regeneration attempts
+            $seed = $ownerId . ":" . strtolower(trim($productName)) . ":" . $attempt . ":" . microtime(true) . ":" . random_int(1000, 9999);
+        }
+        $hash = strtoupper(substr(md5($seed), 0, 5));
+
         return "SKU-{$cleanPrefix}-{$hash}";
+    }
+
+    /**
+     * Generates a unique SKU for a given shop owner, attempting up to $maxTries.
+     * Returns null if unable to find a unique SKU within $maxTries.
+     */
+    public static function generateUniqueSku(PDO $pdo, int $ownerId, string $productName, string $category = '', int $maxTries = 10): ?string {
+        $dupStmt = $pdo->prepare("SELECT id FROM products WHERE shop_owner_id = ? AND sku = ? LIMIT 1");
+        for ($attempt = 1; $attempt <= $maxTries; $attempt++) {
+            $candidate = self::generateStableSku($ownerId, $productName, $category, $attempt);
+            $dupStmt->execute([$ownerId, $candidate]);
+            if (!$dupStmt->fetch()) {
+                return $candidate;
+            }
+        }
+        return null;
     }
 
     /**

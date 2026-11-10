@@ -38,7 +38,7 @@ if (!is_array($data)) {
 
 // Field extraction and validation
 $name = trim($data["name"] ?? "");
-$userSku = isset($data["sku"]) && is_string($data["sku"]) ? strtoupper(trim($data["sku"])) : "";
+$userSku = isset($data["sku"]) && is_string($data["sku"]) ? trim($data["sku"]) : "";
 $category = trim($data["category"] ?? "General");
 $description = trim($data["description"] ?? "");
 $price = isset($data["price"]) ? (float)$data["price"] : -1;
@@ -102,31 +102,22 @@ try {
             http_response_code(409);
             echo json_encode([
                 "status" => false,
-                "message" => "A product with SKU '{$userSku}' already exists in your shop.",
+                "message" => "A product with this SKU already exists.",
                 "data" => (object)[]
             ]);
             exit;
         }
         $finalSku = $userSku;
     } else {
-        // Missing or empty SKU: generate stable SKU like SKU-{PREFIX}-{HASH}
-        $baseSku = ColumnMatcher::generateStableSku($shopOwnerId, $name);
-        $dupCheck = $pdo->prepare("SELECT id FROM products WHERE shop_owner_id = ? AND sku = ? LIMIT 1");
-        $dupCheck->execute([$shopOwnerId, $baseSku]);
-        if (!$dupCheck->fetch()) {
-            $finalSku = $baseSku;
-        } else {
-            // Base generated SKU already exists in this shop: append unique numeric suffix (-1, -2, ...)
-            $suffix = 1;
-            do {
-                $candidateSku = $baseSku . "-" . $suffix;
-                $dupCheck->execute([$shopOwnerId, $candidateSku]);
-                if (!$dupCheck->fetch()) {
-                    $finalSku = $candidateSku;
-                    break;
-                }
-                $suffix++;
-            } while (true);
+        $finalSku = ColumnMatcher::generateUniqueSku($pdo, $shopOwnerId, $name, $category, 10);
+        if ($finalSku === null) {
+            http_response_code(409);
+            echo json_encode([
+                "status" => false,
+                "message" => "Unable to generate a unique SKU after 10 attempts. Please specify a SKU manually.",
+                "data" => (object)[]
+            ]);
+            exit;
         }
     }
 

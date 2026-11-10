@@ -471,7 +471,7 @@
                         "add_product.php"
                     ]
                 },
-                "description": "Adds a new product to the shop inventory with prepared statements. SKU is optional; if omitted or empty, server generates a stable SKU like SKU-{PREFIX}-{HASH} with unique numeric suffix (-1, -2, ...) on collision, returning final SKU in response."
+                "description": "Adds a new product to the shop inventory with prepared statements. SKU is optional; if omitted or empty, server generates a unique SKU like SKU-{PREFIX}-{HASH} (3-4 character prefix from category/name, 5-char hash) reusing ColumnMatcher and regenerates up to 10 attempts on collision in the shop, returning the final SKU in the response. If client provides a SKU that already exists in this shop, returns 409 Conflict: 'A product with this SKU already exists.'"
             }
         },
         {

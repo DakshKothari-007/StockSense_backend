@@ -787,7 +787,7 @@
                                 "add_product.php"
                             ]
                         },
-                        "description": "Inserts a new product into the shop inventory. SKU is optional; if provided, duplicate SKU is rejected with 409 Conflict."
+                        "description": "Inserts a new product into the shop inventory. SKU is optional; if provided, duplicate SKU in the same shop is rejected with 409 Conflict: 'A product with this SKU already exists.' The same SKU in another shop does not conflict."
                     }
                 },
                 {
@@ -818,7 +818,7 @@
                                 "add_product.php"
                             ]
                         },
-                        "description": "Inserts a product with omitted SKU. The server creates a stable SKU like SKU-{PREFIX}-{HASH} and appends a numeric suffix (-1, -2, ...) if duplicate in this shop, returning final SKU in response."
+                        "description": "Inserts a product with omitted or empty SKU. The server generates a unique SKU like SKU-{PREFIX}-{HASH} (3-4 character prefix from category/name, 5-char hash) reusing ColumnMatcher and regenerates up to 10 attempts on collision in the shop, returning the final SKU in the response."
                     }
                 },
                 {

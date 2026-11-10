@@ -414,7 +414,7 @@ All responses adhere to the standard JSON envelope:
   ```json
   {
     "name": "string (required, max 150 characters)",
-    "sku": "string (optional, max 50 characters; if omitted or empty, server generates a stable SKU like SKU-{PREFIX}-{HASH} with numeric suffix -1, -2 if duplicate in shop)",
+    "sku": "string (optional, max 50 characters; if omitted or empty, server generates a unique SKU in format SKU-{PREFIX}-{HASH} where PREFIX is 3-4 uppercase alphanumeric characters derived from category or product name and HASH is a 5-character short unique hash. Reuses the import helper ColumnMatcher; regenerates up to 10 attempts on collision in the shop)",
     "category": "string (optional, default 'General')",
     "description": "string (optional)",
     "units": 100,
@@ -444,7 +444,10 @@ All responses adhere to the standard JSON envelope:
   }
   ```
 - **Error Responses**:
-  - `409 Conflict`: User-provided SKU already exists in this shop (`"A product with SKU '{sku}' already exists in your shop."`). Note: Generated SKUs automatically resolve collisions with a numeric suffix (`-1`, `-2`, etc.) and do not fail with 409.
+  - `409 Conflict`: 
+    - Client-supplied SKU already exists in this shop: `{"status": false, "message": "A product with this SKU already exists.", "data": {}}`.
+    - Auto-generation could not find a unique SKU after 10 attempts: `{"status": false, "message": "Unable to generate a unique SKU after 10 attempts. Please specify a SKU manually.", "data": {}}`.
+    - Note: Uniqueness is strictly scoped per shop (`shop_owner_id`); the same SKU in another shop never conflicts.
   - `422 Unprocessable Entity`: Missing required name, negative price/units.
 
 #### 3.4 Update Product
