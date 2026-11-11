@@ -911,7 +911,7 @@
                                 "delete_product.php"
                             ]
                         },
-                        "description": "Deletes a product by SKU or ID, scoped strictly to the authenticated shop owner. If the product appears in sales bills, deletion is rejected with 400 Bad Request: 'This product appears in N sales bills, so it cannot be deleted.'"
+                        "description": "Deletes a product by SKU or ID, scoped strictly to the authenticated shop owner (other shop's product returns 404). If the product has sales history, returns 409 Conflict: 'This product has sales history, so it cannot be deleted. You can set its stock to 0 or mark it inactive.' If in an open purchase order, returns 409: 'This product is in an open purchase order.' If no sales, returns 200 OK: 'Product deleted.'"
                     }
                 }
             ]

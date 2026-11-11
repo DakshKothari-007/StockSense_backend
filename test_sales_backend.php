@@ -215,10 +215,10 @@ assertCheck("11d. Successful import returns 201", $resGoodImport['code'] === 201
 $stockAfterGoodImport = (int)$pdo->query("SELECT units FROM products WHERE id = 1")->fetchColumn();
 assertCheck("11e. deduct_stock = false leaves stock unchanged", $stockBeforeGoodImport === $stockAfterGoodImport);
 
-// 12. Test: Product delete when sales exist returns clear 400
+// 12. Test: Product delete when sales exist returns clear 409
 $resDelete = apiCall("$baseUrl/inventory/delete_product.php", 'POST', ["id" => 1], ["Authorization: Bearer $token2"]);
-assertCheck("12. Delete product with sales rejected with 400", $resDelete['code'] === 400, "Body: {$resDelete['body']}");
-assertCheck("12b. Clear sales bills constraint message (no archive mention)", str_contains($resDelete['json']['message'] ?? '', 'sales bills, so it cannot be deleted') && !str_contains($resDelete['json']['message'] ?? '', 'archive'));
+assertCheck("12. Delete product with sales rejected with 409", $resDelete['code'] === 409, "Body: {$resDelete['body']}");
+assertCheck("12b. Clear sales history constraint message (no archive mention)", str_contains($resDelete['json']['message'] ?? '', 'sales history, so it cannot be deleted') && !str_contains($resDelete['json']['message'] ?? '', 'archive'));
 
 // 13. Test: dashboard/summary.php reflects real sales & slow-moving metadata (Rule 7)
 $resDash = apiCall("$baseUrl/dashboard/summary.php", 'GET', null, ["Authorization: Bearer $token2"]);

@@ -469,31 +469,57 @@ All responses adhere to the standard JSON envelope:
 #### 3.5 Delete Product
 - **Method & Path**: `POST /inventory/delete_product.php`
 - **Token Required**: Yes
-- **App Screen**: `ProductDetailScreen.kt`
+- **App Screen**: `EditProductScreen.kt`
 - **Request Body**:
   ```json
   {
-    "id": 1
+    "id": 1,
+    "sku": "AMUL-MILK-500"
   }
   ```
 - **Success Response (`200 OK`)**:
   ```json
   {
     "status": true,
-    "message": "Product deleted successfully."
-  }
-  ```
-- **Error Response (`400 Bad Request`)**: If product has historical sales bills, deletion is rejected with:
-  ```json
-  {
-    "status": false,
-    "message": "This product appears in {N} sales bills, so it cannot be deleted.",
+    "message": "Product deleted.",
     "data": {
-      "product_id": 1,
-      "sales_count": 5
+      "deleted_id": 1,
+      "deleted_sku": "AMUL-MILK-500"
     }
   }
   ```
+- **Error Responses**:
+  - `404 Not Found`: Product not found in the authenticated shop's inventory:
+    ```json
+    {
+      "status": false,
+      "message": "Product not found.",
+      "data": {}
+    }
+    ```
+  - `409 Conflict` (Sales History): Product cannot be deleted because it has sales history:
+    ```json
+    {
+      "status": false,
+      "message": "This product has sales history, so it cannot be deleted. You can set its stock to 0 or mark it inactive.",
+      "data": {
+        "product_id": 1,
+        "sales_count": 5
+      }
+    }
+    ```
+  - `409 Conflict` (Open Purchase Order): Product is referenced in an open purchase order (`status = 'placed'`):
+    ```json
+    {
+      "status": false,
+      "message": "This product is in an open purchase order.",
+      "data": {
+        "product_id": 1,
+        "open_po_count": 1
+      }
+    }
+    ```
+  - `422 Unprocessable Entity`: Missing both `id` and `sku` in request payload.
 
 ---
 

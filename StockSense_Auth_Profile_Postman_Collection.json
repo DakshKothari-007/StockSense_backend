@@ -570,7 +570,7 @@
                         "delete_product.php"
                     ]
                 },
-                "description": "Deletes a product from the shop inventory. Validates ownership before deletion. Rejects with 400 Bad Request if linked to sales bills: 'This product appears in N sales bills, so it cannot be deleted.'"
+                "description": "Deletes a product from the shop inventory. Validates ownership before deletion (other shop's product returns 404). If the product has sales history, returns 409 Conflict: 'This product has sales history, so it cannot be deleted. You can set its stock to 0 or mark it inactive.' If in an open purchase order, returns 409: 'This product is in an open purchase order.' If no sales, returns 200 OK: 'Product deleted.'"
             }
         },
         {

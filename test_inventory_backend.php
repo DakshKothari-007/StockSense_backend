@@ -80,8 +80,9 @@ $token3 = $login3['json']['token'] ?? null;
 assertCheck("0b. Login Shop 3 successful", $login3['code'] === 200 && !empty($token3));
 $authHeader3 = ["Authorization: Bearer $token3"];
 
-// Clean up any existing test products from previous test runs (skipping any linked to sales)
-$pdo->exec("DELETE FROM products WHERE id NOT IN (SELECT product_id FROM sales_items) AND (sku LIKE 'TEST-%' OR sku LIKE 'SKU-%' OR name LIKE 'Auto Sku Product%' OR name LIKE 'Super Extra Long%' OR name LIKE '@#$%^&*()%' OR name LIKE 'Clean Delete Product%')");
+// Clean up any existing test products and test POs from previous test runs (skipping any linked to sales)
+$pdo->exec("DELETE FROM purchase_order_items WHERE product_id IN (SELECT id FROM products WHERE sku LIKE 'TEST-%' OR sku LIKE 'SKU-%' OR name LIKE 'Auto Sku Product%' OR name LIKE 'Super Extra Long%' OR name LIKE '@#$%^&*()%' OR name LIKE 'Clean Delete Product%' OR name LIKE 'Delete Test%')");
+$pdo->exec("DELETE FROM products WHERE id NOT IN (SELECT product_id FROM sales_items) AND (sku LIKE 'TEST-%' OR sku LIKE 'SKU-%' OR name LIKE 'Auto Sku Product%' OR name LIKE 'Super Extra Long%' OR name LIKE '@#$%^&*()%' OR name LIKE 'Clean Delete Product%' OR name LIKE 'Delete Test%')");
 
 $createdProductIds = [];
 
@@ -206,7 +207,7 @@ $createdProductIds[] = (int)($resCollision['json']['data']['id'] ?? 0);
 assertCheck("7b. Regenerated SKU is distinct from first product SKU", $regeneratedSku !== $generatedSku1 && !empty($regeneratedSku), "Regenerated: $regeneratedSku, First: $generatedSku1");
 assertCheck("7c. Regenerated SKU matches format SKU-{PREFIX}-{HASH}", (bool)preg_match('/^SKU-[A-Z0-9]{3,4}-[A-Z0-9]{5}$/', $regeneratedSku));
 
-// 8. Test: Delete product with sales returns exact message without archiving mention
+// 8. Test: Delete product with sales returns 409 and clear message without archiving mention
 $salesCountQuery = $pdo->query("SELECT COUNT(*) FROM sales_items WHERE product_id = 1");
 $salesCount = (int)$salesCountQuery->fetchColumn();
 
@@ -215,18 +216,20 @@ if ($salesCount > 0) {
         "id" => 1
     ], $authHeader2);
 
-    assertCheck("8a. Delete product with sales returns 400 Bad Request", $resDeleteWithSales['code'] === 400);
-    $expectedMsg = "This product appears in {$salesCount} sales bills, so it cannot be deleted.";
+    assertCheck("8a. Delete product with sales returns 409 Conflict", $resDeleteWithSales['code'] === 409, "Body: {$resDeleteWithSales['body']}");
+    $expectedMsg = "This product has sales history, so it cannot be deleted. You can set its stock to 0 or mark it inactive.";
     assertCheck("8b. Error message matches exact phrasing", ($resDeleteWithSales['json']['message'] ?? '') === $expectedMsg, "Got: " . ($resDeleteWithSales['json']['message'] ?? ''));
     assertCheck("8c. No mention of archiving in message or data", 
         !str_contains(strtolower($resDeleteWithSales['json']['message'] ?? ''), 'archive') &&
         !isset($resDeleteWithSales['json']['data']['suggested_action'])
     );
+    $prod1StillExists = (int)$pdo->query("SELECT COUNT(*) FROM products WHERE id = 1")->fetchColumn();
+    assertCheck("8d. Product with sales history is NOT deleted from DB", $prod1StillExists === 1);
 } else {
     echo " [SKIP] Product 1 has no sales in database, skipping test 8\n";
 }
 
-// 9. Test: Delete product without sales succeeds (200 OK)
+// 9. Test: Delete product without sales succeeds (200 OK: "Product deleted.")
 $resCleanProd = apiCall("$baseUrl/inventory/add_product.php", 'POST', [
     "name" => "Clean Delete Product",
     "sku" => "TEST-DELETE-CLEAN",
@@ -242,6 +245,65 @@ $resDeleteClean = apiCall("$baseUrl/inventory/delete_product.php", 'POST', [
     "id" => $cleanProdId
 ], $authHeader2);
 assertCheck("9a. Delete product without sales returns 200 OK", $resDeleteClean['code'] === 200, "Body: {$resDeleteClean['body']}");
+assertCheck("9b. Success message is exactly 'Product deleted.'", ($resDeleteClean['json']['message'] ?? '') === "Product deleted.", "Got: " . ($resDeleteClean['json']['message'] ?? ''));
+$cleanProdExists = (int)$pdo->query("SELECT COUNT(*) FROM products WHERE id = $cleanProdId")->fetchColumn();
+assertCheck("9c. Product without sales is removed from DB", $cleanProdExists === 0);
+
+// 10. Test: Delete product belonging to another shop returns 404
+$resShop3Prod = apiCall("$baseUrl/inventory/add_product.php", 'POST', [
+    "name" => "Shop 3 Protected Product",
+    "sku" => "TEST-SHOP3-PROT",
+    "category" => "General",
+    "price" => 15.00,
+    "cost_price" => 10.00,
+    "units" => 10,
+    "min_stock_threshold" => 5
+], $authHeader3);
+$shop3ProdId = (int)($resShop3Prod['json']['data']['id'] ?? 0);
+
+$resDeleteOtherShop = apiCall("$baseUrl/inventory/delete_product.php", 'POST', [
+    "id" => $shop3ProdId
+], $authHeader2); // Shop 2 attempts to delete Shop 3's product
+assertCheck("10a. Delete other shop's product returns 404 Not Found", $resDeleteOtherShop['code'] === 404, "Body: {$resDeleteOtherShop['body']}");
+assertCheck("10b. 404 message indicates product not found", ($resDeleteOtherShop['json']['message'] ?? '') === "Product not found.");
+$shop3ProdStillExists = (int)$pdo->query("SELECT COUNT(*) FROM products WHERE id = $shop3ProdId")->fetchColumn();
+assertCheck("10c. Other shop product is preserved in DB", $shop3ProdStillExists === 1);
+
+// Clean up Shop 3 test product using Shop 3's own token
+apiCall("$baseUrl/inventory/delete_product.php", 'POST', ["id" => $shop3ProdId], $authHeader3);
+
+// 11. Test: Delete product in an open purchase order returns 409
+$resPoProd = apiCall("$baseUrl/inventory/add_product.php", 'POST', [
+    "name" => "Delete Test Open PO Product",
+    "sku" => "TEST-DELETE-OPEN-PO",
+    "category" => "General",
+    "price" => 20.00,
+    "cost_price" => 15.00,
+    "units" => 5,
+    "min_stock_threshold" => 10
+], $authHeader2);
+$poProdId = (int)($resPoProd['json']['data']['id'] ?? 0);
+
+$resCreatePo = apiCall("$baseUrl/reorder/create_order.php", 'POST', [
+    "items" => [
+        ["product_id" => $poProdId, "quantity" => 10, "cost_price" => 15.00]
+    ],
+    "notes" => "PO for delete test"
+], $authHeader2);
+$createdPoId = (int)($resCreatePo['json']['data']['order_id'] ?? 0);
+
+$resDeleteOpenPoProd = apiCall("$baseUrl/inventory/delete_product.php", 'POST', [
+    "id" => $poProdId
+], $authHeader2);
+assertCheck("11a. Delete product in open purchase order returns 409 Conflict", $resDeleteOpenPoProd['code'] === 409, "Body: {$resDeleteOpenPoProd['body']}");
+assertCheck("11b. Message is 'This product is in an open purchase order.'", ($resDeleteOpenPoProd['json']['message'] ?? '') === "This product is in an open purchase order.", "Got: " . ($resDeleteOpenPoProd['json']['message'] ?? ''));
+
+// Cancel open PO and then delete cleanly
+apiCall("$baseUrl/reorder/cancel.php", 'POST', ["order_id" => $createdPoId], $authHeader2);
+$resDeleteAfterCancel = apiCall("$baseUrl/inventory/delete_product.php", 'POST', [
+    "id" => $poProdId
+], $authHeader2);
+assertCheck("11c. Deletion succeeds after PO is no longer open", $resDeleteAfterCancel['code'] === 200, "Body: {$resDeleteAfterCancel['body']}");
 
 // Clean up created test products
 if (!empty($createdProductIds)) {

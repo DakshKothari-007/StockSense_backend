@@ -49,7 +49,7 @@ if ($productId <= 0 && $sku === "") {
 }
 
 try {
-    // Find target product in owner's store
+    // 1. Scope by shop from token: Find target product in owner's store. Another shop's product returns 404.
     if ($productId > 0) {
         $findStmt = $pdo->prepare("SELECT id, name, sku FROM products WHERE id = ? AND shop_owner_id = ?");
         $findStmt->execute([$productId, $shopOwnerId]);
@@ -63,7 +63,7 @@ try {
         http_response_code(404);
         echo json_encode([
             "status" => false,
-            "message" => "Product not found or already deleted from your inventory.",
+            "message" => "Product not found.",
             "data" => (object)[]
         ]);
         exit;
@@ -71,16 +71,39 @@ try {
 
     $actualId = (int)$targetProduct['id'];
 
-    // Check if product has sales records (Rule 8: Clear 400 error)
+    // 2. Check if product appears in an open purchase order (status = 'placed') -> 409
+    $poCheck = $pdo->prepare("
+        SELECT COUNT(*) 
+        FROM purchase_order_items poi
+        JOIN purchase_orders po ON po.id = poi.purchase_order_id
+        WHERE poi.product_id = ? AND po.shop_owner_id = ? AND po.status = 'placed'
+    ");
+    $poCheck->execute([$actualId, $shopOwnerId]);
+    $openPoCount = (int)$poCheck->fetchColumn();
+
+    if ($openPoCount > 0) {
+        http_response_code(409);
+        echo json_encode([
+            "status" => false,
+            "message" => "This product is in an open purchase order.",
+            "data" => [
+                "product_id" => $actualId,
+                "open_po_count" => $openPoCount
+            ]
+        ]);
+        exit;
+    }
+
+    // 3. Check if product has sales history -> 409
     $salesCheck = $pdo->prepare("SELECT COUNT(*) FROM sales_items WHERE product_id = ?");
     $salesCheck->execute([$actualId]);
     $salesCount = (int)$salesCheck->fetchColumn();
 
     if ($salesCount > 0) {
-        http_response_code(400);
+        http_response_code(409);
         echo json_encode([
             "status" => false,
-            "message" => "This product appears in {$salesCount} sales bills, so it cannot be deleted.",
+            "message" => "This product has sales history, so it cannot be deleted. You can set its stock to 0 or mark it inactive.",
             "data" => [
                 "product_id" => $actualId,
                 "sales_count" => $salesCount
@@ -89,20 +112,34 @@ try {
         exit;
     }
 
-    $stmt = $pdo->prepare("DELETE FROM products WHERE id = ? AND shop_owner_id = ?");
-    $stmt->execute([$actualId, $shopOwnerId]);
+    // 4. Delete product and clean up non-open order/reco references
+    $pdo->beginTransaction();
+
+    $delReco = $pdo->prepare("DELETE FROM recommendation_responses WHERE shop_owner_id = ? AND (product_id_1 = ? OR product_id_2 = ?)");
+    $delReco->execute([$shopOwnerId, $actualId, $actualId]);
+
+    $delPoi = $pdo->prepare("DELETE FROM purchase_order_items WHERE product_id = ? AND purchase_order_id IN (SELECT id FROM purchase_orders WHERE shop_owner_id = ?)");
+    $delPoi->execute([$actualId, $shopOwnerId]);
+
+    $delProd = $pdo->prepare("DELETE FROM products WHERE id = ? AND shop_owner_id = ?");
+    $delProd->execute([$actualId, $shopOwnerId]);
+
+    $pdo->commit();
 
     http_response_code(200);
     echo json_encode([
         "status" => true,
-        "message" => "Product deleted successfully from inventory.",
+        "message" => "Product deleted.",
         "data" => [
-            "deleted_id" => $productId ?: null,
-            "deleted_sku" => $sku ?: null
+            "deleted_id" => $actualId,
+            "deleted_sku" => $targetProduct['sku'] ?? $sku
         ]
     ]);
 
-} catch (PDOException $e) {
+} catch (Throwable $e) {
+    if ($pdo->inTransaction()) {
+        $pdo->rollBack();
+    }
     error_log("Failed to delete product: " . $e->getMessage());
     http_response_code(500);
     echo json_encode([
