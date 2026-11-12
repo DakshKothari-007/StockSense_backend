@@ -42,7 +42,7 @@ All responses adhere to the standard JSON envelope:
 - `405 Method Not Allowed`: Incorrect HTTP method used (e.g. GET instead of POST).
 - `422 Unprocessable Entity`: Semantic validation failure (e.g., invalid email format during signup).
 - `429 Too Many Requests`: Rate limit exceeded (5 failed login attempts in 15 minutes).
-- `500 Internal Server Error`: Server failure (technical details logged to server `error_log`, generic error message returned to client).
+- `500 Internal Server Error`: Server failure (technical details logged to server `error_log`, generic error message returned to client
 
 ---
 
