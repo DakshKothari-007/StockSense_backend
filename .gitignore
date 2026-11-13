@@ -1,0 +1,8 @@
+vendor/
+mail.json
+*.sql
+*.log
+*.key
+*.pem
+*firebase-service-account*.json
+

@@ -1286,7 +1286,7 @@ StockSense uses Firebase Cloud Messaging (FCM) HTTP v1 protocol using pure PHP (
   - `low_stock_alerts`: Controls `low_stock` push notifications.
   - `ai_recommendations`: Controls `reorder_suggestion` (and AI insights) push notifications.
   - `daily_sales_summary`: Controls `daily_summary` push notifications.
-  - `weekly_email_digest`: No push notifications sent.
+  - `weekly_email_digest`: Controls the Sunday 8:00 PM IST Weekly Email Digest (`cron/weekly_digest.php` / `cron/weekly_digest.bat`). Dispatches rich responsive HTML & plain-text email via PHPMailer with SMTP configured in `C:\xampp\StockSense_private\mail.json`. (Excluded from FCM push notifications).
 
 - **Allowed Push Notification Types**:
   1. **Low Stock Alert (`low_stock`)**:
@@ -1318,11 +1318,43 @@ StockSense uses Firebase Cloud Messaging (FCM) HTTP v1 protocol using pure PHP (
   - `order_placed`: No push notification sent.
   - `order_received`: No push notification sent.
   - `import_done`: No push notification sent.
-  - `weekly_email_digest`: No push notification or email sender.
-  *(These events update in-app database records only; `PushNotifier::send()` explicitly blocks them with reason `event_type_not_allowed_for_push`).*
+  - `weekly_email_digest`: Handled by email digest runner (`cron/weekly_digest.php`), excluded from push notifications.
+  *(These events update in-app database records or dispatch email; `PushNotifier::send()` explicitly blocks them with reason `event_type_not_allowed_for_push`).*
 
 - **Number Formatting**:
   - Currency values are formatted using Indian number grouping (e.g., `₹1,480`, `₹1,20,500`, `₹1,00,00,000`).
+
+---
+
+### Module 10.3: Weekly Email Digest (`cron/weekly_digest.php`)
+
+Automated weekly email report dispatched every Sunday at 8:00 PM IST (Asia/Kolkata) to shop owners with `weekly_email_digest` enabled and a valid registered email address.
+
+- **Trigger & Schedule**:
+  - Task Scheduler runner: `cron/weekly_digest.bat`
+  - Schedule: Sundays at 8:00 PM IST
+  - CLI only: Web access blocked via `.htaccess` (returns 403 Forbidden).
+- **Configuration & Security**:
+  - SMTP Credentials: `C:\xampp\StockSense_private\mail.json` (outside web root).
+  - Client: PHPMailer (`includes/MailClient.php`).
+  - Timeout: 15 seconds.
+  - Security: Zero hardcoded secrets; credentials never logged or leaked. Missing config fails safely.
+- **Data Scope & Content (Last 7 Days)**:
+  - *Sales & Orders*: Total 7-day revenue and order count with week-over-week % comparison (`+X%` / `-X%`). Displays `"No sales this week"` if sales are 0.
+  - *Top 5 Sellers*: Ranked by units sold and revenue.
+  - *5 Slowest Movers*: Active in-stock products with the fewest units sold over the 7 days.
+  - *Low Stock & Reorders*: Up to 5 products at or below `min_stock_threshold` with suggested reorder quantities.
+  - *Open Purchase Orders*: Count of placed purchase orders awaiting delivery.
+  - *Weekly Action Tip*: Deterministic actionable recommendation derived directly from live numbers (no AI call required).
+  - *Email Format*: Responsive HTML in brand colors (`#2FD39A` green, `#101827` dark) with plain-text fallback.
+  - *Subject*: `"Your StockSense weekly report - {IST date range}"` (e.g. `Your StockSense weekly report - 7 Nov - 13 Nov 2026`).
+- **Deduplication & Failure Handling**:
+  - Table `digest_log`: Records `shop_owner_id`, `sent_at`, `status` (`'sent'`, `'failed'`), and `error_message`.
+  - 6-Day Skip: Skips any shop if a digest was already sent in the last 6 days.
+  - Resilient: Individual delivery failures are logged and do not crash the batch run.
+- **CLI Test Mode**:
+  - Command: `php cron/weekly_digest.php "test=1&owner_id={id}"`
+  - Scopes execution exclusively to the specified owner ID.
 
 ---
 
