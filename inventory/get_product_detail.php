@@ -41,7 +41,7 @@ try {
     $product = null;
     if ($productId > 0) {
         $stmt = $pdo->prepare("
-            SELECT id, shop_owner_id, name, sku, category, description, price, cost_price, units, min_stock_threshold, status, icon_type, created_at, updated_at
+            SELECT id, shop_owner_id, name, sku, category, description, price, cost_price, units, min_stock_threshold, status, icon_type, icon_key, created_at, updated_at
             FROM products
             WHERE id = ? AND shop_owner_id = ?
             LIMIT 1
@@ -52,7 +52,7 @@ try {
 
     if (empty($product) && $sku !== "") {
         $stmt = $pdo->prepare("
-            SELECT id, shop_owner_id, name, sku, category, description, price, cost_price, units, min_stock_threshold, status, icon_type, created_at, updated_at
+            SELECT id, shop_owner_id, name, sku, category, description, price, cost_price, units, min_stock_threshold, status, icon_type, icon_key, created_at, updated_at
             FROM products
             WHERE sku = ? AND shop_owner_id = ?
             LIMIT 1
@@ -163,6 +163,7 @@ try {
         "status" => $status,
         "statusColorHex" => 0xFF98621A,
         "iconType" => (int)$product["icon_type"],
+        "icon_key" => $product["icon_key"],
         "minimumStockThreshold" => $threshold,
         "min_stock_threshold" => $threshold,
         "stock_cover_days" => $stockCoverDays,

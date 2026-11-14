@@ -21,6 +21,7 @@ if ($_SERVER["REQUEST_METHOD"] !== "POST") {
 }
 
 require_once __DIR__ . "/auth_helper.php";
+require_once __DIR__ . "/../includes/IconClassifier.php";
 $owner = authenticateShopOwner($pdo);
 $shopOwnerId = (int)$owner["id"];
 
@@ -138,6 +139,30 @@ try {
         $params[] = (int)$data["icon_type"];
     }
 
+    if (array_key_exists("icon_key", $data)) {
+        $rawIconKey = $data["icon_key"] !== null ? trim((string)$data["icon_key"]) : "";
+        if ($rawIconKey !== "") {
+            if (!IconClassifier::isValidKey($rawIconKey)) {
+                http_response_code(422);
+                echo json_encode([
+                    "status" => false,
+                    "message" => "Invalid icon_key '{$rawIconKey}'. Must be a valid catalog key.",
+                    "data" => (object)[]
+                ]);
+                exit;
+            }
+            $fields[] = "icon_key = ?";
+            $params[] = strtolower($rawIconKey);
+            $fields[] = "icon_is_manual = ?";
+            $params[] = 1; // Stored as owner's manual choice that classifier never overwrites
+        } else {
+            $fields[] = "icon_key = ?";
+            $params[] = null;
+            $fields[] = "icon_is_manual = ?";
+            $params[] = 0;
+        }
+    }
+
     if (empty($fields)) {
         http_response_code(422);
         echo json_encode([
@@ -156,7 +181,7 @@ try {
     $stmt->execute($params);
 
     // Fetch updated record
-    $fetchStmt = $pdo->prepare("SELECT id, name, sku, category, description, price, cost_price, units, min_stock_threshold, status, icon_type, updated_at FROM products WHERE id = ?");
+    $fetchStmt = $pdo->prepare("SELECT id, name, sku, category, description, price, cost_price, units, min_stock_threshold, status, icon_type, icon_key, updated_at FROM products WHERE id = ?");
     $fetchStmt->execute([$targetId]);
     $updated = $fetchStmt->fetch(PDO::FETCH_ASSOC);
 
@@ -180,6 +205,7 @@ try {
                 "min_stock_threshold" => (int)$updated["min_stock_threshold"],
                 "status" => $updated["status"],
                 "iconType" => (int)$updated["icon_type"],
+                "icon_key" => $updated["icon_key"],
                 "updated_at" => $updated["updated_at"]
             ]
         ]

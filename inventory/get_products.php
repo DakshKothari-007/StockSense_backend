@@ -62,7 +62,7 @@ try {
     $countStmt->execute($params);
     $totalCount = (int)$countStmt->fetchColumn();
 
-    $sql = "SELECT id, shop_owner_id, name, sku, category, description, price, cost_price, units, min_stock_threshold, status, icon_type, created_at, updated_at
+    $sql = "SELECT id, shop_owner_id, name, sku, category, description, price, cost_price, units, min_stock_threshold, status, icon_type, icon_key, created_at, updated_at
             FROM products
             WHERE " . implode(" AND ", $whereClauses) . "
             ORDER BY id ASC";
@@ -107,6 +107,7 @@ try {
             "status" => $status,
             "statusColorHex" => $statusColorHex,
             "iconType" => (int)$row["icon_type"],
+            "icon_key" => $row["icon_key"],
             "created_at" => $row["created_at"],
             "updated_at" => $row["updated_at"]
         ];

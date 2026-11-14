@@ -374,7 +374,8 @@ All responses adhere to the standard JSON envelope:
           "price": 27.00,
           "cost_price": 23.50,
           "min_stock_threshold": 24,
-          "status": "low_stock"
+          "status": "low_stock",
+          "icon_key": "milk_bottle"
         }
       ],
       "total_count": 42
@@ -401,7 +402,8 @@ All responses adhere to the standard JSON envelope:
       "cost_price": 23.50,
       "min_stock_threshold": 24,
       "status": "low_stock",
-      "stock_cover_days": 1.6
+      "stock_cover_days": 1.6,
+      "icon_key": "milk_bottle"
     }
   }
   ```
@@ -421,7 +423,8 @@ All responses adhere to the standard JSON envelope:
     "price": 25.00,
     "cost_price": 20.00,
     "min_stock_threshold": 15,
-    "icon_type": 2
+    "icon_type": 2,
+    "icon_key": "string (optional, valid icon_key from shared catalog of 304 supermarket icons. If omitted or null, the backend auto-classifies via IconClassifier: Step 1 keyword rules, Step 2 local AI model. An owner-provided icon is marked as a manual choice icon_is_manual=1)"
   }
   ```
 - **Success Response (`201 Created`)**:
@@ -439,7 +442,8 @@ All responses adhere to the standard JSON envelope:
       "cost_price": "₹120",
       "raw_cost_price": 120.0,
       "units": "50",
-      "min_stock_threshold": 15
+      "min_stock_threshold": 15,
+      "icon_key": "cooking_oil"
     }
   }
   ```
@@ -448,12 +452,12 @@ All responses adhere to the standard JSON envelope:
     - Client-supplied SKU already exists in this shop: `{"status": false, "message": "A product with this SKU already exists.", "data": {}}`.
     - Auto-generation could not find a unique SKU after 10 attempts: `{"status": false, "message": "Unable to generate a unique SKU after 10 attempts. Please specify a SKU manually.", "data": {}}`.
     - Note: Uniqueness is strictly scoped per shop (`shop_owner_id`); the same SKU in another shop never conflicts.
-  - `422 Unprocessable Entity`: Missing required name, negative price/units.
+  - `422 Unprocessable Entity`: Missing required name, negative price/units, or invalid `icon_key` not in the 304 allowed catalog keys (`"Invalid icon_key '{key}'. Must be a valid icon key from the product icon catalog."`).
 
 #### 3.4 Update Product
 - **Method & Path**: `POST /inventory/update_product.php`
 - **Token Required**: Yes
-- **App Screen**: `ProductDetailScreen.kt`
+- **App Screen**: `ProductDetailScreen.kt`, `EditProductScreen.kt`
 - **Request Body**:
   ```json
   {
@@ -461,10 +465,33 @@ All responses adhere to the standard JSON envelope:
     "units": 50,
     "price": 28.00,
     "cost_price": 24.00,
-    "min_stock_threshold": 20
+    "min_stock_threshold": 20,
+    "icon_key": "string (optional, valid icon_key from catalog. Setting this stores it as an owner manual choice icon_is_manual=1 that the classifier never overwrites)"
   }
   ```
-- **Success Response (`200 OK`)**
+- **Success Response (`200 OK`)**:
+  ```json
+  {
+    "status": true,
+    "message": "Product updated successfully.",
+    "data": {
+      "product": {
+        "id": 1,
+        "sku": "AMUL-MILK-500",
+        "name": "Amul Taaza Milk 500ml",
+        "category": "Dairy",
+        "units": 50,
+        "price": 28.00,
+        "cost_price": 24.00,
+        "min_stock_threshold": 20,
+        "icon_key": "milk_bottle"
+      }
+    }
+  }
+  ```
+- **Error Responses**:
+  - `404 Not Found`: Product not found in shop.
+  - `422 Unprocessable Entity`: Invalid `icon_key` or negative price/units.
 
 #### 3.5 Delete Product
 - **Method & Path**: `POST /inventory/delete_product.php`

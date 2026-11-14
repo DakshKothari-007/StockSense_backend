@@ -775,7 +775,7 @@
                         ],
                         "body": {
                             "mode": "raw",
-                            "raw": "{\n  \"name\": \"Fortune Sunflower Oil \u00b7 1 L\",\n  \"sku\": \"OIL-005\",\n  \"category\": \"Staples\",\n  \"description\": \"1 L pouch \u00b7 Refined oil\",\n  \"price\": 145.00,\n  \"cost_price\": 120.00,\n  \"units\": 50,\n  \"min_stock_threshold\": 15,\n  \"icon_type\": 2\n}"
+                            "raw": "{\n  \"name\": \"Fortune Sunflower Oil \u00b7 1 L\",\n  \"sku\": \"OIL-005\",\n  \"category\": \"Staples\",\n  \"description\": \"1 L pouch \u00b7 Refined oil\",\n  \"price\": 145.00,\n  \"cost_price\": 120.00,\n  \"units\": 50,\n  \"min_stock_threshold\": 15,\n  \"icon_type\": 2,\n  \"icon_key\": \"cooking_oil\"\n}"
                         },
                         "url": {
                             "raw": "{{base_url}}/inventory/add_product.php",
@@ -787,7 +787,7 @@
                                 "add_product.php"
                             ]
                         },
-                        "description": "Inserts a new product into the shop inventory. SKU is optional; if provided, duplicate SKU in the same shop is rejected with 409 Conflict: 'A product with this SKU already exists.' The same SKU in another shop does not conflict."
+                        "description": "Inserts a new product into the shop inventory. SKU and icon_key are optional. If icon_key is supplied, it is validated against the 304-item catalog and marked as a manual owner choice (icon_is_manual=1). If omitted, the server automatically classifies it. Duplicate SKU in the same shop is rejected with 409 Conflict."
                     }
                 },
                 {
@@ -837,7 +837,7 @@
                         ],
                         "body": {
                             "mode": "raw",
-                            "raw": "{\n  \"sku\": \"{{sample_sku}}\",\n  \"units\": 68,\n  \"price\": 32.00,\n  \"cost_price\": 27.00,\n  \"min_stock_threshold\": 24\n}"
+                            "raw": "{\n  \"sku\": \"{{sample_sku}}\",\n  \"units\": 68,\n  \"price\": 32.00,\n  \"cost_price\": 27.00,\n  \"min_stock_threshold\": 24,\n  \"icon_key\": \"milk_bottle\"\n}"
                         },
                         "url": {
                             "raw": "{{base_url}}/inventory/update_product.php",
@@ -849,7 +849,7 @@
                                 "update_product.php"
                             ]
                         },
-                        "description": "Updates stock quantity (units), selling price, cost price, or threshold for an existing product."
+                        "description": "Updates stock quantity (units), selling price, cost price, threshold, or icon_key for an existing product. Setting icon_key marks it as a manual owner choice (icon_is_manual=1) that classifier and backfill will never overwrite."
                     }
                 },
                 {

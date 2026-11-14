@@ -33,6 +33,7 @@ require_once __DIR__ . "/../inventory/auth_helper.php";
 require_once __DIR__ . "/SpreadsheetReader.php";
 require_once __DIR__ . "/ColumnMatcher.php";
 require_once __DIR__ . "/../settings/settings_helper.php";
+require_once __DIR__ . "/../includes/IconClassifier.php";
 
 $owner = authenticateShopOwner($pdo);
 $ownerId = (int)$owner['id'];
@@ -386,7 +387,43 @@ try {
     $productsAdded = 0;
     $stockAdded = 0;
 
-    $checkStmt = $pdo->prepare("SELECT id, name, category, units, cost_price, price, min_stock_threshold FROM products WHERE shop_owner_id = ? AND sku = ? LIMIT 1 FOR UPDATE");
+    // Pre-classify product icons (Step 1 keywords, batch up to 20 unmatched to AI)
+    $skuToIconKey = [];
+    $unmatchedForAi = [];
+
+    foreach ($validRowsToInsert as $item) {
+        $sku = $item['sku'];
+        $name = $item['name'] ?? '';
+        $cat = $item['category'] ?? 'General';
+
+        $kwMatch = IconClassifier::matchByKeywords($name, $cat);
+        if ($kwMatch !== null && !empty($kwMatch['icon_key'])) {
+            $skuToIconKey[$sku] = $kwMatch['icon_key'];
+        } else {
+            $unmatchedForAi[] = [
+                'sku' => $sku,
+                'name' => $name,
+                'category' => $cat
+            ];
+        }
+    }
+
+    if (!empty($unmatchedForAi)) {
+        try {
+            $aiBatch = array_slice($unmatchedForAi, 0, 20);
+            $aiResults = IconClassifier::batchClassifyWithAi($aiBatch);
+            foreach ($aiResults as $sku => $iconKey) {
+                if (!empty($iconKey) && IconClassifier::isValidKey($iconKey)) {
+                    $skuToIconKey[$sku] = $iconKey;
+                }
+            }
+        } catch (Throwable $e) {
+            error_log("Icon classification AI error during import: " . $e->getMessage());
+            // Never block the import; on failure, leave empty
+        }
+    }
+
+    $checkStmt = $pdo->prepare("SELECT id, name, category, units, cost_price, price, min_stock_threshold, icon_key, icon_is_manual FROM products WHERE shop_owner_id = ? AND sku = ? LIMIT 1 FOR UPDATE");
     $unitsUpdateExpr = ($shopImportMode === 'REPLACE') ? ":units" : "units + :units";
     $updateStmt = $pdo->prepare("
         UPDATE products
@@ -396,12 +433,13 @@ try {
             name = :name,
             category = :category,
             min_stock_threshold = :min_stock_threshold,
+            icon_key = :icon_key,
             updated_at = CURRENT_TIMESTAMP
         WHERE shop_owner_id = :shop_owner_id AND sku = :sku
     ");
     $insertStmt = $pdo->prepare("
-        INSERT INTO products (shop_owner_id, name, sku, category, description, price, cost_price, units, min_stock_threshold, status, icon_type)
-        VALUES (:shop_owner_id, :name, :sku, :category, 'Imported product', :price, :cost_price, :units, :min_stock_threshold, NULL, 0)
+        INSERT INTO products (shop_owner_id, name, sku, category, description, price, cost_price, units, min_stock_threshold, status, icon_type, icon_key, icon_is_manual)
+        VALUES (:shop_owner_id, :name, :sku, :category, 'Imported product', :price, :cost_price, :units, :min_stock_threshold, NULL, 0, :icon_key, 0)
     ");
 
     foreach ($validRowsToInsert as $item) {
@@ -415,6 +453,14 @@ try {
             $updateCategory = (!empty($item['category'])) ? $item['category'] : (!empty($existing['category']) ? $existing['category'] : 'General');
             $updateMinStock = ($colMinStockIdx !== null && $item['min_stock_threshold'] > 0) ? $item['min_stock_threshold'] : (int)($existing['min_stock_threshold'] ?? 10);
 
+            // Never overwrite owner's manual choice or existing icon
+            $finalIconKey = $existing['icon_key'];
+            if ((empty($existing['icon_key']) || $existing['icon_key'] === null) && (int)($existing['icon_is_manual'] ?? 0) === 0) {
+                if (isset($skuToIconKey[$item['sku']])) {
+                    $finalIconKey = $skuToIconKey[$item['sku']];
+                }
+            }
+
             $updateStmt->execute([
                 ':units' => $item['units'],
                 ':cost_price' => $updateCost,
@@ -422,11 +468,13 @@ try {
                 ':name' => $updateName,
                 ':category' => $updateCategory,
                 ':min_stock_threshold' => $updateMinStock,
+                ':icon_key' => $finalIconKey,
                 ':shop_owner_id' => $ownerId,
                 ':sku' => $item['sku']
             ]);
             $productsUpdated++;
         } else {
+            $finalIconKey = $skuToIconKey[$item['sku']] ?? null;
             $insertStmt->execute([
                 ':shop_owner_id' => $ownerId,
                 ':name' => $item['name'],
@@ -435,7 +483,8 @@ try {
                 ':price' => $item['price'],
                 ':cost_price' => $item['cost_price'],
                 ':units' => $item['units'],
-                ':min_stock_threshold' => $item['min_stock_threshold'] ?? 10
+                ':min_stock_threshold' => $item['min_stock_threshold'] ?? 10,
+                ':icon_key' => $finalIconKey
             ]);
             $productsAdded++;
         }

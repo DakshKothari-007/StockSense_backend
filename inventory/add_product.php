@@ -22,6 +22,7 @@ if ($_SERVER["REQUEST_METHOD"] !== "POST") {
 
 require_once __DIR__ . "/auth_helper.php";
 require_once __DIR__ . "/../import/ColumnMatcher.php";
+require_once __DIR__ . "/../includes/IconClassifier.php";
 $owner = authenticateShopOwner($pdo);
 $shopOwnerId = (int)$owner["id"];
 
@@ -121,10 +122,32 @@ try {
         }
     }
 
-    // 2. Insert product
+    // 2. Resolve icon_key: explicit owner choice vs auto-classification
+    $rawIconKey = isset($data["icon_key"]) && is_string($data["icon_key"]) ? trim($data["icon_key"]) : null;
+    $finalIconKey = null;
+    $isManualIcon = 0;
+
+    if ($rawIconKey !== null && $rawIconKey !== "") {
+        if (!IconClassifier::isValidKey($rawIconKey)) {
+            http_response_code(422);
+            echo json_encode([
+                "status" => false,
+                "message" => "Invalid icon_key '{$rawIconKey}'. Must be a valid catalog key.",
+                "data" => (object)[]
+            ]);
+            exit;
+        }
+        $finalIconKey = strtolower($rawIconKey);
+        $isManualIcon = 1;
+    } else {
+        $finalIconKey = IconClassifier::classify($name, $category);
+        $isManualIcon = 0;
+    }
+
+    // 3. Insert product
     $insertSql = "INSERT INTO products 
-        (shop_owner_id, name, sku, category, description, price, cost_price, units, min_stock_threshold, status, icon_type)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        (shop_owner_id, name, sku, category, description, price, cost_price, units, min_stock_threshold, status, icon_type, icon_key, icon_is_manual)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
     $stmt = $pdo->prepare($insertSql);
     $stmt->execute([
         $shopOwnerId,
@@ -137,7 +160,9 @@ try {
         $units,
         $minStockThreshold,
         $status ?: null,
-        $iconType
+        $iconType,
+        $finalIconKey,
+        $isManualIcon
     ]);
 
     $newId = (int)$pdo->lastInsertId();
@@ -159,7 +184,8 @@ try {
             "units" => (string)$units,
             "min_stock_threshold" => $minStockThreshold,
             "status" => $status,
-            "iconType" => $iconType
+            "iconType" => $iconType,
+            "icon_key" => $finalIconKey
         ]
     ]);
 
