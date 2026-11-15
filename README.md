@@ -95,3 +95,4 @@ All protected endpoints require a cryptographically secure Bearer token:
 - **Logout (`POST /auth/logout.php`)**: Revokes the active session by deleting the matching `token_hash` row from `tokens`. Subsequent requests with that token return `HTTP 401 Unauthorized`.
 - **Postman Automation**: The `Login` request in the Postman collection automatically extracts `response.token` and populates the `{{token}}` collection variable.
 
+### i have just commited 10 days straight
