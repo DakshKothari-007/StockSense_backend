@@ -72,7 +72,8 @@ $login2 = makeRequest('POST', 'auth/login.php', null, ["email" => "ananya@exampl
 $tokenShop2 = $login2['json']['token'] ?? null;
 assertTest($login2['code'] === 200 && strlen($tokenShop2) === 64, "Login Shop 2 (Ananya) returns valid 64-char token");
 
-$login3 = makeRequest('POST', 'auth/login.php', null, ["email" => "daksh1@gmail.com", "password" => "password123"]);
+$shop3Email = $pdo->query("SELECT email FROM owner_account WHERE id = 3")->fetchColumn() ?: "daksh@example.com";
+$login3 = makeRequest('POST', 'auth/login.php', null, ["email" => $shop3Email, "password" => "password123"]);
 $tokenShop3 = $login3['json']['token'] ?? null;
 assertTest($login3['code'] === 200 && strlen($tokenShop3) === 64, "Login Shop 3 (Daksh) returns valid 64-char token");
 

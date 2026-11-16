@@ -7,6 +7,7 @@ require_once __DIR__ . "/AiModelClient.php";
 require_once __DIR__ . "/GeminiClient.php";
 require_once __DIR__ . "/OllamaClient.php";
 require_once __DIR__ . "/AiClientFactory.php";
+require_once __DIR__ . "/IntentEngine.php";
 
 /**
  * AiEngine: Core AI Orchestrator for Dukaan Mitra.
@@ -1843,7 +1844,8 @@ EOT;
 
         // 1. Exclude general business advice, ideas, how-to, or app help (route to model or fallback)
         $advicePattern = '/\b(advice|tip|tips|idea|ideas|how\s+to\s+increase|how\s+should\s+i|how\s+can\s+i|how\s+do\s+i|how\s+to\s+reduce|best\s+way\s+to\s+reduce|reduce|strategy|strategies|markup|discount|promotion|scheme|festival|diwali|pongal|eid|spoilage|negotiat|vendor\s*deal|supplier\s*talk|display|merchandis|shelf|layout|cash\s*flow|working\s*capital|stocksense\s*app|help\s*with\s*app|competitor|competitors|rival|rivals|supermarket|supermarkets|attract|loyalty|beat\s+the\s+shop|new\s+store|диப்ஸ்|யோசனை|ஆலோசனை|சலுகை|விற்பனை\s*அதிகரிக்க|सलाह|सुझाव|आइडिया|तरीका|उपाय|बढ़ाने|डिस्काउंट|ऑफर)\b/iu';
-        if (preg_match($advicePattern, $lower) && !$isSpecificProductQuery && !$isProfileOrSettings && !$isAppHelpQuery) {
+        $isAdviceQuery = (bool)preg_match($advicePattern, $lower);
+        if ($isAdviceQuery && !$isSpecificProductQuery && !$isProfileOrSettings && !$isAppHelpQuery) {
             return null;
         }
 
@@ -2103,6 +2105,14 @@ EOT;
             $topRes = AiTools::topSellingProducts($pdo, $shopId, ($period === 'yesterday' || $date || $period === 'best_day') ? 'month' : $period);
             $topItem = $topRes['result']['products'][0] ?? null;
             return self::formatSalesResponse($res['result'] ?? [], $topItem, $res['cards'] ?? [], $period, $lang);
+        }
+
+        // 17. Multi-Layer IntentEngine Semantic Concept Resolution (Layers A & B, 0 model latency)
+        if (self::isShopQuestion($message) && !$isAdviceQuery) {
+            $resolution = IntentEngine::resolve($pdo, $shopId, $message, $history, $languageHint, false);
+            if ($resolution['confidence'] >= 0.70 && !in_array($resolution['intent'], ['business_advice', 'general_knowledge', 'prompt_injection', 'security_refusal', 'feedback_rude'], true)) {
+                return IntentEngine::executeIntent($pdo, $shopId, $resolution, $lang);
+            }
         }
 
         return null;
@@ -3641,57 +3651,11 @@ EOT;
             ];
         }
 
-        // 9. Unrecognized query fallback
-        // 'I could not find information for that in your shop records' is ONLY for a data question whose tool returned nothing, never for chit-chat.
-        if (self::isDataQuestion($message)) {
-            if ($lang === 'hi') {
-                $answer = "मुझे दुकान के रिकॉर्ड में इसके बारे में जानकारी नहीं मिली। आप आज की बिक्री, कम स्टॉक, दोबारा ऑर्डर या सबसे ज्यादा बिकने वाले सामान के बारे में पूछ सकते हैं।";
-                $suggestions = [
-                    ['label' => 'आज की बिक्री', 'message' => 'आज की बिक्री कितनी है?'],
-                    ['label' => 'कम स्टॉक', 'message' => 'कम स्टॉक वाले सामान दिखाएं']
-                ];
-            } elseif ($lang === 'ta') {
-                $answer = "கடை பதிவுகளில் இதற்கான தகவல் கிடைக்கவில்லை. இன்றைய விற்பனை, குறைவான இருப்பு, மீண்டும் ஆர்டர் அல்லது மெதுவாக விற்பனையாகும் பொருட்கள் பற்றி கேட்கலாம்.";
-                $suggestions = [
-                    ['label' => 'இன்றைய விற்பனை', 'message' => 'இன்று விற்பனை எவ்வளவு?'],
-                    ['label' => 'குறைவான இருப்பு', 'message' => 'குறைவான இருப்பு பொருட்கள்']
-                ];
-            } else {
-                $answer = "I could not find information for that in your shop records. You can ask about today's sales, low stock, reorder recommendations, or top selling products.";
-                $suggestions = [
-                    ['label' => 'Check low stock', 'message' => 'Which items are low on stock?'],
-                    ['label' => "Today's sales", 'message' => 'How much did I sell today?']
-                ];
-            }
-        } else {
-            // Non-data / chit-chat / general query fallback
-            if ($lang === 'hi') {
-                $answer = "मुझे अभी थोड़ी परेशानी हो रही है। कृपया कुछ देर बाद पुनः प्रयास करें।";
-                $suggestions = [
-                    ['label' => 'कम स्टॉक', 'message' => 'कम स्टॉक वाले सामान दिखाएं'],
-                    ['label' => 'आज की बिक्री', 'message' => 'आज की बिक्री कितनी है?']
-                ];
-            } elseif ($lang === 'ta') {
-                $answer = "தற்போது சிறு சிக்கல் ஏற்பட்டுள்ளது. சிறிது நேரம் கழித்து மீண்டும் முயற்சிக்கவும்.";
-                $suggestions = [
-                    ['label' => 'குறைவான இருப்பு', 'message' => 'குறைவான இருப்பு பொருட்கள்'],
-                    ['label' => 'இன்றைய விற்பனை', 'message' => 'இன்று விற்பனை எவ்வளவு?']
-                ];
-            } else {
-                $answer = "I'm having a little trouble right now. Please try again in a moment.";
-                $suggestions = [
-                    ['label' => 'Check low stock', 'message' => 'Which items are low on stock?'],
-                    ['label' => "Today's sales", 'message' => 'How much did I sell today?']
-                ];
-            }
-        }
-
-        return [
-            'answer' => $answer,
-            'cards' => [],
-            'actions' => [],
-            'suggestions' => $suggestions
-        ];
+        // 9. Layer D Never-Fail Intent Resolution:
+        // Run closest intent or grounded shop overview with "Did you mean...?" suggestions.
+        // "I'm having trouble" is NEVER shown for shop questions.
+        $resolution = IntentEngine::resolve($pdo, $shopId, $message, $history, $languageHint, true);
+        return IntentEngine::executeIntent($pdo, $shopId, $resolution, $lang);
     }
 
     /**

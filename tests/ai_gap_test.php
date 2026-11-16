@@ -207,7 +207,7 @@ foreach ($questions as $idx => $item) {
     $suggestions = $res['suggestions'] ?? [];
 
     // Determine path
-    $isRefusal = (bool)preg_match('/\b(only\s+access\s+data\s+for\s+your\s+own\s+shop|only\s+help\s+with\s+your\s+shop|cannot\s+access\s+or\s+share|क्षमा\s+करें|மன்னிக்கவும்)\b/iu', $answer);
+    $isRefusal = (bool)preg_match('/(*UCP)\b(only\s+access\s+data\s+for\s+your\s+own\s+shop|only\s+help\s+with\s+your\s+shop|cannot\s+access\s+or\s+share)\b|(क्षमा\s+करें|மன்னிக்கவும்)/iu', $answer);
     
     // Determine which engine answered
     $path = "unknown";

@@ -276,7 +276,8 @@ assertCheck("4p. get_product_detail.php returns 200", $getDetailRes['code'] === 
 assertCheck("4q. Product detail reflects current icon_key 'candy'", $detailIcon === 'candy');
 
 // 4r. Shop scoping: Shop 3 cannot update Shop 2's product
-$login3 = apiCall("$baseUrl/auth/login.php", 'POST', ["email" => "daksh1@gmail.com", "password" => "password123"]);
+$shop3Email = $pdo->query("SELECT email FROM owner_account WHERE id = 3")->fetchColumn() ?: "daksh@example.com";
+$login3 = apiCall("$baseUrl/auth/login.php", 'POST', ["email" => $shop3Email, "password" => "password123"]);
 $token3 = $login3['json']['token'] ?? null;
 $headers3 = ["Authorization: Bearer $token3"];
 

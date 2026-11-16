@@ -52,16 +52,17 @@ function assertCheck($name, $cond, $details = '') {
     }
 }
 
+require_once __DIR__ . '/../config/db.php';
+
 // 0. Acquire tokens for Shop 2 (Ananya) and Shop 3 (Daksh)
 $login2 = apiCall("$baseUrl/auth/login.php", 'POST', ["email" => "ananya@example.com", "password" => "password123"]);
 $token2 = $login2['json']['token'] ?? '';
 assertCheck("0a. Login Shop 2 returns valid token", $login2['code'] === 200 && strlen($token2) === 64);
 
-$login3 = apiCall("$baseUrl/auth/login.php", 'POST', ["email" => "daksh1@gmail.com", "password" => "password123"]);
+$shop3Email = $pdo->query("SELECT email FROM owner_account WHERE id = 3")->fetchColumn() ?: "daksh@example.com";
+$login3 = apiCall("$baseUrl/auth/login.php", 'POST', ["email" => $shop3Email, "password" => "password123"]);
 $token3 = $login3['json']['token'] ?? '';
 assertCheck("0b. Login Shop 3 returns valid token", $login3['code'] === 200 && strlen($token3) === 64);
-
-require_once __DIR__ . '/../config/db.php';
 
 // 1. Test: No token / expired token returns 401
 $resNoAuth = apiCall("$baseUrl/reorder/list.php", 'GET', null, []);

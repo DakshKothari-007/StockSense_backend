@@ -75,7 +75,8 @@ $token2 = $login2['json']['token'] ?? null;
 assertCheck("0a. Login Shop 2 successful", $login2['code'] === 200 && !empty($token2));
 $authHeader2 = ["Authorization: Bearer $token2"];
 
-$login3 = apiCall("$baseUrl/auth/login.php", 'POST', ["email" => "daksh1@gmail.com", "password" => "password123"]);
+$shop3Email = $pdo->query("SELECT email FROM owner_account WHERE id = 3")->fetchColumn() ?: "daksh@example.com";
+$login3 = apiCall("$baseUrl/auth/login.php", 'POST', ["email" => $shop3Email, "password" => "password123"]);
 $token3 = $login3['json']['token'] ?? null;
 assertCheck("0b. Login Shop 3 successful", $login3['code'] === 200 && !empty($token3));
 $authHeader3 = ["Authorization: Bearer $token3"];

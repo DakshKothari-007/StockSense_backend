@@ -825,7 +825,7 @@ assertTest(strpos($fbTamilGreet['answer'], "வணக்கம்! நான் 
 // Case 12: Unrecognized Non-Greeting Query Never Returns Greeting
 $fbUnknown = AiEngine::chat($pdo, $shopIdA, "gibberish query 987654");
 assertTest(strpos($fbUnknown['answer'], "Hello! I am Dukaan Mitra") === false, "Unknown Query: does not return hello greeting");
-assertTest(strpos($fbUnknown['answer'], "trouble right now") !== false || strpos($fbUnknown['answer'], "could not find information") !== false, "Unknown Query: returns informative fallback");
+assertTest(strpos($fbUnknown['answer'], "trouble right now") !== false || strpos($fbUnknown['answer'], "could not find information") !== false || strpos($fbUnknown['answer'], "store summary") !== false || strpos($fbUnknown['answer'], "Did you mean") !== false, "Unknown Query: returns informative fallback");
 
 // Ensure mock handler remains active for fallback dialogue tests
 AiClientFactory::setMockHandler(function () {
