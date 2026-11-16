@@ -21,6 +21,10 @@ class GeminiClient implements AiModelClient {
         self::$mockHandler = $handler;
     }
 
+    public static function hasMockHandler(): bool {
+        return self::$mockHandler !== null;
+    }
+
     /**
      * Get the API key securely from config path.
      */

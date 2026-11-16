@@ -31,6 +31,10 @@ class AiClientFactory {
         self::setGeminiMockHandler($handler);
     }
 
+    public static function hasMockHandler(): bool {
+        return OllamaClient::hasMockHandler() || GeminiClient::hasMockHandler();
+    }
+
     /**
      * Resolves the client class name implementing AiModelClient based on config or override.
      *

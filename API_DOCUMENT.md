@@ -1430,6 +1430,32 @@ Dukaan Mitra is the app's built-in intelligent AI assistant for shop owners. It 
 - **Multi-Tenant Scoping**: All tool executions and data lookups are strictly bound to the authenticated user's `shop_id` extracted from the Bearer token. No raw SQL or client-provided `shop_id` is permitted. Requests attempting to inspect another shop's data are strictly refused.
 - **Brand & Safety Defense**: Output sanitization filters external model names (Ollama, Qwen, Gemini, OpenAI, Claude, etc.). Prompt injection attempts inside queries or product names to alter persona, reveal credentials, or modify system instructions are safely neutralized.
 - **Fail-Safe Resilience**: If the AI model times out (90s limit for Ollama, 20s for Gemini), experiences connection failure, or the service is offline, Dukaan Mitra automatically falls back to intelligent keyword-driven rule execution. The API never returns HTTP 500 for AI issues.
+- **Business Advisor Mode (`includes/AdvisorEngine.php`)**:
+  - **Question Type First (`IntentEngine::classifyQuestionType()`)**: Classifies the query TYPE (`lookup`, `advice`, `general_knowledge`, `conversation`, `safety`) prior to topic scoring. If the type is `advice`, it is strictly routed to the Business Advisor and **NEVER returns a plain data lookup**. (e.g. *"trick bol sales increase karne ki"* routes to advice rather than matching *"sales"* to return today's sales figure).
+  - **12 Business Advice Topics**: Recognizes 12 core retail business topics across English, Hindi, Tamil, Hinglish, and Tanglish:
+    1. `sales_growth`: Sales Growth & Turnaround
+    2. `profit_margin`: Profit Margin & Markup Strategy
+    3. `inventory_stockouts`: Stockout Prevention & Inventory Control
+    4. `dead_slow_stock`: Dead Stock & Slow Moving Clearance
+    5. `cash_flow`: Cash Flow & Working Capital Optimization
+    6. `pricing_discounts`: Pricing, Markdown & Discount Policy
+    7. `offers_promotions`: Promotional Offers & Weekend Schemes
+    8. `festival_seasonal`: Festival & Seasonal Demand Preparation
+    9. `supplier_terms`: Supplier Negotiations & Purchase Terms
+    10. `retention_bundles`: Customer Retention & Combo Bundling
+    11. `expense_control`: Shop Expense & Cost Reduction
+    12. `general_operations`: General Store Operations & Merchandising
+  - **Compact Grounded Facts Evidence**: Gathers real metrics using read-only SQL queries (7-day/30-day sales, week-on-week growth %, best and worst days, top and slow sellers, dead stock count and tied-up capital, low-stock items, open purchase orders, total inventory valuation). Injects compact numerical facts directly into the prompt (numbers only, never invented numbers).
+  - **4-Section Structured Markdown Output**:
+    1. `**What I see:**`: 2–3 points diagnosing the shop's situation using real database numbers.
+    2. `**What to do:**`: 3–5 prioritized actions for the week (Why, How this week, Expected effect).
+    3. `**How to track it:**`: 1–2 simple metrics to track on StockSense.
+    4. `**Watch out:**`: 1–2 risks or assumptions (general wisdom labeled with `"General tip:"`).
+  - **Suggestion Chips**: Returns 2 to 3 topic-tailored suggestions for immediate follow-up.
+  - **Deterministic Rule-Based Fallback**: If the local model is offline or slow, falls back to a deterministic rule-based advisor grounded in the exact same shop facts. Never returns the *"having trouble"* message for shop advice.
+  - **Speed & Daily Caching**: Caches daily advice answers in `ai_cache` table under key `advisor_{hash}_{Ymd}` with 86,400s TTL. (Cached latency: < 2 ms; Rule-based fallback: < 50 ms).
+  - **Configuration (`advisor_use_cloud_for_general_strategy`)**: Configured in `config/ai.php` (default `false`). When `false`, shop numbers are strictly preserved locally and never sent to cloud models.
+  - **Safety & Compliance**: Prohibits guaranteed-profit claims; appends a certified accountant disclaimer for tax, legal, or loan queries; declines stock market, share trading, and cryptocurrency investment questions with an immediate redirect to store operations.
 
 #### Scope & System Rules
 - **Shop Data Queries**:

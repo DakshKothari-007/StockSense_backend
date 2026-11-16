@@ -18,10 +18,14 @@ return [
     // Cloud privacy: Gemini never receives tool results, shop names, product names, sales or stock numbers
     'allow_cloud_for_shop_data' => false,
 
+    // Advisor mode: optional setting to allow cloud for general strategy questions with NO shop data (default false)
+    'advisor_use_cloud_for_general_strategy' => false,
+
     // Ollama configuration
     'ollama_url' => 'http://localhost:11434',
     'ollama_model' => 'qwen2.5:7b',
     'num_ctx' => 8192,               // Context window size suitable for tools and conversation context
+    'num_gpu' => 0,                  // 0 = CPU execution (avoids CUDA out of memory / GPU driver errors on local host)
     'keep_alive' => '30m',           // Keep local model loaded in memory for 30 minutes
 
     // Gemini API configuration
