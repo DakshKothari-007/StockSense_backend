@@ -3,7 +3,7 @@ logs/
 *.log
 
 # Database dumps & SQL exports
-*.sql
+
 !docs/schema.sql
 
 # Keys & Certificates
