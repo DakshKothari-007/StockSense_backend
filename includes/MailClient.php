@@ -9,7 +9,9 @@
  * Zero hardcoded secrets, zero secrets in log outputs.
  */
 
-require_once __DIR__ . '/../vendor/autoload.php';
+if (file_exists(__DIR__ . '/../vendor/autoload.php')) {
+    require_once __DIR__ . '/../vendor/autoload.php';
+}
 
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception as PHPMailerException;
@@ -152,6 +154,16 @@ class MailClient {
         }
 
         // 5. Instantiate and configure PHPMailer
+        if (!class_exists('PHPMailer\PHPMailer\PHPMailer')) {
+            $safeError = "PHPMailer library is not installed. Please run composer install.";
+            error_log("MailClient error: " . $safeError);
+            return [
+                'status' => false,
+                'message' => $safeError,
+                'error' => $safeError
+            ];
+        }
+
         try {
             $mail = new PHPMailer(true);
 

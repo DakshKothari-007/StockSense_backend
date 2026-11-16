@@ -15,7 +15,7 @@
  * 9. Delete product without sales -> returns 200 OK.
  */
 
-require_once __DIR__ . '/config/db.php';
+require_once __DIR__ . '/../config/db.php';
 
 $baseUrl = "http://localhost/StockSense_backend";
 

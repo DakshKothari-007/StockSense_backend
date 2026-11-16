@@ -24,14 +24,14 @@ if (php_sapi_name() !== 'cli') {
     exit(1);
 }
 
-require_once __DIR__ . "/config/db.php";
-require_once __DIR__ . "/includes/AiEngine.php";
-require_once __DIR__ . "/includes/AiTools.php";
-require_once __DIR__ . "/includes/AiModelClient.php";
-require_once __DIR__ . "/includes/GeminiClient.php";
-require_once __DIR__ . "/includes/OllamaClient.php";
-require_once __DIR__ . "/includes/AiClientFactory.php";
-require_once __DIR__ . "/includes/PushNotifier.php";
+require_once __DIR__ . "/../config/db.php";
+require_once __DIR__ . "/../includes/AiEngine.php";
+require_once __DIR__ . "/../includes/AiTools.php";
+require_once __DIR__ . "/../includes/AiModelClient.php";
+require_once __DIR__ . "/../includes/GeminiClient.php";
+require_once __DIR__ . "/../includes/OllamaClient.php";
+require_once __DIR__ . "/../includes/AiClientFactory.php";
+require_once __DIR__ . "/../includes/PushNotifier.php";
 
 echo "=== STOCKSENSE DUKAAN MITRA AI ASSISTANT TEST SUITE ===\n\n";
 
@@ -105,7 +105,7 @@ assertTest(in_array('shop_id', $colsCache) && in_array('cache_key', $colsCache) 
 // -----------------------------------------------------------------------------
 echo "\n--- Section 2: Config & Model Provider Security ---\n";
 
-$aiConfig = require __DIR__ . '/config/ai.php';
+$aiConfig = require __DIR__ . '/../config/ai.php';
 assertTest(($aiConfig['provider'] ?? '') === 'ollama', "Default model provider is 'ollama'");
 assertTest(($aiConfig['general_provider'] ?? '') === 'gemini', "General knowledge provider is 'gemini'");
 assertTest(($aiConfig['allow_cloud_for_shop_data'] ?? true) === false, "allow_cloud_for_shop_data is false");

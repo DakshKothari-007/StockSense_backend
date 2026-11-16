@@ -61,7 +61,7 @@ $login3 = apiCall("$baseUrl/auth/login.php", 'POST', ["email" => "daksh1@gmail.c
 $token3 = $login3['json']['token'] ?? '';
 assertCheck("0b. Login Shop 3 returns valid token", $login3['code'] === 200 && strlen($token3) === 64);
 
-require_once __DIR__ . '/config/db.php';
+require_once __DIR__ . '/../config/db.php';
 
 // 1. Test: No token / expired token returns 401
 $resNoAuth = apiCall("$baseUrl/reorder/list.php", 'GET', null, []);

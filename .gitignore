@@ -1,8 +1,22 @@
-vendor/
-mail.json
-*.sql
+# Logs
+logs/
 *.log
+
+# Database dumps & SQL exports
+*.sql
+!docs/schema.sql
+
+# Keys & Certificates
 *.key
 *.pem
+
+# Credentials & Service Accounts
+mail.json
+gemini.json
+firebase-service-account.json
 *firebase-service-account*.json
 
+# Dependencies & Uploads
+vendor/
+uploads/*
+!uploads/.htaccess

@@ -1,7 +1,7 @@
 <?php
 // test_import_idempotency.php - Verify idempotency and double-import prevention
 
-require_once __DIR__ . '/config/db.php';
+require_once __DIR__ . '/../config/db.php';
 
 echo "=== Running Idempotency Key Verification Test ===\n";
 
@@ -26,7 +26,7 @@ $headers = [
 
 // 2. Create a test CSV file in uploads/temp
 $tempToken = "imp_{$ownerId}_test_idem_" . time() . ".csv";
-$tempFilePath = __DIR__ . "/uploads/temp/" . $tempToken;
+$tempFilePath = __DIR__ . "/../uploads/temp/" . $tempToken;
 $testSku = "IDEM-TEST-" . time();
 $csvContent = "Product Name,SKU,Quantity,Cost Price,Selling Price,Category\nIdempotency Test Item,{$testSku},25,100,150,Test Category\n";
 file_put_contents($tempFilePath, $csvContent);

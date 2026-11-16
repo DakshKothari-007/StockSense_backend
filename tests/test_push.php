@@ -23,10 +23,10 @@ if (php_sapi_name() !== 'cli') {
     exit(1);
 }
 
-require_once __DIR__ . "/config/db.php";
-require_once __DIR__ . "/includes/FcmSender.php";
-require_once __DIR__ . "/includes/PushNotifier.php";
-require_once __DIR__ . "/settings/settings_helper.php";
+require_once __DIR__ . "/../config/db.php";
+require_once __DIR__ . "/../includes/FcmSender.php";
+require_once __DIR__ . "/../includes/PushNotifier.php";
+require_once __DIR__ . "/../settings/settings_helper.php";
 
 echo "=== STOCKSENSE FCM PUSH NOTIFICATIONS TEST SUITE ===\n\n";
 

@@ -90,7 +90,7 @@ assertCheck("4b. Token returned is exactly 64 characters", strlen($realToken) ==
 assertCheck("4c. Expiry is returned in response", !empty($loginRes['json']['expires_at']));
 
 // Check database directly for hash
-require_once __DIR__ . '/config/db.php';
+require_once __DIR__ . '/../config/db.php';
 $expectedHash = hash('sha256', $realToken);
 $tokenStmt = $pdo->prepare("SELECT user_id, expires_at FROM tokens WHERE token_hash = ?");
 $tokenStmt->execute([$expectedHash]);

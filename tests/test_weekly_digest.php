@@ -17,9 +17,9 @@
 date_default_timezone_set('Asia/Kolkata');
 putenv('STOCKSENSE_MOCK_MAIL=1');
 
-require_once __DIR__ . '/config/db.php';
-require_once __DIR__ . '/includes/MailClient.php';
-require_once __DIR__ . '/includes/WeeklyDigestService.php';
+require_once __DIR__ . '/../config/db.php';
+require_once __DIR__ . '/../includes/MailClient.php';
+require_once __DIR__ . '/../includes/WeeklyDigestService.php';
 
 $pdo->exec("SET time_zone = '+05:30'");
 
@@ -129,13 +129,13 @@ echo "\n--- 3. Testing Opt-Out Enforcement ---\n";
 $pdo->prepare("UPDATE user_settings SET weekly_email_digest = 0 WHERE user_id = 2")->execute();
 
 // Run cron script via PHP CLI capturing output
-$output = shell_exec('C:\xampp\php\php.exe ' . escapeshellarg(__DIR__ . '/cron/weekly_digest.php') . ' "test=1&owner_id=2"');
+$output = shell_exec('C:\xampp\php\php.exe ' . escapeshellarg(__DIR__ . '/../cron/weekly_digest.php') . ' "test=1&owner_id=2"');
 assertCondition(strpos($output, "weekly_email_digest setting is OFF") !== false, "3a. Cron skips shop when weekly_email_digest is OFF");
 assertCondition(strpos($output, "Sent: 0") !== false, "3b. Zero emails sent when shop has opted out");
 
 // Turn ON weekly_email_digest for Shop 2
 $pdo->prepare("UPDATE user_settings SET weekly_email_digest = 1 WHERE user_id = 2")->execute();
-$outputOn = shell_exec('C:\xampp\php\php.exe ' . escapeshellarg(__DIR__ . '/cron/weekly_digest.php') . ' "test=1&owner_id=2"');
+$outputOn = shell_exec('C:\xampp\php\php.exe ' . escapeshellarg(__DIR__ . '/../cron/weekly_digest.php') . ' "test=1&owner_id=2"');
 assertCondition(strpos($outputOn, "weekly_email_digest setting is OFF") === false, "3c. Cron does NOT skip shop when toggle is ON");
 
 // -------------------------------------------------------------
@@ -273,7 +273,7 @@ assertCondition($getOnJson['data']['notifications']['weekly_email_digest'] === t
 echo "\n--- 7. Testing CLI Test Mode ---\n";
 
 // Execute test mode with query-style arg
-$testOutput = shell_exec('C:\xampp\php\php.exe ' . escapeshellarg(__DIR__ . '/cron/weekly_digest.php') . ' "test=1&owner_id=2"');
+$testOutput = shell_exec('C:\xampp\php\php.exe ' . escapeshellarg(__DIR__ . '/../cron/weekly_digest.php') . ' "test=1&owner_id=2"');
 assertCondition(strpos($testOutput, "Starting StockSense Weekly Digest Runner (TEST MODE)") !== false, "7a. Test mode banner recognized");
 assertCondition(strpos($testOutput, "Processed: 1") !== false, "7b. Test mode scoped exclusively to targeted owner_id=2");
 

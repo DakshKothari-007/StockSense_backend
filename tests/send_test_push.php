@@ -27,8 +27,8 @@ if ($argc < 2 || empty(trim($argv[1]))) {
     exit(1);
 }
 
-require_once __DIR__ . "/config/db.php";
-require_once __DIR__ . "/includes/FcmSender.php";
+require_once __DIR__ . "/../config/db.php";
+require_once __DIR__ . "/../includes/FcmSender.php";
 
 $fcmToken = trim($argv[1]);
 $title = isset($argv[2]) && trim($argv[2]) !== '' ? trim($argv[2]) : "StockSense Alert";

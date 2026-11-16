@@ -7,10 +7,10 @@
  * and response quality.
  */
 
-require_once __DIR__ . '/config/db.php';
-require_once __DIR__ . '/includes/AiEngine.php';
-require_once __DIR__ . '/includes/AiTools.php';
-require_once __DIR__ . '/includes/AiClientFactory.php';
+require_once __DIR__ . '/../config/db.php';
+require_once __DIR__ . '/../includes/AiEngine.php';
+require_once __DIR__ . '/../includes/AiTools.php';
+require_once __DIR__ . '/../includes/AiClientFactory.php';
 
 echo "=== DUKAAN MITRA AI COMPREHENSIVE GAP-FINDING TEST ===\n";
 echo "Date: " . date('Y-m-d H:i:s') . "\n\n";

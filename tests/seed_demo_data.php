@@ -20,7 +20,7 @@ if (php_sapi_name() !== 'cli' || isset($_SERVER['REQUEST_METHOD'])) {
 
 date_default_timezone_set('Asia/Kolkata');
 
-require_once __DIR__ . '/config/db.php';
+require_once __DIR__ . '/../config/db.php';
 $pdo->exec("SET time_zone = '+05:30'");
 
 // 2. Parse command line arguments

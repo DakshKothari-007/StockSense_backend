@@ -3,7 +3,7 @@
 // Verifies that a sale created without sale_date defaults to current Asia/Kolkata time within 1 minute of now.
 
 date_default_timezone_set('Asia/Kolkata');
-require_once __DIR__ . '/config/db.php';
+require_once __DIR__ . '/../config/db.php';
 
 echo "=== TEST: CREATE SALE WITHOUT sale_date ===\n";
 

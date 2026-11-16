@@ -21,9 +21,9 @@ if (php_sapi_name() !== 'cli') {
     exit(1);
 }
 
-require_once __DIR__ . "/config/db.php";
-require_once __DIR__ . "/includes/AiEngine.php";
-require_once __DIR__ . "/includes/AiClientFactory.php";
+require_once __DIR__ . "/../config/db.php";
+require_once __DIR__ . "/../includes/AiEngine.php";
+require_once __DIR__ . "/../includes/AiClientFactory.php";
 
 // Parse CLI argument
 $provider = 'auto'; // default auto dual-provider routing

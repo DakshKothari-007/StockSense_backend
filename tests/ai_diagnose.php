@@ -4,14 +4,14 @@
  * Strictly never exposes the raw API key.
  */
 
-require_once __DIR__ . '/config/db.php';
-require_once __DIR__ . '/includes/GeminiClient.php';
-require_once __DIR__ . '/includes/AiTools.php';
-require_once __DIR__ . '/includes/AiEngine.php';
+require_once __DIR__ . '/../config/db.php';
+require_once __DIR__ . '/../includes/GeminiClient.php';
+require_once __DIR__ . '/../includes/AiTools.php';
+require_once __DIR__ . '/../includes/AiEngine.php';
 
 echo "=== DUKAAN MITRA / GEMINI DIAGNOSIS ===\n";
 
-$config = require __DIR__ . '/config/ai.php';
+$config = require __DIR__ . '/../config/ai.php';
 $model = $config['model'] ?? '';
 echo "1. Configured Model: $model\n";
 

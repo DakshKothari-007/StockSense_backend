@@ -2,7 +2,7 @@
 // test_import_existing_and_new_sku.php
 // Regression test: Importing a file with an existing SKU and a new SKU in one transaction
 
-require_once __DIR__ . '/config/db.php';
+require_once __DIR__ . '/../config/db.php';
 
 echo "========================================================\n";
 echo "  REGRESSION TEST: EXISTING SKU + NEW SKU IN ONE FILE   \n";
@@ -50,7 +50,7 @@ $tokenId = (int)$pdo->lastInsertId();
 
 // 3. Create test spreadsheet in uploads/temp matching 3_existing_sku.csv
 $tempToken = "imp_{$ownerId}_3_existing_sku_" . time() . ".csv";
-$tempFilePath = __DIR__ . "/uploads/temp/" . $tempToken;
+$tempFilePath = __DIR__ . "/../uploads/temp/" . $tempToken;
 $csvContent = "Product Name,SKU,Category,Quantity,Cost Price,Selling Price,Minimum Stock\n" .
               "Amul Milk - 500 ml,DAI-001,Dairy,10,25,30,24\n" .
               "Test New Item,TST-009,Snacks,12,15,20,3\n";

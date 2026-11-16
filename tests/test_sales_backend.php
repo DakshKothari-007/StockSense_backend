@@ -61,7 +61,7 @@ $login3 = apiCall("$baseUrl/auth/login.php", 'POST', ["email" => "daksh1@gmail.c
 $token3 = $login3['json']['token'] ?? '';
 assertCheck("0b. Login Shop 3 successful", $login3['code'] === 200 && strlen($token3) === 64, "Token3 len: " . strlen($token3));
 
-require_once __DIR__ . '/config/db.php';
+require_once __DIR__ . '/../config/db.php';
 
 // Prepare a clean test product for Shop 2
 $pdo->prepare("UPDATE products SET units = 100, price = 50.00 WHERE id = 1 AND shop_owner_id = 2")->execute();

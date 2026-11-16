@@ -17,7 +17,7 @@
                 ],
                 "body": {
                     "mode": "raw",
-                    "raw": "{\n  \"full_name\": \"Ananya Rao\",\n  \"shop_name\": \"Green Basket\",\n  \"location\": \"Indiranagar, Bengaluru\",\n  \"store_type\": \"Neighbourhood supermarket\",\n  \"currency\": \"₹ INR / IST\",\n  \"email\": \"ananya@greenbasket.in\",\n  \"password\": \"password123\"\n}"
+                    "raw": "{\n  \"full_name\": \"Ananya Rao\",\n  \"shop_name\": \"Green Basket\",\n  \"location\": \"Indiranagar, Bengaluru\",\n  \"store_type\": \"Neighbourhood supermarket\",\n  \"currency\": \"₹ INR / IST\",\n  \"email\": \"ananya@greenbasket.in\",\n  \"password\": \"{{password}}\"\n}"
                 },
                 "url": {
                     "raw": "http://localhost/StockSense_backend/auth/signup.php",
@@ -46,7 +46,7 @@
                 ],
                 "body": {
                     "mode": "raw",
-                    "raw": "{\n  \"email\": \"ananya@greenbasket.in\",\n  \"password\": \"password123\"\n}"
+                    "raw": "{\n  \"email\": \"ananya@greenbasket.in\",\n  \"password\": \"{{password}}\"\n}"
                 },
                 "url": {
                     "raw": "http://localhost/StockSense_backend/auth/login.php",

@@ -1,7 +1,7 @@
 <?php
 // reproduce_bug.php
 
-require_once __DIR__ . '/config/db.php';
+require_once __DIR__ . '/../config/db.php';
 
 echo "=== REPRODUCING IMPORT BUG FOR 3_existing_sku.csv ===\n";
 
@@ -22,7 +22,7 @@ $tokenId = $pdo->lastInsertId();
 
 // Create the temporary file with 3_existing_sku.csv content
 $tempToken = "imp_{$ownerId}_3_existing_sku_" . time() . ".csv";
-$tempFilePath = __DIR__ . "/uploads/temp/" . $tempToken;
+$tempFilePath = __DIR__ . "/../uploads/temp/" . $tempToken;
 $csvContent = "Product Name,SKU,Category,Quantity,Cost Price,Selling Price,Minimum Stock\n" .
               "Amul Milk - 500 ml,DAI-001,Dairy,10,25,30,24\n" .
               "Test New Item,TST-009,Snacks,12,15,20,3\n";

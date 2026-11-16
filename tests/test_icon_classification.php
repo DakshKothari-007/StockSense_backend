@@ -25,8 +25,8 @@
  * 7. CLI backfill script execution.
  */
 
-require_once __DIR__ . '/config/db.php';
-require_once __DIR__ . '/includes/IconClassifier.php';
+require_once __DIR__ . '/../config/db.php';
+require_once __DIR__ . '/../includes/IconClassifier.php';
 
 $baseUrl = "http://localhost/StockSense_backend";
 
@@ -347,7 +347,7 @@ for ($i = 96; $i <= 100; $i++) {
 }
 
 // Write temporary CSV file
-$tempCsvPath = __DIR__ . '/uploads/temp/test_100_import_' . time() . '.csv';
+$tempCsvPath = __DIR__ . '/../uploads/temp/test_100_import_' . time() . '.csv';
 if (!is_dir(dirname($tempCsvPath))) {
     mkdir(dirname($tempCsvPath), 0777, true);
 }
@@ -442,7 +442,7 @@ echo "\n--- 7. Testing CLI Backfill Script ---\n";
 // Run CLI script via PHP CLI in dry-run mode
 $backfillOutput = [];
 $backfillReturn = 0;
-exec("C:\\xampp\\php\\php.exe " . escapeshellarg(__DIR__ . '/cli/backfill_product_icons.php') . " --shop_id=2 --dry-run --limit=20 --no-ai", $backfillOutput, $backfillReturn);
+exec("C:\\xampp\\php\\php.exe " . escapeshellarg(__DIR__ . '/../cli/backfill_product_icons.php') . " --shop_id=2 --dry-run --limit=20 --no-ai", $backfillOutput, $backfillReturn);
 $backfillStr = implode("\n", $backfillOutput);
 
 assertCheck("7a. CLI backfill script executed with return code 0", $backfillReturn === 0);

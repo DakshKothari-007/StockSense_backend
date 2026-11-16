@@ -34,11 +34,11 @@ $password = ""; // Set your local database password if configured
    ```sql
    CREATE DATABASE stocksense CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
    ```
-4. Import the schema file `ssdb.sql`:
-   - Via phpMyAdmin: Select the `stocksense` database, navigate to the **Import** tab, choose `ssdb.sql`, and click **Go**.
+4. Import the schema file `docs/schema.sql`:
+   - Via phpMyAdmin: Select the `stocksense` database, navigate to the **Import** tab, choose `docs/schema.sql`, and click **Go**.
    - Via Command Line:
      ```bash
-     mysql -u root -p stocksense < ssdb.sql
+     mysql -u root -p stocksense < docs/schema.sql
      ```
 5. Run the incremental migration scripts from the backend root folder:
    ```bash
@@ -46,6 +46,7 @@ $password = ""; // Set your local database password if configured
    php migrations/02_add_idempotency_key_to_import_history.php
    php migrations/03_create_device_tokens_table.php
    php migrations/04_create_ai_tables.php
+   php migrations/05_add_icon_columns_to_products.php
    ```
 
 ---
@@ -202,44 +203,65 @@ php test_ai.php
 
 ### Files to Remove or Move Before Production Deployment
 
-> [!CAUTION]
-> The following test scripts, diagnostic tools, and database dumps must be **removed** or **moved outside the web root** (`htdocs/`) before deploying to a production server. Leaving these files exposed to HTTP requests presents a critical security vulnerability.
+## 4. Tests, Diagnostics & Documentation Files
 
-1. **Automated Test Runners (`test_*.php`)**:
-   - `test_ai.php`
-   - `test_token_auth.php`
-   - `test_inventory_backend.php`
-   - `test_sales_backend.php`
-   - `test_sale_without_sale_date.php`
-   - `test_reorder_backend.php`
-   - `test_insights_backend.php`
-   - `test_settings_backend.php`
-   - `test_push.php`
-   - `test_notifications_and_delete.php`
-   - `test_profile_and_edit.php`
-   - `test_import_column_detection.php`
-   - `test_import_good_file.php`
-   - `test_import_existing_and_new_sku.php`
-   - `test_import_idempotency.php`
+All test suites and diagnostic tools are isolated inside the `/tests/` directory with Apache HTTP access strictly forbidden (`Require all denied`). All Postman collections, SQL dumps, and sample spreadsheets are organized inside `/docs/`.
 
-2. **Diagnostic & Scratch Scripts**:
-   - `ai_diagnose.php`
-   - `check_dai.php`
-   - `desc_products.php`
-   - `reproduce_bug.php`
-   - `seed_demo_data.php`
-   - `send_test_ai.php`
-   - `send_test_push.php`
-   - `temp_cleanup.php`
+### Running All Automated Tests
+To execute the complete test suite from PowerShell:
+```powershell
+powershell -ExecutionPolicy Bypass -File tests/run_all_tests.ps1
+```
 
-3. **Database Dumps & Sample Files**:
-   - `05-11-2026.sql`
-   - `ssdb.sql`
-   - `sample_valid_import.csv`
-   - `sample_error_import.csv`
-   - `sample_stock_oct15.xlsx`
-   - `StockSense_Postman_Collection.json`
-   - `StockSense_Auth_Profile_Postman_Collection.json`
+Individual test suites can be executed via CLI PHP:
+```bash
+php tests/test_token_auth.php
+php tests/test_inventory_backend.php
+php tests/test_ai.php
+```
+
+1. **Automated Test Runners (`tests/test_*.php`)**:
+   - `tests/run_all_tests.ps1` (Comprehensive test runner)
+   - `tests/test_ai.php`
+   - `tests/test_token_auth.php`
+   - `tests/test_inventory_backend.php`
+   - `tests/test_sales_backend.php`
+   - `tests/test_sale_without_sale_date.php`
+   - `tests/test_reorder_backend.php`
+   - `tests/test_insights_backend.php`
+   - `tests/test_settings_backend.php`
+   - `tests/test_push.php`
+   - `tests/test_weekly_digest.php`
+   - `tests/test_icon_classification.php`
+   - `tests/test_notifications_and_delete.php`
+   - `tests/test_profile_and_edit.php`
+   - `tests/test_import_column_detection.php`
+   - `tests/test_import_good_file.php`
+   - `tests/test_import_existing_and_new_sku.php`
+   - `tests/test_import_idempotency.php`
+   - `tests/ai_gap_test.php`
+   - `tests/ai_compare.php`
+
+2. **Diagnostic & Scratch Scripts (`tests/`)**:
+   - `tests/ai_diagnose.php`
+   - `tests/check_dai.php`
+   - `tests/desc_products.php`
+   - `tests/reproduce_bug.php`
+   - `tests/seed_demo_data.php`
+   - `tests/send_test_ai.php`
+   - `tests/send_test_push.php`
+   - `tests/temp_cleanup.php`
+
+3. **Database Dumps & Sample Files (`docs/`)**:
+   - `docs/schema.sql` (Full database table structures - tracked in repository)
+   - `docs/05-11-2026.sql` (Database dump - gitignored)
+   - `docs/06-11-2026.sql` (Database dump - gitignored)
+   - `docs/ssdb.sql` (Database dump - gitignored)
+   - `docs/sample_valid_import.csv`
+   - `docs/sample_error_import.csv`
+   - `docs/sample_stock_oct15.xlsx`
+   - `docs/StockSense_Postman_Collection.json`
+   - `docs/StockSense_Auth_Profile_Postman_Collection.json`
 
 ---
 

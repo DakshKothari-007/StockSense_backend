@@ -18,7 +18,7 @@
         },
         {
             "key": "auth_password",
-            "value": "password123",
+            "value": "{{password}}",
             "type": "string"
         },
         {

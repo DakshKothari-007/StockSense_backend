@@ -37,12 +37,25 @@ All responses adhere to the standard JSON envelope:
 - `201 Created`: Resource created successfully (e.g. sale bill, purchase order, signup).
 - `400 Bad Request`: Validation failure, missing required field, bad types, or rule violation.
 - `401 Unauthorized`: Missing or invalid Bearer token / wrong credentials.
-- `403 Forbidden`: Access denied (e.g., trying to directly access scripts/schemas from the browser).
+- `403 Forbidden`: Access denied (e.g., trying to directly access scripts/schemas from the browser, or accessing protected directories /tests, /cli, /cron, /logs, /vendor, /config, /includes).
 - `404 Not Found`: Target resource not found or belongs to another store.
 - `405 Method Not Allowed`: Incorrect HTTP method used (e.g. GET instead of POST).
 - `422 Unprocessable Entity`: Semantic validation failure (e.g., invalid email format during signup).
 - `429 Too Many Requests`: Rate limit exceeded (5 failed login attempts in 15 minutes).
 - `500 Internal Server Error`: Server failure (technical details logged to server `error_log`, generic error message returned to client).
+
+### Directory Security & Test Isolation
+- **Protected Internal Directories**: Direct HTTP access to `/tests/`, `/cli/`, `/cron/`, `/logs/`, `/vendor/`, `/config/`, and `/includes/` is completely denied via Apache `.htaccess` (`Require all denied`). Requests to these paths return `HTTP 403 Forbidden`.
+- **CLI & Cron Execution**: Command-line tools (such as `cli/backfill_product_icons.php`, `cron/daily_summary.php`, and `cron/weekly_digest.php`) run unimpeded via PHP CLI (`php.exe`).
+- **Postman Collections & Documentation**:
+  - `docs/StockSense_Postman_Collection.json`
+  - `docs/StockSense_Auth_Profile_Postman_Collection.json`
+  - `docs/sample_valid_import.csv`, `docs/sample_error_import.csv`, `docs/sample_stock_oct15.xlsx`
+  - `docs/schema.sql` (Full database table structures - tracked in repository)
+- **Automated Test Suites**: All test scripts reside in `/tests/` and are executed via PowerShell:
+  ```powershell
+  powershell -ExecutionPolicy Bypass -File tests/run_all_tests.ps1
+  ```
 
 ---
 

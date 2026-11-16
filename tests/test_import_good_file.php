@@ -8,7 +8,7 @@
  * name being overwritten with SKU or price being overwritten with cost price.
  */
 
-require_once __DIR__ . "/config/db.php";
+require_once __DIR__ . "/../config/db.php";
 
 $baseUrl = "http://localhost/StockSense_backend";
 
@@ -87,7 +87,7 @@ $ownerId = (int)$stmt->fetchColumn();
 $pdo->prepare("DELETE FROM products WHERE shop_owner_id = ? AND sku IN ('TST-001', 'TST-002')")->execute([$ownerId]);
 
 // 2. Create 1_good_import.csv
-$tempCsvPath = __DIR__ . "/uploads/temp/1_good_import.csv";
+$tempCsvPath = __DIR__ . "/../uploads/temp/1_good_import.csv";
 $csvContent = "Product Name, SKU, Category, Quantity, Cost Price, Selling Price, Minimum Stock\n" .
     "\"Premium Basmati Rice 5kg\", \"TST-001\", \"Grains\", \"50\", \"320.00\", \"450.00\", \"10\"\n" .
     "\"Pure Cow Ghee 1L\", \"TST-002\", \"Dairy\", \"25\", \"520.00\", \"650.00\", \"5\"\n";

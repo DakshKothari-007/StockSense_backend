@@ -30,8 +30,8 @@ if ($argc < 3 || empty(trim($argv[1])) || empty(trim($argv[2]))) {
     exit(1);
 }
 
-require_once __DIR__ . "/config/db.php";
-require_once __DIR__ . "/includes/AiEngine.php";
+require_once __DIR__ . "/../config/db.php";
+require_once __DIR__ . "/../includes/AiEngine.php";
 
 $rawToken = trim($argv[1]);
 $question = trim($argv[2]);

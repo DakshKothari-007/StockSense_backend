@@ -1,7 +1,7 @@
 <?php
 
-require_once __DIR__ . '/config/db.php';
-require_once __DIR__ . '/settings/settings_helper.php';
+require_once __DIR__ . '/../config/db.php';
+require_once __DIR__ . '/../settings/settings_helper.php';
 
 echo "=== STOCKSENSE NOTIFICATIONS & DELETE ACCOUNT TEST SUITE ===\n\n";
 
