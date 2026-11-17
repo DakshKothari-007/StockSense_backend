@@ -8,7 +8,6 @@ require_once __DIR__ . "/GeminiClient.php";
 require_once __DIR__ . "/OllamaClient.php";
 require_once __DIR__ . "/AiClientFactory.php";
 require_once __DIR__ . "/IntentEngine.php";
-require_once __DIR__ . "/AdvisorEngine.php";
 
 /**
  * AiEngine: Core AI Orchestrator for Dukaan Mitra.
@@ -1603,12 +1602,6 @@ EOT;
             return $refusal;
         }
 
-        // Advice questions must NEVER be answered by fast-path greetings, small talk, or affirmations
-        $normalized = IntentEngine::normalize($trimmed);
-        if (IntentEngine::classifyQuestionType($trimmed, $normalized) === 'advice') {
-            return null;
-        }
-
         // Long or multi-topic messages (> 300 chars or > 2 intents) must not be answered by fast-path greetings or small talk
         if (self::isLongOrMultiTopic($trimmed)) {
             return null;
@@ -1833,13 +1826,6 @@ EOT;
         // Long or multi-topic messages (> 300 chars or > 2 intents) must not be answered by a single keyword match.
         // Send them to the model path.
         if (self::isLongOrMultiTopic($trimmed)) {
-            return null;
-        }
-
-        // Advice questions must NEVER be answered by direct data keyword matching!
-        $normalized = IntentEngine::normalize($trimmed);
-        $qType = IntentEngine::classifyQuestionType($trimmed, $normalized);
-        if ($qType === 'advice') {
             return null;
         }
 
@@ -2258,17 +2244,6 @@ EOT;
             $fastPathResult = self::tryFastPath($pdo, $shopId, $message, $history, $languageHint);
             if ($fastPathResult !== null) {
                 return self::finalizeAndCacheResponse($pdo, $shopId, $cacheKey, $fastPathResult, $config);
-            }
-
-            // Question Type First: If advice and not long/multi-topic, switch directly to Business Advisor Mode!
-            if (!self::isLongOrMultiTopic($message)) {
-                $normalized = IntentEngine::normalize($message);
-                $qType = IntentEngine::classifyQuestionType($message, $normalized);
-                if ($qType === 'advice') {
-                    $detectedLang = self::detectLanguage($message, $history, $languageHint);
-                    $advisorResult = AdvisorEngine::handleAdvice($pdo, $shopId, $message, $detectedLang, $config);
-                    return self::finalizeAndCacheResponse($pdo, $shopId, $cacheKey, $advisorResult, $config);
-                }
             }
 
             // 4. Direct Data Path (Shop-wide aggregate data questions: low stock, sales, reorder, slow moving, top sellers, open orders)
@@ -3260,22 +3235,6 @@ EOT;
         // ----------------------------------------------------
         // MATCHING & EXECUTION IN ORDER OF SPECIFICITY
         // ----------------------------------------------------
-
-        // Business Advice Mode: Advice questions must NEVER be answered by data lookups
-        $normalized = IntentEngine::normalize($trimmed);
-        $qType = IntentEngine::classifyQuestionType($trimmed, $normalized);
-        if ($qType === 'advice') {
-            $topic = AdvisorEngine::classifyTopic($trimmed);
-            $facts = AdvisorEngine::collectShopFacts($pdo, $shopId);
-            $answer = AdvisorEngine::generateRuleBasedAdvice($facts, $topic, $lang, $trimmed);
-            $suggestions = AdvisorEngine::getFollowUpSuggestions($topic, $lang);
-            return [
-                'answer' => $answer,
-                'cards' => [],
-                'actions' => [],
-                'suggestions' => $suggestions
-            ];
-        }
 
         // 1. Reorder Intent
         if (self::matchesAnyKeyword($lower, $reorderKeywords)) {

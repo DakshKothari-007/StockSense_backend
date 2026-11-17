@@ -47,15 +47,14 @@ class OllamaClient implements AiModelClient {
         array $contents,
         ?string $systemInstruction = null,
         array $tools = [],
-        ?int $shopId = null,
-        array $options = []
+        ?int $shopId = null
     ): array {
         $startTime = microtime(true);
         $config = require __DIR__ . '/../config/ai.php';
         $ollamaUrl = rtrim($config['ollama_url'] ?? 'http://localhost:11434', '/');
         $model = $config['ollama_model'] ?? 'qwen2.5:7b';
-        $timeout = isset($options['timeout']) ? (int)$options['timeout'] : (int)($config['timeout'] ?? 90);
-        $numCtx = isset($options['num_ctx']) ? (int)$options['num_ctx'] : (int)($config['num_ctx'] ?? 8192);
+        $timeout = (int)($config['timeout'] ?? 90);
+        $numCtx = (int)($config['num_ctx'] ?? 8192);
         $keepAlive = (string)($config['keep_alive'] ?? '30m');
 
         // Convert contents and system prompt into Ollama messages
@@ -123,11 +122,8 @@ class OllamaClient implements AiModelClient {
         // Build request payload
         $payloadOptions = [
             'num_ctx' => $numCtx,
-            'temperature' => isset($options['temperature']) ? (float)$options['temperature'] : 0.2
+            'temperature' => 0.2
         ];
-        if (isset($options['num_predict'])) {
-            $payloadOptions['num_predict'] = (int)$options['num_predict'];
-        }
         if (isset($config['num_gpu'])) {
             $payloadOptions['num_gpu'] = (int)$config['num_gpu'];
         }
@@ -139,10 +135,6 @@ class OllamaClient implements AiModelClient {
             'keep_alive' => $keepAlive,
             'options' => $payloadOptions
         ];
-
-        if (isset($options['format'])) {
-            $payload['format'] = $options['format'];
-        }
 
         if (!empty($ollamaTools)) {
             $payload['tools'] = $ollamaTools;
