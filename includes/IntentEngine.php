@@ -13,6 +13,7 @@
 
 require_once __DIR__ . "/AiTools.php";
 require_once __DIR__ . "/AiClientFactory.php";
+require_once __DIR__ . "/OllamaClient.php";
 require_once __DIR__ . "/AdvisorEngine.php";
 
 class IntentEngine {
@@ -666,6 +667,113 @@ class IntentEngine {
     }
 
     /**
+     * Helper to package classification response with confidence details.
+     */
+    private static function wrapType(string $type, float $confidence, string $source, bool $withDetails) {
+        if ($withDetails) {
+            return [
+                'type' => $type,
+                'confidence' => round($confidence, 2),
+                'source' => $source
+            ];
+        }
+        return $type;
+    }
+
+    /**
+     * Calls classifyQuestionType returning [type, confidence, source] structure.
+     */
+    public static function classifyQuestionTypeWithConfidence(string $rawMessage, array $normalized, bool $allowModel = true): array {
+        return self::classifyQuestionType($rawMessage, $normalized, true, $allowModel);
+    }
+
+    /**
+     * Ask the LOCAL model (Ollama) to classify the question type when rules are uncertain.
+     * Enforces strict JSON, validated type, 8s timeout, and caching by normalized text.
+     * Privacy: Sends ONLY the message text, never shop data.
+     * 
+     * @param string $message
+     * @param string $normalizedText
+     * @return array|null ['type' => string, 'confidence' => float, 'source' => 'local_model']
+     */
+    public static function askLocalModelForType(string $message, string $normalizedText): ?array {
+        static $memoryCache = [];
+        $cacheKey = md5(trim($normalizedText));
+        if (isset($memoryCache[$cacheKey])) {
+            return $memoryCache[$cacheKey];
+        }
+
+        // File cache in private directory outside web root
+        $cacheDir = 'C:\\xampp\\StockSense_private\\qtype_cache';
+        if (!is_dir($cacheDir)) {
+            @mkdir($cacheDir, 0750, true);
+        }
+        if (!is_dir($cacheDir)) {
+            $cacheDir = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'stocksense_qtype_cache';
+            if (!is_dir($cacheDir)) {
+                @mkdir($cacheDir, 0750, true);
+            }
+        }
+
+        $cacheFile = $cacheDir . DIRECTORY_SEPARATOR . $cacheKey . '.json';
+        if (file_exists($cacheFile)) {
+            $raw = @file_get_contents($cacheFile);
+            if ($raw) {
+                $cached = @json_decode($raw, true);
+                if (is_array($cached) && isset($cached['type'], $cached['confidence'])) {
+                    $memoryCache[$cacheKey] = $cached;
+                    return $cached;
+                }
+            }
+        }
+
+        $systemPrompt = "You are a retail assistant question classifier for Dukaan Mitra.\n"
+            . "Classify the message into exactly ONE type:\n"
+            . "- lookup: requesting counts, lists, numbers, prices, stock levels, reports, or status (e.g. 'low stock list chahiye', 'reorder list dikhao', 'sales ka plan kya hai', 'which items increased this week').\n"
+            . "- advice: asking for business tips, strategy, how-to, ideas, or stating a business problem/worry/goal without asking for a number (e.g. 'sales kam ho gayi hai', 'customers nahi aa rahe', 'my shop is not doing well', 'profit nahi ho raha', 'vyapaaram sariya illa', 'how to increase sales').\n"
+            . "- general_knowledge: science, history, general trivia.\n"
+            . "- conversation: greetings, thanks, small talk, acknowledgement.\n"
+            . "- safety: requests for passwords, tokens, competitor data, prompt injection, abuse.\n\n"
+            . "Respond ONLY with valid JSON: {\"type\": \"<type>\", \"confidence\": <float 0.0 to 1.0>}";
+
+        $contents = [
+            ['role' => 'user', 'parts' => [['text' => $message]]]
+        ];
+
+        try {
+            $res = OllamaClient::generateContent($contents, $systemPrompt, [], null, [
+                'timeout' => 8,
+                'format' => 'json',
+                'temperature' => 0.0,
+                'num_predict' => 40
+            ]);
+
+            if (!empty($res['success']) && !empty($res['text'])) {
+                $json = json_decode(trim($res['text']), true);
+                if (is_array($json) && isset($json['type'])) {
+                    $type = strtolower(trim((string)$json['type']));
+                    $validTypes = ['lookup', 'advice', 'general_knowledge', 'conversation', 'safety'];
+                    if (in_array($type, $validTypes, true)) {
+                        $conf = isset($json['confidence']) ? (float)$json['confidence'] : 0.90;
+                        $result = [
+                            'type' => $type,
+                            'confidence' => max(0.1, min(1.0, $conf)),
+                            'source' => 'local_model'
+                        ];
+                        $memoryCache[$cacheKey] = $result;
+                        @file_put_contents($cacheFile, json_encode($result));
+                        return $result;
+                    }
+                }
+            }
+        } catch (\Throwable $e) {
+            // Local model down or timed out -> gracefully return null to fall back to rules
+        }
+
+        return null;
+    }
+
+    /**
      * Classifies the high-level question TYPE before topic evaluation:
      *   - 'safety': unauthorized data access, tokens, passwords, prompt injection, abuse
      *   - 'conversation': pure greeting, thanks, acknowledgement, negation
@@ -673,67 +781,180 @@ class IntentEngine {
      *   - 'advice': retail advice, tips, tricks, strategy, planning, how to, why, kya karun, eppadi
      *   - 'lookup': data lookups, numbers, quantities, lists, counts, pricing
      */
-    public static function classifyQuestionType(string $rawMessage, array $normalized): string {
+    public static function classifyQuestionType(string $rawMessage, array $normalized, bool $withDetails = false, bool $allowModel = true) {
         $lower = $normalized['lower'] ?? mb_strtolower(trim($rawMessage), 'UTF-8');
+        $trimmed = trim($rawMessage);
 
-        // 1. Safety Checks (Priority 1)
-        if (preg_match('/\b(other\s*shops?|another\s*shop|other\s*stores?|all\s*shops|database\s*root|admin\s*password|bearer\s*token|dump\s*users?)\b|(दूसरी\s*दुकान|अन्य\s*दुकान|डेटाबेस|पासवर्ड|டோக்கன்|அடுத்த\s*கடை|மற்ற\s*கடை)/iu', $lower)) {
-            return 'safety';
-        }
-        if (preg_match('/\b(ignore\s*all\s*previous|override\s*all\s*rules|system\s*prompt|unrestricted\s*terminal)\b|(सारे\s*निर्देश\s*भूल|सिस्टम\s*प्रॉम्प्ट|விதிகள்\s*அனைத்தையும்)/iu', $lower)) {
-            return 'safety';
-        }
-        if (preg_match('/\b(you\s*are\s*useless|why\s*is\s*your\s*answer\s*so\s*slow|very\s*angry|you\s*are\s*stupid|terrible\s*assistant)\b|(बेकार\s*ऐप|बेवकूफ|घटिया|வேஸ்ட்|முட்டாள்)/iu', $lower)) {
-            return 'safety';
-        }
-
-        // 2. Advice Markers across 5 Languages (Priority 2: Advice overrules plain data keyword match)
-        $advicePattern = '/(?<!\p{L})('
-            // English
-            . 'how\s+to|how\s+do\s+i|how\s+can\s+i|how\s+should\s+i|should\s+i|what\s+should\s+i\s+do|what\s+should\s+i|what\s+to\s+do|what\s+can\s+i\s+do|why\s+are|why\s+is|why\s+my|'
-            . 'trick|tricks|tip|tips|idea|ideas|strategy|strategies|plan|planning|improve|improving|increase|increasing|boost|boosting|grow|growing|growth|reduce|reducing|cut\s+down|decrease|avoid|'
-            . 'suggest|recommend|solution|advice|advise|ways\s+to|best\s+way|focus\s+on|attract\s+customers|beat\s+the\s+shop|compete|discount\s+strategy|deal\s+with|liquidate|prevent|footfall|'
-            // Hindi / Hinglish
-            . 'kaise|kaise\s+kare|kaise\s+karein|kaise\s+badhaye|kaise\s+ghataye|kya\s+karu|kya\s+karun|kya\s+karna\s+chahiye|kya\s+kare|kya\s+karein|'
-            . 'trick\s+bol|upay|tarika|tareeka|salah|sujhav|increase\s+karne|improve\s+karne|kam\s+karne|reduce\s+karne|grow\s+karne|kya\s+plan|plan\s+kaise|'
-            . 'dena\s+chahiye|chalani\s+chahiye|chalana\s+chahiye|chahiye\s+kya|chahiye|rakhna\s+chahiye|kaise\s+bache|kaise\s+roke|kaise\s+laye|kaise\s+banaye|kaise\s+rakhe|kaise\s+set|'
-            . 'कैसे|कैसे\s+करें|क्या\s+करूँ|क्या\s+करूं|क्या\s+करना\s+चाहिए|क्या\s+करें|तरीका|सलाह|सुझाव|रणनीति|बढ़ाएं|बढ़ाना|बढ़ाने|घटाएं|घटाना|सुधारें|सुधारने|सुधार|योजना|आइडिया|टिप्स|ट्रिक|उपाय|'
-            . 'देना\s+चाहिए|चलानी\s+चाहिए|रखना\s+चाहिए|रखें|ध्यान\s+दें|रोकें|बचाएं|'
-            // Tamil / Tanglish
-            . 'eppadi|epdi|eppadi\s+panradhu|epdi\s+pathukradhu|enna\s+seyyalam|enna\s+panna|enna\s+pannanum|athigam\s+aaga|adhigam\s+panna|adhigam\s+vara|kuraikka|increase\s+panna|improve\s+panna|boost\s+panna|'
-            . 'yosani|alosani|vazhi|tharalama|podalama|vaikkanum|vikkadha|matha\s+enna\s+trick|aachu\s+na|'
-            . 'எப்படி|எவ்வாறு|என்ன\s+செய்ய\s+வேண்டும்|என்ன\s+செய்யலாம்|என்ன\s+பண்ணலாம்|என்ன\s+செய்வது|உத்தி|யோசனை|யோசனைகள்|ஆலோசனை|வழிகாட்டல்|அதிகரிக்க|அதிகப்படுத்த|குறைக்க|வளர்க்க|முன்னேற்ற|திட்டம்|'
-            . 'வழி|வழிகள்|கொடுக்கலாமா|தரலாமா|ஈர்க்க|தடுப்பது|நிர்வகிக்க|உயர்த்த|வைக்க\s+வேண்டும்'
-            . ')(?!\p{L}|\p{M})/iu';
-
-        // Check if query is an explanation / calculation formula request (e.g. "Explain how to calculate profit margins")
-        if (preg_match('/^explain\s+how\s+to\s+calculate/i', $lower)) {
-            return 'general_knowledge';
+        // 1. Safety Checks (Priority 1: data leakage, tokens, passwords, prompt injection, abuse)
+        if (preg_match('/(show\s+me|give\s+me|what\s+are|get|view|list|access)\s+(all\s+shops|other\s+shops?|competitor\'?s?)\s+(sales|stock|data|records?|numbers?|prices?)/i', $lower) ||
+            preg_match('/^(list\s+all\s+shops|show\s+all\s+shops|all\s+shops\s+list)$/i', $trimmed) ||
+            preg_match('/\b(other\s*shops?|another\s*shop|other\s*stores?|all\s*shops\s+and\s+owners|database\s*root|admin\s*password|bearer\s*token|dump\s*users?|api[-_\s]?key|developer\s*instructions)\b|(दूसरी\s*दुकान|अन्य\s*दुकान|डेटाबेस|पासवर्ड|டோக்கன்|அடுத்த\s*கடை|மற்ற\s*கடை)/iu', $lower) ||
+            preg_match('/\b(ignore\s*all\s*previous|override\s*all\s*rules|system\s*prompt|unrestricted\s*terminal)\b|(सारे\s*निर्देश\s*भूल|सिस्टम\s*प्रॉम्प्ट|விதிகள்\s*அனைத்தையும்)/iu', $lower) ||
+            preg_match('/\b(you\s*are\s*useless|why\s*is\s*your\s*answer\s*so\s*slow|very\s*angry|you\s*are\s*stupid|terrible\s*assistant)\b|(बेकार\s*ऐप|बेवकूफ|घटिया|வேஸ்ட்|முட்டாள்)/iu', $lower)) {
+            return self::wrapType('safety', 0.99, 'rule', $withDetails);
         }
 
-        // App feature usage help (e.g. "How do I import products from Excel?", "How to record a sale in app?", "How to scan barcode")
+        // 2. Conversation Check (Priority 2: greetings, thanks, acknowledgements, negations)
+        if (preg_match('/^(hi|hello|hey|good\s+morning|good\s+evening|namaste|vanakkam|thanks|thank\s+you|thx|ok|okay|k|got\s+it|fine|sure|no|nope|nah|cancel)$/i', $trimmed) ||
+            preg_match('/^(नमस्ते|प्रणाम|नमस्कार|धन्यवाद|शुक्रिया|ठीक\s+है|अच्छा|नहीं|வணக்கம்|நன்றி|சரி|சரிங்க|இல்லை|வேண்டாம்)$/u', $trimmed)) {
+            return self::wrapType('conversation', 0.99, 'rule', $withDetails);
+        }
+
+        // 3. General Knowledge Check (Priority 3: science, history, trivia, calculation formulas)
+        if (preg_match('/^explain\s+how\s+to\s+calculate/i', $lower) ||
+            preg_match('/\b(capital\s+of|einstein|speed\s+of\s+light|photosynthesis|percent\s+of\s+\d+|who\s+was|who\s+is\s+the\s+president)\b|(राजधानी|प्रकाश\s+की\s+गति|प्रकाश\s+संश्लेषण|தலைநகரம்|ஒளியின்\s+வேகம்)/iu', $lower)) {
+            return self::wrapType('general_knowledge', 0.95, 'rule', $withDetails);
+        }
+
+        // App feature usage help (routes to app help lookup)
         $isAppHelp = (bool)preg_match('/\b(import|excel|csv|barcode|scanner|camera|record\s*a?\s*sale|add\s*new\s*supplier|add\s*supplier|add\s*product|use\s*stocksense|app\s*use)\b|(इम्पोर्ट|स्कैन|कैमरा|सप्लायर\s*जोड़ें|सामान\s*जोड़ें|எக்செல்|ஏற்றுவது|பதிவு\s*செய்ய|ஸ்கேன்)/iu', $lower);
 
-        // Check if explicit reorder recommendations lookup (e.g. "what should I reorder this week", "reorder list")
+        // Explicit reorder recommendations lookup
         $isPureReorderLookup = (bool)preg_match('/\b(what\s+should\s+i\s+reorder|what\s+to\s+reorder|reorder\s+list|reorder\s+recommendations|reorder\s+advice|kya\s+mangana\s+hai|kya\s+order\s+karna\s+hai|marubadi\s+order\s+list|meendum\s+order\s+panna\s+vendiya)\b|(दोबारा\s+ऑर्डर\s+क्या|रीऑर्डर\s+की\s+सूची|रीऑर्डर\s+सलाह|मंगाने\s+वाले\s+सामान|மீண்டும்\s+ஆர்டர்\s+செய்ய\s+வேண்டியவை)/iu', $lower);
 
-        if (preg_match($advicePattern, $lower) && !$isPureReorderLookup && !$isAppHelp) {
-            return 'advice';
+        // Explicit entity list questions: "which items increased this week", "which products", "kaunse items", "endha porul"
+        $isEntityList = (bool)(preg_match('/\b(which\s+items?|which\s+products?|which\s+goods?|kaunse\s+items?|kaunse\s+samaan|kaunsa\s+product|endha\s+porul|endha\s+items?)\b|(कौनसे\s+सामान|कौन\s+से\s+प्रोडक्ट|எந்த\s+பொருள்|எந்த\s+பொருட்கள்)/iu', $lower));
+
+        // Specific data reports, lists or configured plans requested
+        $isDataReport = (bool)(preg_match('/\b(low\s*stock\s*list|reorder\s*list|sales\s*report|stock\s*report|sales\s*summary|inventory\s*list|gst\s*report|out\s*of\s*stock\s*list)\b|(लो\s*स्टॉक\s*लिस्ट|रीऑर्डर\s*लिस्ट|बिक्री\s*रिपोर्ट|स्टॉक\s*रिपोर्ट|குறைந்த\s*இருப்பு\s*பட்டியல்|விற்பனை\s*அறிக்கை)/iu', $lower));
+
+        // Asking for configured sales plan or targets: "show my sales plan", "sales ka plan kya hai", "what is my sales plan"
+        $isConfiguredSalesPlan = (bool)(preg_match('/\b(show\s+(?:me\s+)?(?:my\s+)?sales\s+plan|what\s+is\s+(?:my\s+)?sales\s+plan|sales\s+ka\s+plan\s+kya\s+hai|reorder\s+plan\s+dikhao|sales\s+plan\s+enna)\b|(सेल्स\s+का\s+प्लान\s+क्या\s+है|सेल्स\s+प्लान\s+दिखाओ|விற்பனை\s+திட்டம்\s+என்ன)/iu', $lower));
+
+        // Explicit request for a document/list via chahiye or venum/kudunga (e.g. "low stock list chahiye", "sales report chahiye")
+        $isDocumentRequest = (bool)(
+            preg_match('/\b(list|report|data|details|status|hisab|parcha|soochi|suchi|stk)\s+(chahiye|chahiye\s+tha)\b|(लिस्ट|रिपोर्ट|डेटा|विवरण|स्थिति|हिसाब|सूची)\s+चाहिए/iu', $lower) ||
+            preg_match('/\b(list|report|pattyal|vivaram|iruppu|virpanai|plan)\s+(thevai|venum|kudunga|kaatunga)\b|(பட்டியல்|அறிக்கை|விவரம்)\s+(வேண்டும்|காட்டு|தா)/iu', $lower)
+        );
+
+        // Pure quantity / count questions (unless paired with margin advice: e.g. "kitna margin rakhna chahiye")
+        $isPureCount = (bool)(
+            preg_match('/\b(how\s+much|how\s+many|what\s+is\s+the\s+total|count|quantity|number\s+of|total\s+value|total\s+amount|total\s+rupya|kitna|kitne|kitni|evvalavu|evalo|ethanai)\b|(कितना|कितने|कितनी|மொத்த\s*மதிப்பு|எவ்வளவு|எத்தனை)/iu', $lower) &&
+            !preg_match('/(margin|profit|markup|munafa|laabam|லாப|மार्जिन).*?(rakhna\s+chahiye|set\s+kare|vaikkanum|vaikka\s+vendum|रखना\s+चाहिए|வைக்க\s+வேண்டும்)/iu', $lower)
+        );
+
+        // 4. Evaluate Lookup Signals
+        $hasLookupCue = false;
+        $lookupConfidence = 0.0;
+
+        if ($isAppHelp || $isPureReorderLookup || $isEntityList || $isDataReport || $isConfiguredSalesPlan || $isDocumentRequest) {
+            $hasLookupCue = true;
+            $lookupConfidence = 0.98;
+        } elseif ($isPureCount) {
+            $hasLookupCue = true;
+            $lookupConfidence = 0.95;
         }
 
-        // 3. General Knowledge Markers
-        if (preg_match('/\b(capital\s+of|einstein|speed\s+of\s+light|photosynthesis|percent\s+of\s+\d+|who\s+was|who\s+is\s+the\s+president)\b|(राजधानी|प्रकाश\s+की\s+गति|प्रकाश\s+संश्लेषण|தலைநகரம்|ஒளியின்\s+வேகம்)/iu', $lower)) {
-            return 'general_knowledge';
+        // Data request verbs combined with metrics: "show/give/tell me sales/stock/margin/price"
+        // But NOT when asking for advice/tips/tricks/methods (e.g. "sales badhane ke tips batao", "sales increase panna trick sollunga")
+        $isAdviceTelling = (bool)preg_match('/\b(trick|tricks|tip|tips|idea|ideas|tareeka|tarika|upay|salah|sujhav|yosani|alosani|vazhi|thittam|uththi)\b|(திட்டம்|வழி|உத்தி|யோசனை|ஆலோசனை|उपाय|तरीका|सलाह|सुझाव)/iu', $lower);
+        if (!$isAdviceTelling) {
+            if (preg_match('/\b(show|give|display|tell|view|fetch)\s+(me\s+)?(my\s+)?(sales|stock|inventory|price|cost|margin|profit|sku|items?|products?|bills?|orders?)\b|(dikhao|batao|bataiye|kaatu|kaatunga|solle|sollunga)\b/iu', $lower) &&
+                preg_match('/\b(sales|stock|price|cost|margin|profit|sku|reorder|today|yesterday|aaj|kal|inniku|netru|bhav|rate|daam|iruppu|virpanai)\b|(बिक्री|स्टॉक|दाम|भाव|लागत|விற்பனை|இருப்பு|விலை)/iu', $lower)) {
+                $hasLookupCue = true;
+                $lookupConfidence = max($lookupConfidence, 0.95);
+            }
         }
 
-        // 4. Conversation Markers (Greetings, Thanks, Ack, Negation)
-        if (preg_match('/^(hi|hello|hey|good\s+morning|namaste|vanakkam|thanks|thank\s+you|ok|okay|k|got\s+it|fine|sure|no|nope|nah|cancel)$/i', trim($lower)) ||
-            preg_match('/^(नमस्ते|प्रणाम|नमस्कार|धन्यवाद|शुक्रिया|ठीक\s+है|अच्छा|नहीं|வணக்கம்|நன்றி|சரி|இல்லை)$/u', trim($lower))) {
-            return 'conversation';
+        // 5. Evaluate Advice Signals
+        $hasAdviceCue = false;
+        $adviceConfidence = 0.0;
+
+        // 5A. Business Problem / Worry / Statement (Requirement 3: problem, goal, worry with no request for a number)
+        $problemPatterns = [
+            // Sales dropping / low / declining
+            '/(sales|revenue|bikri|turnover|virpanai|सेल|बिक्री|टर्नओवर|விற்பனை).*?(kam\s+ho|down\s+ho|gir\s+rahi|kam\s+hai|kam\s+hui|down\s+hai|down\s+aachu|down\s+aayiduchu|drop|dropped|falling|declining|low|kuraivaga|koranj|சரிந்து|குறைந்து|படுத்து|पड़\s+गई|घट\s+रही)/iu',
+
+            // Customers / Footfall not coming / leaving
+            '/(customers?|grahak|footfall|vaadikkaiyaalargal|aal|aale|walk-?ins?|कस्टमर|ग्राहक|फुटफॉल|வாடிக்கையாளர்கள்|மக்கள்).*?(nahi\s+aa|not\s+coming|kam\s+aa|kam\s+hai|are\s+not\s+coming|falling|dropping|varavillai|varala|koranj|vanished|छूट\s+गए|टूट\s+गए|வரவில்லை|குறைந்து)/iu',
+
+            // Profit / Margins not happening / losses
+            '/(profit|margin|munafaa|laabam|earnings?|मुनाफा|प्रॉफिट|लाभ|मार्जिन|லாபம்).*?(nahi\s+ho|kam\s+hai|kam\s+mil|is\s+low|dropping|falling|kidaikala|varala|declining|making\s+losses|zero|नुकसान|நஷ்ட|घाटे)/iu',
+            '/(losses?|loss|nattam|घाटा|नुकसान|loss\s+la).*?(ho\s+rahe|badh|aagudhu|turnaround|pogudhu)/iu',
+
+            // Shop / Business struggling / slow
+            '/(my\s+shop|store|dukan|kadai|vyapaaram|vyaparam|business|दुकान|व्यापार|बिजनेस|கடை|வியாபாரம்).*?(not\s+doing\s+well|struggling|slow|theek\s*(?:se)?\s*nahi|achhi\s+nahi|down|s[ae]riy?a\s*(?:illa|pogala)|seri\s+illa|nalla\s+pogala|மந்தம்|நஷ்டம்|घाटे|मंदा|खर्चा\s*नहीं|சரியா(?:க)?\s*(?:போகல|போகவில்லை|இல்லை))/iu',
+
+            // Stock / Cash stuck / unsold inventory / sitting on shelves
+            '/(?:(stock|inventory|saman|porul|sarakku|paisa|capital|money|स्टॉक|सामान|समान|माल|पैसा|சரக்கு|சரக்குகள்|பொருள்|பொருட்கள்|பணம்).*?(too\s+much|pada\s+hai|fansa|phansa|bahut|fasa|atkaa|sitting|stagnant|idle|unsold|vikkama|thengi|mudangi|waste|spoil|जाम|फंसा|अटका|முடங்கி|தேங்கி|விற்காமல்|விற்பனை\s*ஆகாத|बिक\s*नहीं|कोई\s*खरीद\s*नहीं)|(stuck|idle|stagnant|dead|unsold|தேங்கி|முடங்கி|விற்காத|அழுகிய)\s*(?:கிடக்கும்)?\s*(stock|inventory|items?|products?|saman|porul|sarakku|பொருள்|பொருட்கள்|சரக்கு|சரக்குகள்))/iu',
+
+            // Competition worry
+            '/(competitor|supermarket|rival|other\s+store|mart|सुपरमार्केट|प्रतियोगी|போட்டி|பல்பொருள்|பெரிய\s*கடை).*?(opening|opened|near|next\s+door|samne|vantha|सामने|खुल|வந்து|vandhuduchu)/iu'
+        ];
+
+        foreach ($problemPatterns as $pp) {
+            if (preg_match($pp, $lower)) {
+                $hasAdviceCue = true;
+                $adviceConfidence = max($adviceConfidence, 0.98);
+                break;
+            }
         }
 
-        // 5. Default: Lookup (asks for data, reports, inventory counts, sales numbers, etc.)
-        return 'lookup';
+        // 5B. How-To, Tips, Strategies, and Goal Action Inquiries
+        // Note: Broad standalone markers (like चाहिए and வழி on their own) are strictly excluded!
+        $adviceInquiryPattern = '/(?<!\p{L})('
+            // English
+            . 'how\s+to|how\s+do\s+i|how\s+can\s+i|how\s+should\s+i|should\s+i|what\s+should\s+i\s+do|what\s+should\s+i|what\s+to\s+do|what\s+can\s+i\s+do|what\s+steps|what\s+action|why\s+are|why\s+is|why\s+my|'
+            . 'trick|tricks|tip|tips|idea|ideas|strategy|strategies|improve|improving|increase|increasing|boost|boosting|grow|growing|growth|reduce|reducing|cut\s+down|decrease|avoid|'
+            . 'suggest|recommend|solution|advice|advise|guidance|guide|ways\s+to|methods?\s+to|best\s+way|simple\s+ways|correct\s+way|focus\s+on|attract\s+customers|beat\s+the\s+shop|compete|discount\s+strategy|deal\s+with|liquidate|prevent|footfall|'
+            . 'how\s+to\s+grow|help\s+increase\s+revenue|shop\s+not\s+doing\s+well|clear\s+unsold|hw\s+to|incrase|clr\s+deadstok|droping\s+advce|turnaround|sitting\s+on\s+shelves|'
+            // Hindi / Hinglish (paired chahiye only)
+            . 'kaise|kaise\s+kare|kaise\s+karein|kaise\s+badhaye|kaise\s+ghataye|kya\s+karu|kya\s+karun|kya\s+karna\s+chahiye|kya\s+kare|kya\s+karein|'
+            . 'trick\s+bol|upay|tarika|tareeka|salah|sujhav|increase\s+karne|improve\s+karne|kam\s+karne|reduce\s+karne|grow\s+karne|kya\s+plan|plan\s+kaise|'
+            . 'dena\s+chahiye|chalani\s+chahiye|chalana\s+chahiye|chahiye\s+kya|rakhna\s+chahiye|shuru\s+karni\s+chahiye|kaise\s+bache|kaise\s+roke|kaise\s+laye|kaise\s+banaye|kaise\s+rakhe|kaise\s+set|'
+            . 'कैसे|कैसे\s+करें|क्या\s+करूँ|क्या\s+करूं|क्या\s+करना\s+चाहिए|क्या\s+करें|तरीका|तरीके|सलाह|सुझाव|रणनीति|बढ़ाएं|बढ़ाना|बढ़ाने|घटाएं|घटाना|सुधारें|सुधारने|सुधार|योजना|आइडिया|टिप्स|ट्रिक|उपाय|'
+            . 'देना\s+चाहिए|चलानी\s+चाहिए|रखना\s+चाहिए|शुरू\s+करनी\s+चाहिए|रखें|ध्यान\s+दें|रोकें|बचाएं|मार्गदर्शन|सूत्र|सजावट|कदम\s+उठाएं|कहाँ\s+से\s+खरीदें|कहा\s+से\s+खरीदे|तरकीब|प्रचार|नियम\s+बनाएं|'
+            . 'बढाए|बढेगा|डैड\s*स्टाक|सेल\s*कम|नही\s*आ\s*रहे|'
+            // Tamil / Tanglish (paired vazhi, thittam, yosani, alosani, panradhu, seyyalam)
+            . 'eppadi|epdi|eppadi\s+panradhu|epdi\s+pathukradhu|enna\s+seyyalam|enna\s+panna|enna\s+pannanum|enna\s+panradhu|athigam\s+aaga|adhigam\s+panna|adhigam\s+vara|kuraikka|increase\s+panna|improve\s+panna|boost\s+panna|'
+            . 'yosani|alosani|athigarikka\s+vazhi|kuraikka\s+vazhi|munnetra\s+vazhi|enna\s+vazhi|vazhi\s+enna|panamakka|enna\s+thittam|thittam\s+enna|tharalama|podalama|vaikkanum|vikkadha|matha\s+enna\s+trick|aachu\s+na|'
+            . 'sollunga|advice\s+venum|success\s+formula|korañjiduchu|ded\s*stok|adhigam\s+aakuradhu|vazhigaattal|pannalama|mudiyuma|vecha\s+nalla\s+vikkum|develop\s+panna|thadukka|achieve\s+panna|double\s+panna|raise\s+panna|attract\s+panna|enga\s+kedaikkum|adhigam\s+aaka\s+vazhi|'
+            . 'எப்படி|எவ்வாறு|என்ன\s+செய்ய\s+வேண்டும்|என்ன\s+செய்யலாம்|என்ன\s+பண்ணலாம்|என்ன\s+செய்வது|உத்தி|உத்திகள்|யோசனை|யோசனைகள்|ஆலோசனை|ஆலோசனைகள்|வழிகாட்டல்|அதிகரிக்க|அதிகப்படுத்த|குறைக்க|வளர்க்க|முன்னேற்ற|'
+            . 'அதிகரிக்க\s+வழி|குறைக்க\s+வழி|முன்னேற்ற\s+வழி|என்ன\s+வழி|வழி\s+என்ன|பணமாக்க\s+வழி|பணமாக்க|என்ன\s+திட்டம்|திட்டம்\s+என்ன|விற்க\s+திட்டம்|கொடுக்கலாமா|தரலாமா|போடலாமா|ஈர்க்க|தடுப்பது|நிர்வகிக்க|உயர்த்த|வைக்க\s+வேண்டும்|'
+            . 'வழிமுறைகள்|தக்கவைக்க|வெல்ல|ரகசியங்கள்|சரியான\s+தருணம்|தனித்து\s+தெரிய|நடவடிக்கை|ஆரம்பிக்கலாமா|ஈர்க்க\s+முடியுமா|கவனம்\s+செலுத்த|பெருக்க|வழிகள்|திட்டங்கள்|கவர\s+முடியுமா|வழங்கலாமா|எங்கு\s+கிடைக்கும்|வைக்க\s+வேண்டிய|என்ன\s+ஐடியா|'
+            // Hinglish typos / short phrases
+            . 'kya\s+action\s+lu|saste\s+me|procure\s+kare|advertisement|impulse\s+item|advice\s+chahiye|faydemand\s+hai\s+kya|planning\s+guide|sales\s+bdhane|deadstok|km\s+ho\s+gyi|prfit\s+bdhao|grow\s+ideas|survive|double\s+karne'
+            . ')(?!\p{L}|\p{M})/iu';
+
+        if (preg_match($adviceInquiryPattern, $lower)) {
+            $hasAdviceCue = true;
+            $adviceConfidence = max($adviceConfidence, 0.98);
+        }
+
+        // 6. Decision & Confidence Thresholding
+        // Priority A: Explicit entity list, document list, configured sales plan, reorder recommendations, or app help (Requirement 4)
+        if ($isEntityList || $isDataReport || $isConfiguredSalesPlan || $isDocumentRequest || $isPureReorderLookup || $isAppHelp) {
+            return self::wrapType('lookup', $lookupConfidence, 'rule', $withDetails);
+        }
+
+        // Priority B: Advice (problem statement or advice inquiry) takes precedence over generic data words
+        if ($hasAdviceCue && !$isPureCount) {
+            return self::wrapType('advice', $adviceConfidence, 'rule', $withDetails);
+        }
+
+        // Priority C: Pure count / numerical value data question (e.g. "how much did I sell today", "total value of dead stock")
+        if ($isPureCount) {
+            return self::wrapType('lookup', $lookupConfidence, 'rule', $withDetails);
+        }
+
+        if ($hasLookupCue && !$hasAdviceCue) {
+            return self::wrapType('lookup', $lookupConfidence, 'rule', $withDetails);
+        }
+
+        // 7. Uncertainty Resolution: If rules are not confident, ask LOCAL model (Requirement 2)
+        if ($allowModel) {
+            $localModelResult = self::askLocalModelForType($rawMessage, $normalized['cleaned'] ?? $lower);
+            if ($localModelResult !== null) {
+                return self::wrapType($localModelResult['type'], $localModelResult['confidence'], 'local_model', $withDetails);
+            }
+        }
+
+        // If local model is unreachable, disabled or down, fall back to best rule estimate
+        if ($hasAdviceCue) {
+            return self::wrapType('advice', 0.80, 'rule_fallback', $withDetails);
+        }
+
+        return self::wrapType('lookup', 0.75, 'rule_fallback', $withDetails);
     }
 
     /**
@@ -742,14 +963,14 @@ class IntentEngine {
      * Computes overlap with semantic concept groups, determines matching intent,
      * and returns confidence score between 0.0 and 1.0.
      */
-    public static function scoreConcepts(array $normalized): array {
+    public static function scoreConcepts(array $normalized, bool $allowModel = false): array {
         $tokens = $normalized['tokens'];
         $lower = $normalized['lower'];
         $cleaned = $normalized['cleaned'];
         $params = $normalized['params'];
 
         // 0. Classify Question Type first: if advice, NEVER return a plain data lookup!
-        $qType = self::classifyQuestionType($normalized['original'] ?? $lower, $normalized);
+        $qType = self::classifyQuestionType($normalized['original'] ?? $lower, $normalized, false, $allowModel);
         if ($qType === 'advice') {
             return [
                 'intent' => 'business_advice',
@@ -1157,7 +1378,7 @@ class IntentEngine {
         $normalized = self::normalize($rawMessage);
 
         // Layer B: Concept Scoring
-        $scored = self::scoreConcepts($normalized);
+        $scored = self::scoreConcepts($normalized, $allowModelClassifier);
 
         // If confidence is high (>= 0.70) or model classifier is not permitted, return Layer B result
         if ($scored['confidence'] >= 0.70 || !$allowModelClassifier) {

@@ -1,0 +1,155 @@
+{
+    "date": "2026-11-17 04:18:48",
+    "total": 992,
+    "accuracy": 98.79032258064517,
+    "passed": true,
+    "perLanguage": {
+        "en": {
+            "name": "English",
+            "total": 200,
+            "tp": 99,
+            "fn": 1,
+            "tn": 100,
+            "fp": 0,
+            "accuracy": 99.5,
+            "precision": 100,
+            "recall": 99,
+            "f1": 99.49748743718592,
+            "falsePositives": [],
+            "falseNegatives": [
+                {
+                    "query": "stagnant stock is eating all my working capital",
+                    "predicted": "lookup",
+                    "confidence": 0.75,
+                    "source": "rule_fallback"
+                }
+            ]
+        },
+        "hi": {
+            "name": "Hindi (Devanagari)",
+            "total": 199,
+            "tp": 95,
+            "fn": 4,
+            "tn": 100,
+            "fp": 0,
+            "accuracy": 97.98994974874373,
+            "precision": 100,
+            "recall": 95.95959595959596,
+            "f1": 97.9381443298969,
+            "falsePositives": [],
+            "falseNegatives": [
+                {
+                    "query": "\u0917\u094d\u0930\u093e\u0939\u0915 \u0926\u0941\u0915\u093e\u0928 \u092a\u0930 \u0928\u0939\u0940\u0902 \u0906 \u0930\u0939\u0947 \u0939\u0948\u0902",
+                    "predicted": "lookup",
+                    "confidence": 0.75,
+                    "source": "rule_fallback"
+                },
+                {
+                    "query": "\u092e\u0947\u0930\u0940 \u0926\u0941\u0915\u093e\u0928 \u0920\u0940\u0915 \u0938\u0947 \u0928\u0939\u0940\u0902 \u091a\u0932 \u0930\u0939\u0940 \u0939\u0948",
+                    "predicted": "lookup",
+                    "confidence": 0.75,
+                    "source": "rule_fallback"
+                },
+                {
+                    "query": "\u0921\u0947\u0921 \u0938\u094d\u091f\u0949\u0915 \u092e\u0947\u0902 \u092c\u0939\u0941\u0924 \u092a\u0948\u0938\u093e \u092b\u0902\u0938\u093e \u0939\u0941\u0906 \u0939\u0948",
+                    "predicted": "lookup",
+                    "confidence": 0.75,
+                    "source": "rule_fallback"
+                },
+                {
+                    "query": "\u0938\u0938\u094d\u0924\u0947 \u0926\u093e\u092e \u092a\u0930 \u092e\u093e\u0932 \u0915\u0939\u093e\u0902 \u0938\u0947 \u0916\u0930\u0940\u0926\u0947\u0902",
+                    "predicted": "lookup",
+                    "confidence": 0.75,
+                    "source": "rule_fallback"
+                }
+            ]
+        },
+        "ta": {
+            "name": "Tamil (Script)",
+            "total": 197,
+            "tp": 93,
+            "fn": 4,
+            "tn": 100,
+            "fp": 0,
+            "accuracy": 97.96954314720813,
+            "precision": 100,
+            "recall": 95.87628865979381,
+            "f1": 97.89473684210525,
+            "falsePositives": [],
+            "falseNegatives": [
+                {
+                    "query": "\u0b85\u0b9f\u0bbf\u0baa\u0bcd\u0baa\u0b9f\u0bc8 \u0bae\u0bb3\u0bbf\u0b95\u0bc8\u0baa\u0bcd \u0baa\u0bca\u0bb0\u0bc1\u0b9f\u0bcd\u0b95\u0bb3\u0bc1\u0b95\u0bcd\u0b95\u0bc1 \u0b8e\u0bb5\u0bcd\u0bb5\u0bb3\u0bb5\u0bc1 \u0bb2\u0bbe\u0baa \u0b9a\u0ba4\u0bb5\u0bbf\u0b95\u0bbf\u0ba4\u0bae\u0bcd \u0bb5\u0bc8\u0b95\u0bcd\u0b95 \u0bb5\u0bc7\u0ba3\u0bcd\u0b9f\u0bc1\u0bae\u0bcd",
+                    "predicted": "lookup",
+                    "confidence": 0.95,
+                    "source": "rule"
+                },
+                {
+                    "query": "\u0baa\u0ba3\u0bae\u0bcd \u0bae\u0bc1\u0b9f\u0b99\u0bcd\u0b95\u0bbf\u0bb5\u0bbf\u0b9f\u0bcd\u0b9f\u0ba4\u0bc1 \u0b8e\u0ba9\u0bcd\u0ba9 \u0ba4\u0bc0\u0bb0\u0bcd\u0bb5\u0bc1",
+                    "predicted": "lookup",
+                    "confidence": 0.75,
+                    "source": "rule_fallback"
+                },
+                {
+                    "query": "\u0b95\u0bb8\u0bcd\u0b9f\u0bae\u0bb0\u0bcd \u0bb5\u0bb0\u0bb2 \u0b8e\u0ba9\u0bcd\u0ba9 \u0b9a\u0bc6\u0baf\u0bcd\u0baf",
+                    "predicted": "lookup",
+                    "confidence": 0.75,
+                    "source": "rule_fallback"
+                },
+                {
+                    "query": "\u0bb5\u0bbf\u0baf\u0bbe\u0baa\u0bbe\u0bb0\u0bae\u0bcd \u0baa\u0bc6\u0bb0\u0bc1\u0b95 \u0bb5\u0bb4\u0bbf",
+                    "predicted": "lookup",
+                    "confidence": 0.75,
+                    "source": "rule_fallback"
+                }
+            ]
+        },
+        "hinglish": {
+            "name": "Hinglish",
+            "total": 199,
+            "tp": 97,
+            "fn": 2,
+            "tn": 100,
+            "fp": 0,
+            "accuracy": 98.99497487437185,
+            "precision": 100,
+            "recall": 97.97979797979798,
+            "f1": 98.9795918367347,
+            "falsePositives": [],
+            "falseNegatives": [
+                {
+                    "query": "monthly sales target achieve karne ki planning",
+                    "predicted": "lookup",
+                    "confidence": 0.75,
+                    "source": "rule_fallback"
+                },
+                {
+                    "query": "grahak nhi a rhe",
+                    "predicted": "lookup",
+                    "confidence": 0.75,
+                    "source": "rule_fallback"
+                }
+            ]
+        },
+        "tanglish": {
+            "name": "Tanglish",
+            "total": 197,
+            "tp": 96,
+            "fn": 1,
+            "tn": 100,
+            "fp": 0,
+            "accuracy": 99.49238578680203,
+            "precision": 100,
+            "recall": 98.96907216494846,
+            "f1": 99.4818652849741,
+            "falsePositives": [],
+            "falseNegatives": [
+                {
+                    "query": "porul vikkama thengi kidakudhu",
+                    "predicted": "lookup",
+                    "confidence": 0.75,
+                    "source": "rule_fallback"
+                }
+            ]
+        }
+    }
+}
