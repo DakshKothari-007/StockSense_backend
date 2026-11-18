@@ -148,9 +148,9 @@ assertTest($noTokenUnread['code'] === 401, "GET notifications/unread_count.php w
 $pdo->exec("DELETE FROM notification_states WHERE shop_owner_id = 2");
 $pdo->exec("DELETE FROM products WHERE shop_owner_id = 2 AND sku LIKE 'NOTIF-%'");
 
-// Create 1 low stock product (units = 3, min = 10)
-$stmtProd = $pdo->prepare("INSERT INTO products (shop_owner_id, name, sku, category, units, min_stock_threshold, price, cost_price) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
-$stmtProd->execute([2, "Notification Low Stock Biscuit", "NOTIF-01", "Biscuits", 3, 10, 50.00, 30.00]);
+// Create 1 low stock product (units = 3, min = 10) with icon_key 'cookie'
+$stmtProd = $pdo->prepare("INSERT INTO products (shop_owner_id, name, sku, category, units, min_stock_threshold, price, cost_price, icon_key) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
+$stmtProd->execute([2, "Notification Low Stock Biscuit", "NOTIF-01", "Biscuits", 3, 10, 50.00, 30.00, "cookie"]);
 $notifProdId = (int)$pdo->lastInsertId();
 
 // Create 1 import history log
@@ -173,10 +173,17 @@ foreach ($items as $item) {
         assertTest(str_contains($item['title'], "Notification Low Stock Biscuit"), "Low stock title contains product name");
         assertTest(isset($item['numbers_used']['units']) && $item['numbers_used']['units'] === 3, "Numbers used has exact units (3)");
         assertTest($item['is_read'] === false, "Generated notification starts as unread");
+        assertTest($item['product_id'] === $notifProdId, "Low stock notification returns joined product_id");
+        assertTest($item['product_name'] === "Notification Low Stock Biscuit", "Low stock notification returns product_name");
+        assertTest($item['icon_key'] === "cookie", "Low stock notification returns joined icon_key ('cookie')");
+        assertTest($item['category'] === "Biscuits", "Low stock notification returns category ('Biscuits')");
     }
     if (str_starts_with($item['key'], "import:")) {
         $importFound = true;
         assertTest(str_contains($item['body'], "test_notif.csv"), "Import notification body mentions file name");
+        assertTest($item['product_id'] === null, "Non-product import notification has product_id = null");
+        assertTest($item['product_name'] === null, "Non-product import notification has product_name = null");
+        assertTest($item['icon_key'] === null, "Non-product import notification has icon_key = null");
     }
 }
 assertTest($lowStockFound, "Low stock notification generated for low product");

@@ -43,7 +43,7 @@ function get_shop_notifications(PDO $pdo, int $shopOwnerId, array $options = [])
     // -------------------------------------------------------------
     if ($lowStockEnabled) {
         $stmtLow = $pdo->prepare(
-            "SELECT p.id, p.name, p.units, p.min_stock_threshold, p.cost_price, p.price,
+            "SELECT p.id, p.name, p.category, p.icon_key, p.units, p.min_stock_threshold, p.cost_price, p.price,
                     COALESCE(SUM(si.quantity), 0) AS sold_30_days
              FROM products p
              LEFT JOIN sales_items si ON p.id = si.product_id
@@ -99,6 +99,9 @@ function get_shop_notifications(PDO $pdo, int $shopOwnerId, array $options = [])
                 ],
                 'created_for_date' => $currentDate,
                 'product_id' => $prodId,
+                'product_name' => $prod['name'],
+                'category' => $prod['category'] ?? null,
+                'icon_key' => $prod['icon_key'] ?? null,
                 'priority' => 1
             ];
         }
@@ -126,7 +129,7 @@ function get_shop_notifications(PDO $pdo, int $shopOwnerId, array $options = [])
     if ($aiRecsEnabled) {
         // Query products that are slow-moving (units > 0, not on reorder list)
         $stmtSlow = $pdo->prepare(
-            "SELECT p.id, p.name, p.units, p.cost_price, p.price,
+            "SELECT p.id, p.name, p.category, p.icon_key, p.units, p.cost_price, p.price,
                     COALESCE(SUM(si.quantity), 0) AS units_sold_30_days
              FROM products p
              LEFT JOIN sales_items si ON p.id = si.product_id
@@ -174,6 +177,9 @@ function get_shop_notifications(PDO $pdo, int $shopOwnerId, array $options = [])
                     ],
                     'created_for_date' => $currentDate,
                     'product_id' => $prodId,
+                    'product_name' => $prod['name'],
+                    'category' => $prod['category'] ?? null,
+                    'icon_key' => $prod['icon_key'] ?? null,
                     'priority' => 2
                 ];
             }
@@ -262,6 +268,9 @@ function get_shop_notifications(PDO $pdo, int $shopOwnerId, array $options = [])
                 ],
                 'created_for_date' => $currentDate,
                 'product_id' => null,
+                'product_name' => null,
+                'category' => null,
+                'icon_key' => null,
                 'priority' => 3
             ];
         }
@@ -301,6 +310,9 @@ function get_shop_notifications(PDO $pdo, int $shopOwnerId, array $options = [])
             ],
             'created_for_date' => $importDate,
             'product_id' => null,
+            'product_name' => null,
+            'category' => null,
+            'icon_key' => null,
             'priority' => 4
         ];
     }
@@ -365,9 +377,46 @@ function get_shop_notifications(PDO $pdo, int $shopOwnerId, array $options = [])
     $totalFiltered = count($finalItems);
     $pagedItems = array_slice($finalItems, $offset, $limit);
 
-    // Remove internal 'priority' sorting key from output
+    // Verify product-related notifications against products table (same shop only)
+    $productIds = [];
+    foreach ($pagedItems as $item) {
+        if (!empty($item['product_id'])) {
+            $productIds[] = (int)$item['product_id'];
+        }
+    }
+    $productIds = array_unique($productIds);
+    $productsMap = [];
+    if (!empty($productIds)) {
+        $inClause = implode(',', array_fill(0, count($productIds), '?'));
+        $stmtP = $pdo->prepare("SELECT id, name, category, icon_key FROM products WHERE shop_owner_id = ? AND id IN ($inClause)");
+        $stmtP->execute(array_merge([$shopOwnerId], $productIds));
+        while ($row = $stmtP->fetch(PDO::FETCH_ASSOC)) {
+            $productsMap[(int)$row['id']] = $row;
+        }
+    }
+
+    // Format output fields and remove internal priority key
     foreach ($pagedItems as &$it) {
         unset($it['priority']);
+        if (!empty($it['product_id'])) {
+            $pid = (int)$it['product_id'];
+            if (isset($productsMap[$pid])) {
+                $it['product_id'] = $pid;
+                $it['product_name'] = $productsMap[$pid]['name'];
+                $it['category'] = $productsMap[$pid]['category'] ?? null;
+                $it['icon_key'] = $productsMap[$pid]['icon_key'] ?? null;
+            } else {
+                $it['product_id'] = null;
+                $it['product_name'] = null;
+                $it['category'] = null;
+                $it['icon_key'] = null;
+            }
+        } else {
+            $it['product_id'] = null;
+            $it['product_name'] = null;
+            $it['category'] = null;
+            $it['icon_key'] = null;
+        }
     }
     unset($it);
 

@@ -287,6 +287,23 @@ try {
         ];
     }
 
+    // Sort items by lift DESC, then bills_together DESC to ensure top suggestions first
+    usort($items, function($a, $b) {
+        $liftA = $a["metrics"]["lift"] ?? 0;
+        $liftB = $b["metrics"]["lift"] ?? 0;
+        if ($liftA != $liftB) {
+            return ($liftA < $liftB) ? 1 : -1;
+        }
+        return ($b["metrics"]["bills_together"] ?? 0) <=> ($a["metrics"]["bills_together"] ?? 0);
+    });
+
+    $totalDiscoveredPairs = count($items);
+    // Limit to at most the top 5 bundle/pair suggestions by default
+    $limit = isset($_GET["limit"]) ? ($_GET["limit"] === "all" ? 0 : max(1, (int)$_GET["limit"])) : 5;
+    if ($limit > 0 && count($items) > $limit) {
+        $items = array_slice($items, 0, $limit);
+    }
+
     http_response_code(200);
     echo json_encode([
         "status" => true,
@@ -294,12 +311,14 @@ try {
         "data" => [
             "has_enough_sales_history" => true,
             "total_bills_analyzed" => $totalBills,
-            "total_pairs_count" => count($items),
+            "total_pairs_count" => $totalDiscoveredPairs,
+            "displayed_pairs_count" => count($items),
             "config" => [
                 "window_days" => $windowDays,
                 "min_total_bills" => PAIRS_CONFIG["min_total_bills"],
                 "min_bills_together" => PAIRS_CONFIG["min_bills_together"],
-                "min_support" => $minSupport
+                "min_support" => $minSupport,
+                "limit" => $limit
             ],
             "items" => $items
         ]

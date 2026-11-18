@@ -234,6 +234,7 @@ for ($b = 1; $b <= 32; $b++) {
 $resPairs = makeRequest('GET', 'insights/product_pairs.php', $tokenShop2);
 assertTest($resPairs['code'] === 200, "GET insights/product_pairs.php returns 200 OK after seeding 32 bills");
 assertTest($resPairs['json']['data']['has_enough_sales_history'] === true, "has_enough_sales_history is true with 32 bills");
+assertTest(count($resPairs['json']['data']['items']) <= 5, "Product pairs list returns at most 5 actionable bundle pairs by default");
 
 $pairItems = $resPairs['json']['data']['items'];
 $foundPair12 = false;

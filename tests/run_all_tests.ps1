@@ -8,6 +8,7 @@ $testsDir = $PSScriptRoot
 
 $suites = @(
     "test_token_auth.php",
+    "test_login_errors.php",
     "test_profile_and_edit.php",
     "test_inventory_backend.php",
     "test_sales_backend.php",
@@ -16,6 +17,7 @@ $suites = @(
     "test_reorder_backend.php",
     "test_settings_backend.php",
     "test_notifications_and_delete.php",
+    "test_notification_product_icons.php",
     "test_push.php",
     "test_weekly_digest.php",
     "test_icon_classification.php",

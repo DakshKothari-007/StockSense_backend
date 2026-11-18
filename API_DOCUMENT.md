@@ -41,7 +41,7 @@ All responses adhere to the standard JSON envelope:
 - `404 Not Found`: Target resource not found or belongs to another store.
 - `405 Method Not Allowed`: Incorrect HTTP method used (e.g. GET instead of POST).
 - `422 Unprocessable Entity`: Semantic validation failure (e.g., invalid email format during signup).
-- `429 Too Many Requests`: Rate limit exceeded (5 failed login attempts in 15 minutes).
+- `429 Too Many Requests`: Rate limit exceeded (5 failed login attempts in 5 minutes).
 - `500 Internal Server Error`: Server failure (technical details logged to server `error_log`, generic error message returned to client).
 
 ### Directory Security & Test Isolation
@@ -99,7 +99,7 @@ All responses adhere to the standard JSON envelope:
 
 #### 1.2 Login
 - **Method & Path**: `POST /auth/login.php`
-- **Token Required**: No (Rate limited: 5 failed attempts per email/IP per 15 min)
+- **Token Required**: No (Rate limited: 5 failed attempts per email in 5 minutes; IP rate limit: 20 unknown-email attempts per 15 minutes)
 - **App Screen**: `LoginScreen.kt`
 - **Request Body** (`application/json`):
   ```json
@@ -129,9 +129,46 @@ All responses adhere to the standard JSON envelope:
   ```
 - **Error Responses**:
   - `400 Bad Request`: Invalid JSON.
-  - `401 Unauthorized`: Invalid email or password (returns remaining attempts).
-  - `422 Unprocessable Entity`: Missing email or password format.
-  - `429 Too Many Requests`: Account or IP temporarily locked after 5 failed attempts.
+  - `401 Unauthorized`:
+    - Unknown/unregistered email:
+      ```json
+      {
+        "status": false,
+        "success": false,
+        "error_code": "EMAIL_NOT_FOUND",
+        "message": "No account found with this email."
+      }
+      ```
+    - Wrong password for registered account (returns remaining attempts before lockout):
+      ```json
+      {
+        "status": false,
+        "success": false,
+        "error_code": "WRONG_PASSWORD",
+        "message": "Invalid password.",
+        "attempts_left": 4
+      }
+      ```
+  - `422 Unprocessable Entity`: Missing or invalid email format or empty password.
+  - `429 Too Many Requests`: Account temporarily locked after 5 failed attempts within 5 minutes (`LOGIN_LOCKOUT_SECONDS = 300`):
+    ```json
+    {
+      "status": false,
+      "success": false,
+      "error_code": "ACCOUNT_LOCKED",
+      "message": "Too many failed login attempts. Account locked for 5 minutes.",
+      "retry_after_seconds": 298
+    }
+    ```
+    Or IP rate limit exceeded (20 unknown-email tries per 15 minutes):
+    ```json
+    {
+      "status": false,
+      "success": false,
+      "error_code": "RATE_LIMIT_EXCEEDED",
+      "message": "Too many failed attempts from this IP address. Please try again after 15 minutes."
+    }
+    ```
 
 #### 1.3 Logout
 - **Method & Path**: `POST /auth/logout.php`
@@ -1132,7 +1169,9 @@ Generated on-the-fly directly from live database state (no cron or background wo
           },
           "created_for_date": "2026-10-29",
           "product_id": 1,
-          "priority": 1,
+          "product_name": "Amul Milk · 500 ml",
+          "category": "Dairy",
+          "icon_key": "milk",
           "is_read": false,
           "read_at": null
         },
@@ -1148,7 +1187,9 @@ Generated on-the-fly directly from live database state (no cron or background wo
           },
           "created_for_date": "2026-10-29",
           "product_id": 2,
-          "priority": 2,
+          "product_name": "Britannia Marie · 150 g",
+          "category": "Snacks",
+          "icon_key": "cookie",
           "is_read": false,
           "read_at": null
         },
@@ -1166,7 +1207,9 @@ Generated on-the-fly directly from live database state (no cron or background wo
           },
           "created_for_date": "2026-10-29",
           "product_id": null,
-          "priority": 3,
+          "product_name": null,
+          "category": null,
+          "icon_key": null,
           "is_read": false,
           "read_at": null
         }
