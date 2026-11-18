@@ -239,6 +239,7 @@ php tests/test_ai.php
    - `tests/test_import_good_file.php`
    - `tests/test_import_existing_and_new_sku.php`
    - `tests/test_import_idempotency.php`
+   - `tests/test_seed_demo_data.php`
    - `tests/ai_gap_test.php`
    - `tests/ai_compare.php`
 
@@ -265,7 +266,57 @@ php tests/test_ai.php
 
 ---
 
-## 5. API Documentation
+## 5. Demo Data Seeder (CLI Only)
+
+A command-line seeding utility is provided at `cli/seed_demo_data.php` to populate realistic Indian supermarket demonstration data for presentations, testing, and UI validation.
+
+### Execution Commands
+```bash
+# Seed demo data (safe to run; will notify if demo user already exists)
+php cli/seed_demo_data.php
+
+# Preview seeding calculations and summary without modifying the database
+php cli/seed_demo_data.php --dry-run
+
+# Purge existing demo shop data and regenerate fresh demo data
+php cli/seed_demo_data.php --reset
+```
+
+### Seeded Data Characteristics
+- **Demo Shop Owner**:
+  - Email: `daksh14001@gmail.com`
+  - Store: `Daksh Supermarket` (`Indiranagar, Bengaluru`)
+  - Password: A strong random 16-character password is generated at runtime and printed **once** in the CLI terminal. It is stored solely as a BCrypt hash and never recorded in plaintext, code, or logs.
+- **30 Products Across 8 Categories**:
+  - Categories: *Dairy, Grocery, Snacks, Beverages, Household, Personal Care, Bakery, Vegetables*.
+  - Realistic Indian brand names, selling prices, purchase costs, server SKUs (`ColumnMatcher`), and catalog icon keys (`IconClassifier`).
+- **Inventory Segments**:
+  - **15 Fast-Moving**: Steady turnover, healthy stock levels above minimum threshold.
+  - **5 Low-Stock**: Remaining units below `min_stock_threshold` (triggers reorder warnings).
+  - **3 Slow-Moving**: Very low 30-day velocity, stock cover >= 60 days (triggers clearance recommendations).
+  - **2 Dead-Stock**: Zero sales across the entire 30 days with stock on hand.
+  - **1 Out-of-Stock**: 0 units remaining (triggers urgent reorder alert).
+  - **4 Regular**: Stable everyday products with balanced stock.
+- **30 Days of Sales History**:
+  - Weekday vs. weekend footfall variations (higher basket sizes and bill frequencies on weekends).
+  - Common paired purchases (Milk + Bread, Tea + Biscuits, Maggi + Chips, Veggie combos) to light up Frequently Bought Together insight rules.
+  - Strict stock reduction: starting stock minus cumulative sales units equals current inventory units. Every bill's `total_amount` equals the exact sum of its line items.
+- **2 Purchase Orders**:
+  - `PO-2026-001` (Status: `placed`): Open reorder for out-of-stock Ghee and low-stock Toor Dal.
+  - `PO-2026-002` (Status: `received`): Monthly restock received 8 days ago for Atta, Oil, and Salt.
+- **Safety & Isolation**:
+  - Restricted strictly to CLI (`php_sapi_name() === 'cli'`).
+  - Uses prepared statements and transactions.
+  - Touches and resets **only** the `daksh14001@gmail.com` shop owner; never reads or alters other users' records.
+
+### Running the Seeder Test Suite
+```bash
+php tests/test_seed_demo_data.php
+```
+
+---
+
+## 6. API Documentation
 
 For the complete REST API specification covering all endpoints, request/response bodies, query parameters, error codes, and HTTP statuses, see:
 
