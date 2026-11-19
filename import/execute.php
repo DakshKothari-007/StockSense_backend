@@ -83,6 +83,9 @@ if (!empty($idempotencyKey)) {
             $newInventoryValue = (float)($stats['total_val'] ?? 0.0);
         }
 
+        $outOfStockCreated = $details['out_of_stock_products'] ?? [];
+        $outOfStockCount = (int)($details['out_of_stock_count'] ?? count($outOfStockCreated));
+
         http_response_code(200);
         echo json_encode([
             "status" => true,
@@ -98,10 +101,13 @@ if (!empty($idempotencyKey)) {
                 "stock_added_count" => $stockAdded,
                 "corrected_rows" => $correctedRowsCount,
                 "skipped_rows" => $failedCount,
+                "skipped_count" => $failedCount,
                 "corrected_skipped_text" => "{$correctedRowsCount} / {$failedCount} rows",
                 "total_active_products" => $totalActiveProducts,
                 "new_inventory_value" => "₹" . number_format($newInventoryValue, 0),
-                "new_inventory_value_raw" => round($newInventoryValue, 2)
+                "new_inventory_value_raw" => round($newInventoryValue, 2),
+                "out_of_stock_products" => $outOfStockCreated,
+                "out_of_stock_count" => $outOfStockCount
             ]
         ]);
         exit;
@@ -237,10 +243,22 @@ if (!empty($input['corrections']) && is_array($input['corrections'])) {
 }
 
 $allowPartial = !empty($input['allow_partial']);
+$skipInvalidRows = !empty($input['skip_invalid_rows']) || $allowPartial;
 $totalRows = count($rows);
 $errors = [];
+$skippedRows = [];
 $validRowsToInsert = [];
 $correctedRowsCount = count($correctionsMap);
+
+// Fetch existing products for shop to identify new vs existing products
+$skuStmt = $pdo->prepare("SELECT sku, name, units FROM products WHERE shop_owner_id = ?");
+$skuStmt->execute([$ownerId]);
+$existingProductsMap = [];
+$existingProductsByNameMap = [];
+while ($p = $skuStmt->fetch(PDO::FETCH_ASSOC)) {
+    $existingProductsMap[strtoupper(trim($p['sku']))] = $p;
+    $existingProductsByNameMap[strtolower(trim($p['name']))] = $p;
+}
 
 foreach ($rows as $index => $row) {
     $rowNumber = $index + 2;
@@ -263,9 +281,37 @@ foreach ($rows as $index => $row) {
         $rawSku = ColumnMatcher::generateStableSku($ownerId, $rawName);
     }
 
+    // Check if row is explicitly marked to be skipped via corrections
+    $isSkippedRow = false;
+    if (isset($correctionsMap[$rowNumber]['action']) && $correctionsMap[$rowNumber]['action'] === 'skip') {
+        $isSkippedRow = true;
+    } elseif (isset($correctionsMap[$rowNumber]['units']) && $correctionsMap[$rowNumber]['units'] === 'skip') {
+        $isSkippedRow = true;
+    }
+    if ($isSkippedRow) {
+        $skippedRows[] = [
+            'row_number' => $rowNumber,
+            'name' => $rawName,
+            'sku' => $rawSku,
+            'reason' => 'Skipped by user'
+        ];
+        continue;
+    }
+
+    $skuUpper = strtoupper($rawSku);
+    $nameLower = strtolower($rawName);
+    $isExisting = isset($existingProductsMap[$skuUpper]) || isset($existingProductsByNameMap[$nameLower]);
+
     $rawUnits = ($colUnitsIdx !== null && isset($row[$colUnitsIdx])) ? trim($row[$colUnitsIdx]) : '';
+    $forceSetZero = false;
     if (isset($correctionsMap[$rowNumber]['units'])) {
-        $rawUnits = trim((string)$correctionsMap[$rowNumber]['units']);
+        $corrUnits = $correctionsMap[$rowNumber]['units'];
+        if ($corrUnits === 0 || $corrUnits === '0' || $corrUnits === 'set_zero') {
+            $forceSetZero = true;
+            $rawUnits = '0';
+        } else {
+            $rawUnits = trim((string)$corrUnits);
+        }
     }
 
     $rawCost = ($colCostIdx !== null && isset($row[$colCostIdx])) ? trim($row[$colCostIdx]) : '0';
@@ -282,17 +328,33 @@ foreach ($rows as $index => $row) {
     $hasRowError = false;
     if ($rawSku === '' || strlen($rawSku) > 50) {
         $hasRowError = true;
-        $errors[] = ["row_number" => $rowNumber, "field" => "sku", "reason" => "Invalid SKU"];
+        $errors[] = ["row_number" => $rowNumber, "field" => "sku", "reason" => "Invalid SKU", "product_name" => $rawName];
     }
 
     if ($rawName === '' || strlen($rawName) > 150) {
         $hasRowError = true;
-        $errors[] = ["row_number" => $rowNumber, "field" => "name", "reason" => "Invalid product name"];
+        $errors[] = ["row_number" => $rowNumber, "field" => "name", "reason" => "Invalid product name", "product_name" => $rawName];
     }
 
-    if (!preg_match('/^\d+$/', $rawUnits) || (int)$rawUnits <= 0) {
+    if (!is_numeric($rawUnits) || (float)$rawUnits != (int)(float)$rawUnits) {
         $hasRowError = true;
-        $errors[] = ["row_number" => $rowNumber, "field" => "units", "reason" => "Invalid quantity: '{$rawUnits}'"];
+        $errors[] = ["row_number" => $rowNumber, "field" => "units", "reason" => "Invalid quantity: '{$rawUnits}'", "product_name" => $rawName];
+    } else {
+        $intUnits = (int)(float)$rawUnits;
+        if ($intUnits < 0) {
+            $hasRowError = true;
+            $errors[] = ["row_number" => $rowNumber, "field" => "units", "reason" => "Quantity cannot be negative", "product_name" => $rawName];
+        } elseif ($intUnits === 0) {
+            if ($isExisting && $shopImportMode === 'ADD' && !$forceSetZero) {
+                $hasRowError = true;
+                $errors[] = [
+                    "row_number" => $rowNumber,
+                    "field" => "units",
+                    "reason" => "Quantity to add must be more than 0 for existing products",
+                    "product_name" => $rawName
+                ];
+            }
+        }
     }
 
     $cleanCost = preg_replace('/[^0-9.]/', '', $rawCost);
@@ -306,7 +368,7 @@ foreach ($rows as $index => $row) {
 
     if ($costVal < 0 || $priceVal < 0) {
         $hasRowError = true;
-        $errors[] = ["row_number" => $rowNumber, "field" => "price", "reason" => "Cost and price cannot be negative"];
+        $errors[] = ["row_number" => $rowNumber, "field" => "price", "reason" => "Cost and price cannot be negative", "product_name" => $rawName];
     }
 
     $rawCategory = ($colCategoryIdx !== null && isset($row[$colCategoryIdx])) ? trim($row[$colCategoryIdx]) : '';
@@ -321,22 +383,32 @@ foreach ($rows as $index => $row) {
     $minStockVal = is_numeric($rawMinStock) ? max(0, (int)$rawMinStock) : 10;
     $categoryVal = ($rawCategory !== '') ? $rawCategory : 'General';
 
-    if (!$hasRowError) {
+    if ($hasRowError) {
+        if ($skipInvalidRows) {
+            $skippedRows[] = [
+                'row_number' => $rowNumber,
+                'name' => $rawName,
+                'sku' => $rawSku,
+                'reason' => $errors[count($errors) - 1]['reason'] ?? 'Invalid row'
+            ];
+        }
+    } else {
         $validRowsToInsert[] = [
             'row_number' => $rowNumber,
             'sku' => $rawSku,
             'name' => $rawName,
             'category' => $categoryVal,
             'min_stock_threshold' => $minStockVal,
-            'units' => (int)$rawUnits,
+            'units' => $intUnits,
+            'force_set_zero' => $forceSetZero,
             'cost_price' => $costVal,
             'price' => $priceVal
         ];
     }
 }
 
-// Atomicity check: If any errors exist and partial import is not explicitly allowed, abort immediately!
-if (!empty($errors) && !$allowPartial) {
+// Atomicity check: If any errors exist and skipping invalid rows / partial import is not explicitly allowed, abort immediately!
+if (!empty($errors) && !$skipInvalidRows) {
     // Record failed import in history
     try {
         $histStmt = $pdo->prepare("
@@ -426,10 +498,21 @@ try {
     }
 
     $checkStmt = $pdo->prepare("SELECT id, name, category, units, cost_price, price, min_stock_threshold, icon_key, icon_is_manual FROM products WHERE shop_owner_id = ? AND sku = ? LIMIT 1 FOR UPDATE");
-    $unitsUpdateExpr = ($shopImportMode === 'REPLACE') ? ":units" : "units + :units";
-    $updateStmt = $pdo->prepare("
+    $updateStmtAdd = $pdo->prepare("
         UPDATE products
-        SET units = {$unitsUpdateExpr},
+        SET units = units + :units,
+            cost_price = :cost_price,
+            price = :price,
+            name = :name,
+            category = :category,
+            min_stock_threshold = :min_stock_threshold,
+            icon_key = :icon_key,
+            updated_at = CURRENT_TIMESTAMP
+        WHERE shop_owner_id = :shop_owner_id AND sku = :sku
+    ");
+    $updateStmtSet = $pdo->prepare("
+        UPDATE products
+        SET units = :units,
             cost_price = :cost_price,
             price = :price,
             name = :name,
@@ -443,6 +526,8 @@ try {
         INSERT INTO products (shop_owner_id, name, sku, category, description, price, cost_price, units, min_stock_threshold, status, icon_type, icon_key, icon_is_manual)
         VALUES (:shop_owner_id, :name, :sku, :category, 'Imported product', :price, :cost_price, :units, :min_stock_threshold, NULL, 0, :icon_key, 0)
     ");
+
+    $outOfStockCreated = [];
 
     foreach ($validRowsToInsert as $item) {
         $checkStmt->execute([$ownerId, $item['sku']]);
@@ -463,7 +548,10 @@ try {
                 }
             }
 
-            $updateStmt->execute([
+            $isSetStock = ($item['force_set_zero'] || $shopImportMode === 'REPLACE');
+            $stmtToUse = $isSetStock ? $updateStmtSet : $updateStmtAdd;
+
+            $stmtToUse->execute([
                 ':units' => $item['units'],
                 ':cost_price' => $updateCost,
                 ':price' => $updatePrice,
@@ -489,6 +577,15 @@ try {
                 ':icon_key' => $finalIconKey
             ]);
             $productsAdded++;
+
+            if ($item['units'] === 0) {
+                $outOfStockCreated[] = [
+                    'name' => $item['name'],
+                    'sku' => $item['sku'],
+                    'category' => $item['category'] ?? 'General',
+                    'units' => 0
+                ];
+            }
         }
 
         $stockAdded += $item['units'];
@@ -503,7 +600,10 @@ try {
     $newInventoryValue = (float)($stats['total_val'] ?? 0.0);
 
     $successCount = count($validRowsToInsert);
-    $failedCount = count($errors);
+    $failedCount = count($skippedRows);
+    if (!$skipInvalidRows && !empty($errors)) {
+        $failedCount = count($errors);
+    }
     $importStatus = ($failedCount === 0) ? 'completed' : 'partial';
 
     $detailsPayload = json_encode([
@@ -512,6 +612,8 @@ try {
         "stock_added" => $stockAdded,
         "corrected_rows" => $correctedRowsCount,
         "skipped_rows" => $failedCount,
+        "out_of_stock_products" => $outOfStockCreated,
+        "out_of_stock_count" => count($outOfStockCreated),
         "total_active_products" => $totalActiveProducts,
         "new_inventory_value" => $newInventoryValue
     ]);
@@ -586,10 +688,14 @@ try {
             "stock_added_count" => $stockAdded,
             "corrected_rows" => $correctedRowsCount,
             "skipped_rows" => $failedCount,
+            "skipped_count" => $failedCount,
+            "skipped_rows_list" => $skippedRows,
             "corrected_skipped_text" => "{$correctedRowsCount} / {$failedCount} rows",
             "total_active_products" => $totalActiveProducts,
             "new_inventory_value" => "₹" . number_format($newInventoryValue, 0),
-            "new_inventory_value_raw" => round($newInventoryValue, 2)
+            "new_inventory_value_raw" => round($newInventoryValue, 2),
+            "out_of_stock_products" => $outOfStockCreated,
+            "out_of_stock_count" => count($outOfStockCreated)
         ]
     ]);
 

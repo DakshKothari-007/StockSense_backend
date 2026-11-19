@@ -26,6 +26,7 @@ $suites = @(
     "test_import_good_file.php",
     "test_import_existing_and_new_sku.php",
     "test_import_idempotency.php",
+    "test_import_zero_stock.php",
     "test_bug3_chatbot_stock_responses.php",
     "test_ai.php"
 )

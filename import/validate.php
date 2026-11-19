@@ -14,6 +14,7 @@ require_once __DIR__ . "/../config/db.php";
 require_once __DIR__ . "/../inventory/auth_helper.php";
 require_once __DIR__ . "/SpreadsheetReader.php";
 require_once __DIR__ . "/ColumnMatcher.php";
+require_once __DIR__ . "/../settings/settings_helper.php";
 
 $owner = authenticateShopOwner($pdo);
 
@@ -139,17 +140,23 @@ if (!empty($input['corrections']) && is_array($input['corrections'])) {
     }
 }
 
-// Fetch existing products for shop
+// Fetch existing products for shop and shop import mode setting
+$shopSettings = get_shop_settings($pdo, $ownerId);
+$shopImportMode = strtoupper(trim($input['import_mode'] ?? ($shopSettings['import_mode'] ?? 'ADD')));
+
 $skuStmt = $pdo->prepare("SELECT sku, name, units, cost_price, price FROM products WHERE shop_owner_id = ?");
 $skuStmt->execute([$ownerId]);
 $existingProductsMap = [];
+$existingProductsByNameMap = [];
 while ($p = $skuStmt->fetch(PDO::FETCH_ASSOC)) {
     $existingProductsMap[strtoupper(trim($p['sku']))] = $p;
+    $existingProductsByNameMap[strtolower(trim($p['name']))] = $p;
 }
 
 $rowsChecked = count($rows);
 $errors = [];
 $validatedRows = [];
+$skippedRowsCount = 0;
 $existingUpdatedCount = 0;
 $newCreatedCount = 0;
 $totalStockToAdd = 0;
@@ -179,9 +186,33 @@ foreach ($rows as $index => $row) {
         $rawSku = ColumnMatcher::generateStableSku($ownerId, $rawName);
     }
 
+    // Check if row is explicitly marked to be skipped via corrections
+    $isSkippedRow = false;
+    if (isset($correctionsMap[$rowNumber]['action']) && $correctionsMap[$rowNumber]['action'] === 'skip') {
+        $isSkippedRow = true;
+    } elseif (isset($correctionsMap[$rowNumber]['units']) && $correctionsMap[$rowNumber]['units'] === 'skip') {
+        $isSkippedRow = true;
+    }
+    if ($isSkippedRow) {
+        $skippedRowsCount++;
+        continue;
+    }
+
+    $skuUpper = strtoupper($rawSku);
+    $nameLower = strtolower($rawName);
+    $existingProduct = $existingProductsMap[$skuUpper] ?? ($existingProductsByNameMap[$nameLower] ?? null);
+    $isExisting = ($existingProduct !== null);
+
     $rawUnits = ($colUnitsIdx !== null && isset($row[$colUnitsIdx])) ? trim($row[$colUnitsIdx]) : '';
+    $forceSetZero = false;
     if (isset($correctionsMap[$rowNumber]['units'])) {
-        $rawUnits = trim((string)$correctionsMap[$rowNumber]['units']);
+        $corrUnits = $correctionsMap[$rowNumber]['units'];
+        if ($corrUnits === 0 || $corrUnits === '0' || $corrUnits === 'set_zero') {
+            $forceSetZero = true;
+            $rawUnits = '0';
+        } else {
+            $rawUnits = trim((string)$corrUnits);
+        }
     }
 
     $rawCost = ($colCostIdx !== null && isset($row[$colCostIdx])) ? trim($row[$colCostIdx]) : '0';
@@ -250,19 +281,19 @@ foreach ($rows as $index => $row) {
             "product_name" => $rawName,
             "sku" => $rawSku,
             "imported_value" => "",
-            "reason" => "Quantity to add is required.",
-            "suggested_correction" => "1",
-            "suggested_label" => "1 unit"
+            "reason" => "Quantity is required.",
+            "suggested_correction" => null,
+            "suggested_label" => null
         ];
-    } elseif (!preg_match('/^\d+$/', $rawUnits)) {
+    } elseif (!is_numeric($rawUnits) || (float)$rawUnits != (int)(float)$rawUnits) {
         // Detect stray letters (e.g. 18O -> letter O instead of 0)
         $hasLetterO = (stripos($rawUnits, 'o') !== false);
         $digitsOnly = preg_replace('/[^0-9]/', '', $rawUnits);
-        $suggestedFix = ($digitsOnly !== '') ? (int)$digitsOnly : 1;
+        $suggestedFix = ($digitsOnly !== '') ? (int)$digitsOnly : null;
 
         $reason = $hasLetterO
-            ? "\"{$rawUnits}\" contains the letter O. Quantity must be a whole number greater than zero."
-            : "\"{$rawUnits}\" contains invalid non-numeric characters. Quantity must be a whole number greater than zero.";
+            ? "\"{$rawUnits}\" contains the letter O. Quantity must be a whole number."
+            : "\"{$rawUnits}\" contains invalid non-numeric characters. Quantity must be a whole number.";
 
         $rowErrors[] = [
             "row_number" => $rowNumber,
@@ -274,23 +305,54 @@ foreach ($rows as $index => $row) {
             "imported_value" => $rawUnits,
             "reason" => $reason,
             "suggested_correction" => $suggestedFix,
-            "suggested_label" => "{$suggestedFix} units"
+            "suggested_label" => ($suggestedFix !== null) ? "{$suggestedFix} units" : null
         ];
     } else {
-        $intUnits = (int)$rawUnits;
-        if ($intUnits <= 0) {
+        $intUnits = (int)(float)$rawUnits;
+        if ($intUnits < 0) {
             $rowErrors[] = [
                 "row_number" => $rowNumber,
                 "field" => "units",
                 "error_type" => "QUANTITY_ERROR",
-                "error_badge" => "ROW {$rowNumber} · ZERO QUANTITY",
+                "error_badge" => "ROW {$rowNumber} · NEGATIVE QUANTITY",
                 "product_name" => $rawName,
                 "sku" => $rawSku,
                 "imported_value" => $rawUnits,
-                "reason" => "Quantity to add must be greater than zero.",
-                "suggested_correction" => 1,
-                "suggested_label" => "1 unit"
+                "reason" => "Quantity cannot be negative.",
+                "suggested_correction" => null,
+                "suggested_label" => null
             ];
+        } elseif ($intUnits === 0) {
+            // Quantity 0 is valid when the product is new (or in set-stock/REPLACE mode, or if forced to set zero).
+            // Only flag as error if it is an existing product in additive mode.
+            if ($isExisting && $shopImportMode === 'ADD' && !$forceSetZero) {
+                $rowErrors[] = [
+                    "row_number" => $rowNumber,
+                    "field" => "units",
+                    "error_type" => "QUANTITY_ZERO_EXISTING",
+                    "error_badge" => "ROW {$rowNumber} · ZERO QUANTITY",
+                    "product_name" => $rawName,
+                    "sku" => $rawSku,
+                    "imported_value" => "0",
+                    "reason" => "Quantity to add must be more than 0 for existing products",
+                    "suggested_correction" => 0,
+                    "suggested_label" => "Import with 0 units (out of stock)",
+                    "actions" => [
+                        [
+                            "action" => "set_zero",
+                            "label" => "Import with 0 units (out of stock)",
+                            "value" => 0
+                        ],
+                        [
+                            "action" => "skip_row",
+                            "label" => "Skip this row",
+                            "value" => "skip"
+                        ]
+                    ]
+                ];
+            } else {
+                $parsedUnits = 0;
+            }
         } else {
             $parsedUnits = $intUnits;
         }
@@ -339,10 +401,6 @@ foreach ($rows as $index => $row) {
         }
     } else {
         // Valid row
-        $skuUpper = strtoupper($rawSku);
-        $existingProduct = $existingProductsMap[$skuUpper] ?? null;
-        $isExisting = ($existingProduct !== null);
-
         if ($isExisting) {
             $existingUpdatedCount++;
             $currentStock = (int)$existingProduct['units'];
@@ -351,9 +409,13 @@ foreach ($rows as $index => $row) {
             $currentStock = 0;
         }
 
-        $newStock = $currentStock + $parsedUnits;
+        $newStock = ($forceSetZero || $shopImportMode === 'REPLACE') ? $parsedUnits : ($currentStock + $parsedUnits);
         $totalStockToAdd += $parsedUnits;
         $totalValueToAdd += ($parsedUnits * $costVal);
+
+        $displayCalc = ($forceSetZero || $shopImportMode === 'REPLACE')
+            ? "Set to {$parsedUnits}"
+            : "{$currentStock} + {$parsedUnits} = {$newStock}";
 
         $stockPreview[] = [
             "name" => $rawName,
@@ -361,8 +423,9 @@ foreach ($rows as $index => $row) {
             "current_units" => $currentStock,
             "units_to_add" => $parsedUnits,
             "new_units" => $newStock,
-            "display_calculation" => "{$currentStock} + {$parsedUnits} = {$newStock}",
+            "display_calculation" => $displayCalc,
             "is_new" => !$isExisting,
+            "is_out_of_stock" => ($newStock === 0),
             "cost_price" => $costVal,
             "price" => $priceVal
         ];
@@ -380,24 +443,27 @@ foreach ($rows as $index => $row) {
 }
 
 $invalidRowsCount = count($errors);
-$readyRowsCount = $rowsChecked - $invalidRowsCount;
+$readyRowsCount = $rowsChecked - $invalidRowsCount - $skippedRowsCount;
 $isReadyToImport = ($invalidRowsCount === 0);
 
 http_response_code(200);
 echo json_encode([
     "status" => true,
     "message" => $isReadyToImport
-        ? "Validation complete: all {$rowsChecked} rows are ready for import."
+        ? "Validation complete: all {$readyRowsCount} valid rows are ready for import."
         : "Validation found {$invalidRowsCount} error(s) across rows.",
     "data" => [
         "rows_checked" => $rowsChecked,
         "ready_rows" => $readyRowsCount,
         "errors_remaining" => $invalidRowsCount,
+        "skipped_rows" => $skippedRowsCount,
+        "can_skip_invalid" => ($invalidRowsCount > 0 && $readyRowsCount > 0),
         "ready_to_import" => $isReadyToImport,
         "errors" => $errors,
         "summary" => [
             "existing_products_to_update" => $existingUpdatedCount,
             "new_products_to_create" => $newCreatedCount,
+            "skipped_rows" => $skippedRowsCount,
             "total_stock_to_add" => $totalStockToAdd,
             "total_stock_to_add_formatted" => "{$totalStockToAdd} units",
             "inventory_value_to_add" => round($totalValueToAdd, 2),
