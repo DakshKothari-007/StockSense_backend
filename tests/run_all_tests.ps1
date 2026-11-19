@@ -22,9 +22,11 @@ $suites = @(
     "test_weekly_digest.php",
     "test_icon_classification.php",
     "test_import_column_detection.php",
+    "test_bug1_import_detection.php",
     "test_import_good_file.php",
     "test_import_existing_and_new_sku.php",
     "test_import_idempotency.php",
+    "test_bug3_chatbot_stock_responses.php",
     "test_ai.php"
 )
 

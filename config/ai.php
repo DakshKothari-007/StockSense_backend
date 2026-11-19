@@ -30,7 +30,7 @@ return [
 
     // Gemini API configuration
     'key_file_path' => 'C:\\xampp\\StockSense_private\\gemini.json',
-    'model' => 'gemini-3.5-flash',
+    'model' => 'gemini-3.5-flash-lite',
 
     // Public assistant identity (shown to users as the app's own AI)
     'assistant_name' => 'Dukaan Mitra',

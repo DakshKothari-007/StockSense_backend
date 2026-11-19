@@ -60,9 +60,10 @@ class AiClientFactory {
         ?string $systemInstruction = null,
         array $tools = [],
         ?int $shopId = null,
-        ?string $providerOverride = null
+        ?string $providerOverride = null,
+        array $options = []
     ): array {
         $clientClass = self::getClientClass($providerOverride);
-        return $clientClass::generateContent($contents, $systemInstruction, $tools, $shopId);
+        return $clientClass::generateContent($contents, $systemInstruction, $tools, $shopId, $options);
     }
 }

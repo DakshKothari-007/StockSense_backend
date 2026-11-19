@@ -63,7 +63,10 @@ if (!file_exists($filePath)) {
 }
 
 try {
-    $rows = SpreadsheetReader::read($filePath);
+    $allRows = SpreadsheetReader::read($filePath);
+    $extracted = SpreadsheetReader::extractHeaderAndRows($allRows);
+    $headerRow = $extracted['headers'];
+    $rows = $extracted['rows'];
 } catch (Throwable $e) {
     http_response_code(400);
     echo json_encode([
@@ -74,7 +77,7 @@ try {
     exit;
 }
 
-if (count($rows) < 1) {
+if (count($headerRow) < 1 || count($rows) < 1) {
     http_response_code(400);
     echo json_encode([
         "status" => false,
@@ -84,7 +87,6 @@ if (count($rows) < 1) {
     exit;
 }
 
-$headerRow = array_shift($rows);
 $headerMap = [];
 foreach ($headerRow as $idx => $name) {
     $headerMap[trim($name)] = $idx;

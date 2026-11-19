@@ -339,27 +339,25 @@ class ColumnMatcher {
 
             foreach ($scores[$field] as $colIdx => $score) {
                 if (!in_array($colIdx, $usedCols, true)) {
-                    // Cost price vs Price data check: price is typically >= cost price
-                    if ($field === 'price' && isset($detected['cost_price']) && !empty($sampleRows)) {
-                        $prevCol = array_search('cost_price', $detected, true);
-                        if ($prevCol !== false) {
-                            $stPrev = self::inspectSampleValues($sampleRows, $prevCol);
-                            $stCurr = self::inspectSampleValues($sampleRows, $colIdx);
-                            if ($stPrev['avg_val'] > $stCurr['avg_val'] && $stCurr['avg_val'] > 0) {
-                                // Swap cost and price
-                                $detected['cost_price'] = $headers[$colIdx];
-                                $detected['price'] = $headers[$prevCol];
-                                $confidences['cost_price'] = round($score, 2);
-                                $usedCols[] = $colIdx;
-                                break;
-                            }
-                        }
-                    }
-
                     $detected[$field] = $headers[$colIdx];
                     $confidences[$field] = round($score, 2);
                     $usedCols[] = $colIdx;
                     break;
+                }
+            }
+        }
+
+        // Cost price vs Selling price verification: selling price is typically >= purchase cost
+        if (!empty($detected['price']) && !empty($detected['cost_price']) && !empty($sampleRows)) {
+            $priceCol = array_search($detected['price'], $headers, true);
+            $costCol = array_search($detected['cost_price'], $headers, true);
+            if ($priceCol !== false && $costCol !== false) {
+                $stPrice = self::inspectSampleValues($sampleRows, $priceCol);
+                $stCost = self::inspectSampleValues($sampleRows, $costCol);
+                if ($stCost['avg_val'] > $stPrice['avg_val'] && $stPrice['avg_val'] > 0) {
+                    $tmp = $detected['price'];
+                    $detected['price'] = $detected['cost_price'];
+                    $detected['cost_price'] = $tmp;
                 }
             }
         }

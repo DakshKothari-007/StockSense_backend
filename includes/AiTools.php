@@ -484,14 +484,21 @@ class AiTools {
     // Tool 2: list_low_stock
     // -------------------------------------------------------------------------
     public static function listLowStock(PDO $pdo, int $shopId): array {
+        $cntStmt = $pdo->prepare("
+            SELECT COUNT(*) FROM products 
+            WHERE shop_owner_id = ? 
+              AND (status IS NULL OR (status NOT LIKE '%Archived%' AND status NOT LIKE '%Inactive%'))
+        ");
+        $cntStmt->execute([$shopId]);
+        $totalShopProducts = (int)$cntStmt->fetchColumn();
+
         $stmt = $pdo->prepare("
             SELECT id, name, sku, category, units, min_stock_threshold, price, cost_price
             FROM products
             WHERE shop_owner_id = ?
-              AND min_stock_threshold IS NOT NULL
-              AND units <= min_stock_threshold
+              AND ((min_stock_threshold IS NOT NULL AND units <= min_stock_threshold) OR units <= 0)
               AND (status IS NULL OR (status NOT LIKE '%Archived%' AND status NOT LIKE '%Inactive%'))
-            ORDER BY units ASC, name ASC
+            ORDER BY (CASE WHEN units <= 0 THEN 0 ELSE 1 END) ASC, units ASC, name ASC
             LIMIT 25
         ");
         $stmt->execute([$shopId]);
@@ -531,6 +538,7 @@ class AiTools {
         return [
             'result' => [
                 'count' => count($items),
+                'total_shop_products' => $totalShopProducts,
                 'low_stock_products' => $items
             ],
             'cards' => $cards,
@@ -659,6 +667,7 @@ class AiTools {
         return [
             'result' => [
                 'count' => count($recommendations),
+                'total_shop_products' => count($prods),
                 'lead_time_days' => $leadTime,
                 'safety_days' => $safetyDays,
                 'recommendations' => $recommendations
@@ -847,10 +856,19 @@ class AiTools {
             ];
         }
 
+        $cntStmt = $pdo->prepare("
+            SELECT COUNT(*) FROM products 
+            WHERE shop_owner_id = ? 
+              AND (status IS NULL OR (status NOT LIKE '%Archived%' AND status NOT LIKE '%Inactive%'))
+        ");
+        $cntStmt->execute([$shopId]);
+        $totalShopProducts = (int)$cntStmt->fetchColumn();
+
         return [
             'result' => [
                 'period' => $period,
                 'count' => count($items),
+                'total_shop_products' => $totalShopProducts,
                 'top_products' => $items,
                 'products' => $items
             ],
@@ -934,9 +952,18 @@ class AiTools {
         $slowItems = array_slice($slowItems, 0, 10);
         $cards = array_slice($cards, 0, 5);
 
+        $cntStmt = $pdo->prepare("
+            SELECT COUNT(*) FROM products 
+            WHERE shop_owner_id = ? 
+              AND (status IS NULL OR (status NOT LIKE '%Archived%' AND status NOT LIKE '%Inactive%'))
+        ");
+        $cntStmt->execute([$shopId]);
+        $totalShopProducts = (int)$cntStmt->fetchColumn();
+
         return [
             'result' => [
                 'count' => count($slowItems),
+                'total_shop_products' => $totalShopProducts,
                 'threshold_days' => $thresholdDays,
                 'slow_moving_products' => $slowItems
             ],

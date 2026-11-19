@@ -453,6 +453,11 @@ EOT;
      * If unsure, treats as shop question.
      */
     public static function isShopQuestion(string $message): bool {
+        // Explicit definitional / general knowledge questions (e.g. what is ITR, what is GST, what is PAN, explain inflation)
+        if (IntentEngine::isDefinitionalOrGeneralQuestion($message)) {
+            return false;
+        }
+
         $lower = mb_strtolower(trim($message), 'UTF-8');
 
         // 1. Explicit general knowledge / non-shop queries
@@ -610,7 +615,29 @@ EOT;
     /**
      * Reusable response formatter for Reorder Recommendations.
      */
-    public static function formatReorderResponse(array $recs, array $cards, string $lang): array {
+    public static function formatReorderResponse(array $recs, array $cards, string $lang, int $totalShopProducts = -1): array {
+        if ($totalShopProducts === 0) {
+            if ($lang === 'hi') {
+                $answer = "आपकी दुकान में अभी कोई सामान नहीं है। पहले अपना स्टॉक आयात करें।";
+                $actions = [['label' => 'स्टॉक आयात करें', 'target' => 'import']];
+                $suggestions = [['label' => 'स्टॉक आयात कैसे करें?', 'message' => 'स्टॉक आयात कैसे करें?']];
+            } elseif ($lang === 'ta') {
+                $answer = "உங்கள் கடையில் இன்னும் பொருட்கள் எதுவும் இல்லை. முதலில் உங்கள் இருப்பை இறக்குமதி செய்யவும்.";
+                $actions = [['label' => 'பொருட்களை இறக்குமதி செய்', 'target' => 'import']];
+                $suggestions = [['label' => 'இறக்குமதி செய்வது எப்படி?', 'message' => 'பொருட்களை இறக்குமதி செய்வது எப்படி?']];
+            } else {
+                $answer = "You have no products yet. Import your stock first.";
+                $actions = [['label' => 'Import inventory', 'target' => 'import']];
+                $suggestions = [['label' => 'How to import?', 'message' => 'How do I import products?']];
+            }
+            return [
+                'answer' => $answer,
+                'cards' => [],
+                'actions' => $actions,
+                'suggestions' => $suggestions
+            ];
+        }
+
         $count = count($recs);
         if ($count > 0) {
             $top = array_slice($recs, 0, 5);
@@ -668,14 +695,53 @@ EOT;
     /**
      * Reusable response formatter for Low Stock.
      */
-    public static function formatLowStockResponse(array $items, array $cards, string $lang): array {
+    public static function formatLowStockResponse(array $items, array $cards, string $lang, int $totalShopProducts = -1): array {
+        if ($totalShopProducts === 0) {
+            if ($lang === 'hi') {
+                $answer = "आपकी दुकान में अभी कोई सामान नहीं है। पहले अपना स्टॉक आयात करें।";
+                $actions = [['label' => 'स्टॉक आयात करें', 'target' => 'import']];
+                $suggestions = [['label' => 'स्टॉक आयात कैसे करें?', 'message' => 'स्टॉक आयात कैसे करें?']];
+            } elseif ($lang === 'ta') {
+                $answer = "உங்கள் கடையில் இன்னும் பொருட்கள் எதுவும் இல்லை. முதலில் உங்கள் இருப்பை இறக்குமதி செய்யவும்.";
+                $actions = [['label' => 'பொருட்களை இறக்குமதி செய்', 'target' => 'import']];
+                $suggestions = [['label' => 'இறக்குமதி செய்வது எப்படி?', 'message' => 'பொருட்களை இறக்குமதி செய்வது எப்படி?']];
+            } else {
+                $answer = "You have no products yet. Import your stock first.";
+                $actions = [['label' => 'Import inventory', 'target' => 'import']];
+                $suggestions = [['label' => 'How to import?', 'message' => 'How do I import products?']];
+            }
+            return [
+                'answer' => $answer,
+                'cards' => [],
+                'actions' => $actions,
+                'suggestions' => $suggestions
+            ];
+        }
+
         $count = count($items);
         if ($count > 0) {
-            $top = array_slice($items, 0, 5);
+            $outOfStock = array_values(array_filter($items, fn($it) => ($it['units'] ?? 0) <= 0));
+            $lowStock = array_values(array_filter($items, fn($it) => ($it['units'] ?? 0) > 0));
+
+            $topOut = array_slice($outOfStock, 0, 5);
+            $remainingSlots = max(0, 5 - count($topOut));
+            $topLow = array_slice($lowStock, 0, $remainingSlots);
+
             if ($lang === 'hi') {
                 $lines = [];
-                foreach ($top as $it) {
-                    $lines[] = "• " . $it['name'] . " (" . $it['units'] . " पीस बचे हैं)";
+                if (!empty($topOut)) {
+                    $lines[] = "स्टॉक खत्म (Out of stock):";
+                    foreach ($topOut as $it) {
+                        $lines[] = "• " . $it['name'] . " (0 पीस)";
+                    }
+                }
+                if (!empty($topLow)) {
+                    if (!empty($topOut)) {
+                        $lines[] = "\nकम स्टॉक:";
+                    }
+                    foreach ($topLow as $it) {
+                        $lines[] = "• " . $it['name'] . " (" . $it['units'] . " पीस बचे हैं)";
+                    }
                 }
                 $answer = "आपकी दुकान में {$count} सामान कम स्टॉक या खत्म होने वाले हैं:\n" . implode("\n", $lines) . "\n\nनया ऑर्डर बनाने के लिए नीचे 'रीऑर्डर सूची' देखें या मुझसे रीऑर्डर सलाह पूछें।";
                 $actions = [
@@ -688,8 +754,19 @@ EOT;
                 ];
             } elseif ($lang === 'ta') {
                 $lines = [];
-                foreach ($top as $it) {
-                    $lines[] = "• " . $it['name'] . " (" . $it['units'] . " பொருட்கள் மீதம்)";
+                if (!empty($topOut)) {
+                    $lines[] = "இருப்பு இல்லை (Out of stock):";
+                    foreach ($topOut as $it) {
+                        $lines[] = "• " . $it['name'] . " (0 பொருட்கள்)";
+                    }
+                }
+                if (!empty($topLow)) {
+                    if (!empty($topOut)) {
+                        $lines[] = "\nகுறைவான இருப்பு:";
+                    }
+                    foreach ($topLow as $it) {
+                        $lines[] = "• " . $it['name'] . " (" . $it['units'] . " பொருட்கள் மீதம்)";
+                    }
                 }
                 $answer = "உங்கள் கடையில் {$count} பொருட்கள் இருப்பு குறைவாக உள்ளன:\n" . implode("\n", $lines) . "\n\nபர்சேஸ் ஆர்டர் செய்ய கீழே உள்ள 'மீண்டும் ஆர்டர் பட்டியல்' பார்க்கவும்.";
                 $actions = [
@@ -702,10 +779,24 @@ EOT;
                 ];
             } else {
                 $lines = [];
-                foreach ($top as $it) {
-                    $lines[] = "• " . $it['name'] . " (" . $it['units'] . " units left)";
+                if (!empty($topOut)) {
+                    $lines[] = "Out of stock:";
+                    foreach ($topOut as $it) {
+                        $lines[] = "• " . $it['name'] . " (0 units)";
+                    }
                 }
-                $answer = "You have {$count} product" . ($count > 1 ? 's' : '') . " running low on stock:\n" . implode("\n", $lines) . "\n\nTap 'Open reorder list' below to create a purchase order, or ask me for reorder suggestions.";
+                if (!empty($topLow)) {
+                    if (!empty($topOut)) {
+                        $lines[] = "\nLow stock:";
+                    }
+                    foreach ($topLow as $it) {
+                        $lines[] = "• " . $it['name'] . " (" . $it['units'] . " units left)";
+                    }
+                }
+                $heading = (!empty($topOut) && empty($topLow))
+                    ? "You have {$count} product" . ($count > 1 ? 's' : '') . " out of stock:"
+                    : "You have {$count} product" . ($count > 1 ? 's' : '') . " running low on stock:";
+                $answer = "{$heading}\n" . implode("\n", $lines) . "\n\nTap 'Open reorder list' below to create a purchase order, or ask me for reorder suggestions.";
                 $actions = [
                     ['label' => 'Open reorder list', 'target' => 'reorder'],
                     ['label' => 'View inventory', 'target' => 'inventory']
@@ -810,7 +901,29 @@ EOT;
     /**
      * Reusable response formatter for Slow Moving Products.
      */
-    public static function formatSlowMovingResponse(array $items, array $cards, string $lang): array {
+    public static function formatSlowMovingResponse(array $items, array $cards, string $lang, int $totalShopProducts = -1): array {
+        if ($totalShopProducts === 0) {
+            if ($lang === 'hi') {
+                $answer = "आपकी दुकान में अभी कोई सामान नहीं है। पहले अपना स्टॉक आयात करें।";
+                $actions = [['label' => 'स्टॉक आयात करें', 'target' => 'import']];
+                $suggestions = [['label' => 'स्टॉक आयात कैसे करें?', 'message' => 'स्टॉक आयात कैसे करें?']];
+            } elseif ($lang === 'ta') {
+                $answer = "உங்கள் கடையில் இன்னும் பொருட்கள் எதுவும் இல்லை. முதலில் உங்கள் இருப்பை இறக்குமதி செய்யவும்.";
+                $actions = [['label' => 'பொருட்களை இறக்குமதி செய்', 'target' => 'import']];
+                $suggestions = [['label' => 'இறக்குமதி செய்வது எப்படி?', 'message' => 'பொருட்களை இறக்குமதி செய்வது எப்படி?']];
+            } else {
+                $answer = "You have no products yet. Import your stock first.";
+                $actions = [['label' => 'Import inventory', 'target' => 'import']];
+                $suggestions = [['label' => 'How to import?', 'message' => 'How do I import products?']];
+            }
+            return [
+                'answer' => $answer,
+                'cards' => [],
+                'actions' => $actions,
+                'suggestions' => $suggestions
+            ];
+        }
+
         $count = count($items);
         if ($count > 0) {
             $top = array_slice($items, 0, 5);
@@ -865,7 +978,29 @@ EOT;
     /**
      * Reusable response formatter for Top Selling Products.
      */
-    public static function formatTopSellersResponse(array $items, array $cards, string $period, string $lang): array {
+    public static function formatTopSellersResponse(array $items, array $cards, string $period, string $lang, int $totalShopProducts = -1): array {
+        if ($totalShopProducts === 0) {
+            if ($lang === 'hi') {
+                $answer = "आपकी दुकान में अभी कोई सामान नहीं है। पहले अपना स्टॉक आयात करें।";
+                $actions = [['label' => 'स्टॉक आयात करें', 'target' => 'import']];
+                $suggestions = [['label' => 'स्टॉक आयात कैसे करें?', 'message' => 'स्टॉक आयात कैसे करें?']];
+            } elseif ($lang === 'ta') {
+                $answer = "உங்கள் கடையில் இன்னும் பொருட்கள் எதுவும் இல்லை. முதலில் உங்கள் இருப்பை இறக்குமதி செய்யவும்.";
+                $actions = [['label' => 'பொருட்களை இறக்குமதி செய்', 'target' => 'import']];
+                $suggestions = [['label' => 'இறக்குமதி செய்வது எப்படி?', 'message' => 'பொருட்களை இறக்குமதி செய்வது எப்படி?']];
+            } else {
+                $answer = "You have no products yet. Import your stock first.";
+                $actions = [['label' => 'Import inventory', 'target' => 'import']];
+                $suggestions = [['label' => 'How to import?', 'message' => 'How do I import products?']];
+            }
+            return [
+                'answer' => $answer,
+                'cards' => [],
+                'actions' => $actions,
+                'suggestions' => $suggestions
+            ];
+        }
+
         $count = count($items);
         if ($count > 0) {
             $top = array_slice($items, 0, 5);
@@ -1713,12 +1848,12 @@ EOT;
             // Did previous assistant message suggest reorder?
             if ($lastAssistantText !== null && preg_match('/(reorder|order|दोबारा\s+ऑर्डर|ऑर्डर\s+करना|रीऑर्डर|रिऑर्डर|மீண்டும்\s+ஆர்டர்|ஆர்டர்\s+செய்ய|ரீஆர்டர்|what\s+to\s+reorder)/iu', $lastAssistantText)) {
                 $res = AiTools::getReorderRecommendations($pdo, $shopId);
-                return self::formatReorderResponse($res['result']['recommendations'] ?? [], $res['cards'] ?? [], $lang);
+                return self::formatReorderResponse($res['result']['recommendations'] ?? [], $res['cards'] ?? [], $lang, (int)($res['result']['total_shop_products'] ?? -1));
             }
             // Did previous assistant message suggest low stock?
             if ($lastAssistantText !== null && preg_match('/(low\s+stock|कम\s+स्टॉक|குறைவான\s+இருப்பு|ஸ்டாக்\s+குறைவு)/iu', $lastAssistantText)) {
                 $res = AiTools::listLowStock($pdo, $shopId);
-                return self::formatLowStockResponse($res['result']['low_stock_products'] ?? [], $res['cards'] ?? [], $lang);
+                return self::formatLowStockResponse($res['result']['low_stock_products'] ?? [], $res['cards'] ?? [], $lang, (int)($res['result']['total_shop_products'] ?? -1));
             }
             // Did previous assistant message suggest sales?
             if ($lastAssistantText !== null && preg_match('/(sales|revenue|बिक्री|விற்பனை)/iu', $lastAssistantText)) {
@@ -2058,19 +2193,19 @@ EOT;
         // 11. Reorder Intent
         if (self::matchesAnyKeyword($lower, $reorderKeywords)) {
             $res = AiTools::getReorderRecommendations($pdo, $shopId);
-            return self::formatReorderResponse($res['result']['recommendations'] ?? [], $res['cards'] ?? [], $lang);
+            return self::formatReorderResponse($res['result']['recommendations'] ?? [], $res['cards'] ?? [], $lang, (int)($res['result']['total_shop_products'] ?? -1));
         }
 
         // 12. Low Stock Intent
         if (self::matchesAnyKeyword($lower, $lowStockKeywords)) {
             $res = AiTools::listLowStock($pdo, $shopId);
-            return self::formatLowStockResponse($res['result']['low_stock_products'] ?? [], $res['cards'] ?? [], $lang);
+            return self::formatLowStockResponse($res['result']['low_stock_products'] ?? [], $res['cards'] ?? [], $lang, (int)($res['result']['total_shop_products'] ?? -1));
         }
 
         // 13. Slow Moving Intent
         if (self::matchesAnyKeyword($lower, $slowMovingKeywords)) {
             $res = AiTools::getSlowMovingProducts($pdo, $shopId);
-            return self::formatSlowMovingResponse($res['result']['slow_moving_products'] ?? [], $res['cards'] ?? [], $lang);
+            return self::formatSlowMovingResponse($res['result']['slow_moving_products'] ?? [], $res['cards'] ?? [], $lang, (int)($res['result']['total_shop_products'] ?? -1));
         }
 
         // 14. Top Sellers Intent
@@ -2082,7 +2217,7 @@ EOT;
                 $period = 'month';
             }
             $res = AiTools::topSellingProducts($pdo, $shopId, $period);
-            return self::formatTopSellersResponse($res['result']['products'] ?? [], $res['cards'] ?? [], $period, $lang);
+            return self::formatTopSellersResponse($res['result']['products'] ?? [], $res['cards'] ?? [], $period, $lang, (int)($res['result']['total_shop_products'] ?? -1));
         }
 
         // 15. Open Orders Intent

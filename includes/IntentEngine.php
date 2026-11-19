@@ -681,6 +681,33 @@ class IntentEngine {
     }
 
     /**
+     * Checks if a question is definitional / informational general knowledge (e.g., "what is ITR", "explain inflation").
+     */
+    public static function isDefinitionalOrGeneralQuestion(string $text): bool {
+        $t = trim(mb_strtolower($text, 'UTF-8'));
+        if ($t === '') return false;
+
+        $isDefinitional = (bool)(
+            preg_match('/^(what\s+is|what\s+are|meaning\s+of|explain|define|definition\s+of|full\s+form\s+of|tell\s+me\s+about)\b/iu', $t) ||
+            preg_match('/\b(kya\s+hai|kya\s+hota\s+hai|ka\s+matlab|ka\s+arth|samjhao)\b/iu', $t) ||
+            preg_match('/(क्या\s+है|क्या\s+होता\s+है|का\s+मतलब|का\s+अर्थ|समझाइए|समझाओ)/u', $t) ||
+            preg_match('/\b(enral\s+enna|endral\s+enna|vilakkam)\b/iu', $t) ||
+            preg_match('/(என்றால்\s+என்ன|விளக்கம்)/u', $t)
+        );
+
+        if (!$isDefinitional) {
+            return false;
+        }
+
+        // Exclude explicit user-shop personal inventory references
+        if (preg_match('/\b(my\s+stock|my\s+sales?|my\s+inventory|my\s+shop|my\s+store|my\s+orders?|my\s+profit|my\s+margin|meri\s+sale|mera\s+stock|hamari\s+bikri|reorder\s+list)\b|(मेरा\s+स्टॉक|मेरी\s+बिक्री|என்\s+விற்பனை|என்\s+இருப்பு)/iu', $t)) {
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
      * Calls classifyQuestionType returning [type, confidence, source] structure.
      */
     public static function classifyQuestionTypeWithConfidence(string $rawMessage, array $normalized, bool $allowModel = true): array {
@@ -689,7 +716,7 @@ class IntentEngine {
 
     /**
      * Ask the LOCAL model (Ollama) to classify the question type when rules are uncertain.
-     * Enforces strict JSON, validated type, 8s timeout, and caching by normalized text.
+     * Enforces strict JSON, validated type, 3s budget timeout, and caching by normalized text.
      * Privacy: Sends ONLY the message text, never shop data.
      * 
      * @param string $message
@@ -701,6 +728,17 @@ class IntentEngine {
         $cacheKey = md5(trim($normalizedText));
         if (isset($memoryCache[$cacheKey])) {
             return $memoryCache[$cacheKey];
+        }
+
+        // Fast rule check for general knowledge questions before model invocation
+        if (self::isDefinitionalOrGeneralQuestion($message)) {
+            $defResult = [
+                'type' => 'general_knowledge',
+                'confidence' => 0.95,
+                'source' => 'rule'
+            ];
+            $memoryCache[$cacheKey] = $defResult;
+            return $defResult;
         }
 
         // File cache in private directory outside web root
@@ -742,7 +780,7 @@ class IntentEngine {
 
         try {
             $res = OllamaClient::generateContent($contents, $systemPrompt, [], null, [
-                'timeout' => 8,
+                'timeout' => 3,
                 'format' => 'json',
                 'temperature' => 0.0,
                 'num_predict' => 40
@@ -768,6 +806,14 @@ class IntentEngine {
             }
         } catch (\Throwable $e) {
             // Local model down or timed out -> gracefully return null to fall back to rules
+        }
+
+        if (self::isDefinitionalOrGeneralQuestion($message)) {
+            return [
+                'type' => 'general_knowledge',
+                'confidence' => 0.85,
+                'source' => 'fallback_rule'
+            ];
         }
 
         return null;
@@ -800,7 +846,10 @@ class IntentEngine {
             return self::wrapType('conversation', 0.99, 'rule', $withDetails);
         }
 
-        // 3. General Knowledge Check (Priority 3: science, history, trivia, calculation formulas)
+        // 3. General Knowledge Check (Priority 3: science, history, trivia, calculation formulas, definitional terms)
+        if (self::isDefinitionalOrGeneralQuestion($rawMessage)) {
+            return self::wrapType('general_knowledge', 0.95, 'rule', $withDetails);
+        }
         if (preg_match('/^explain\s+how\s+to\s+calculate/i', $lower) ||
             preg_match('/\b(capital\s+of|einstein|speed\s+of\s+light|photosynthesis|percent\s+of\s+\d+|who\s+was|who\s+is\s+the\s+president)\b|(राजधानी|प्रकाश\s+की\s+गति|प्रकाश\s+संश्लेषण|தலைநகரம்|ஒளியின்\s+வேகம்)/iu', $lower)) {
             return self::wrapType('general_knowledge', 0.95, 'rule', $withDetails);
@@ -976,6 +1025,14 @@ class IntentEngine {
                 'intent' => 'business_advice',
                 'confidence' => 0.98,
                 'params' => ['topic' => AdvisorEngine::classifyTopic($normalized['original'] ?? $lower)],
+                'layer' => 'layer_b'
+            ];
+        }
+        if ($qType === 'general_knowledge') {
+            return [
+                'intent' => 'general_knowledge',
+                'confidence' => 0.95,
+                'params' => [],
                 'layer' => 'layer_b'
             ];
         }
@@ -1329,8 +1386,8 @@ class IntentEngine {
         ];
 
         try {
-            // Local model call strictly on Ollama with 10s timeout
-            $res = AiClientFactory::generateContent($contents, $systemPrompt, [], $shopId, 'ollama');
+            // Local model call strictly on Ollama with 3s budget
+            $res = AiClientFactory::generateContent($contents, $systemPrompt, [], $shopId, 'ollama', ['timeout' => 3]);
 
             if ($res['success'] && !empty($res['text'])) {
                 $text = trim($res['text']);
@@ -1351,7 +1408,17 @@ class IntentEngine {
                 }
             }
         } catch (\Throwable $e) {
-            // Ollama offline or timed out; smoothly continue to Layer D
+            // Ollama offline or timed out; smoothly continue to fallback
+        }
+
+        // Fast fallback for definitional or general questions
+        if (self::isDefinitionalOrGeneralQuestion($normalized['original'] ?? '')) {
+            return [
+                'intent' => 'general_knowledge',
+                'confidence' => 0.85,
+                'params' => $normalized['params'],
+                'layer' => 'layer_c_definitional_fallback'
+            ];
         }
 
         // Layer C could not classify with local model
@@ -1443,13 +1510,13 @@ class IntentEngine {
             case 'low_stock':
                 $res = AiTools::listLowStock($pdo, $shopId);
                 $items = $res['result']['low_stock_products'] ?? [];
-                $formatted = AiEngine::formatLowStockResponse($items, $res['cards'] ?? [], $lang);
+                $formatted = AiEngine::formatLowStockResponse($items, $res['cards'] ?? [], $lang, (int)($res['result']['total_shop_products'] ?? -1));
                 break;
 
             case 'reorder':
                 $res = AiTools::getReorderRecommendations($pdo, $shopId);
                 $recs = $res['result']['recommendations'] ?? [];
-                $formatted = AiEngine::formatReorderResponse($recs, $res['cards'] ?? [], $lang);
+                $formatted = AiEngine::formatReorderResponse($recs, $res['cards'] ?? [], $lang, (int)($res['result']['total_shop_products'] ?? -1));
                 break;
 
             case 'sales_today':
@@ -1493,13 +1560,13 @@ class IntentEngine {
                 $period = $params['period'] ?? 'week';
                 $res = AiTools::topSellingProducts($pdo, $shopId, $period);
                 $items = $res['result']['products'] ?? [];
-                $formatted = AiEngine::formatTopSellersResponse($items, $res['cards'] ?? [], $period, $lang);
+                $formatted = AiEngine::formatTopSellersResponse($items, $res['cards'] ?? [], $period, $lang, (int)($res['result']['total_shop_products'] ?? -1));
                 break;
 
             case 'slow_sellers':
                 $res = AiTools::getSlowMovingProducts($pdo, $shopId);
                 $items = $res['result']['slow_moving_products'] ?? [];
-                $formatted = AiEngine::formatSlowMovingResponse($items, $res['cards'] ?? [], $lang);
+                $formatted = AiEngine::formatSlowMovingResponse($items, $res['cards'] ?? [], $lang, (int)($res['result']['total_shop_products'] ?? -1));
                 break;
 
             case 'dead_stock':

@@ -64,12 +64,13 @@ class GeminiClient implements AiModelClient {
         array $contents,
         ?string $systemInstruction = null,
         array $tools = [],
-        ?int $shopId = null
+        ?int $shopId = null,
+        array $options = []
     ): array {
         $startTime = microtime(true);
         $config = require __DIR__ . '/../config/ai.php';
         $model = $config['model'] ?? 'gemini-3.5-flash';
-        $timeout = (int)($config['timeout_gemini'] ?? 20);
+        $timeout = isset($options['timeout']) ? (int)$options['timeout'] : (int)($config['timeout_gemini'] ?? 20);
 
         // Build request payload
         $payload = [
@@ -152,6 +153,23 @@ class GeminiClient implements AiModelClient {
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
         $curlError = curl_error($ch);
         curl_close($ch);
+
+        // Fast automatic retry on 503 high demand spike with alternate fast-lite model
+        if (($httpCode === 503 || $httpCode === 429) && $model !== 'gemini-3.1-flash-lite') {
+            $fallbackUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent?key=" . urlencode($apiKey);
+            $ch = curl_init($fallbackUrl);
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($ch, CURLOPT_POST, true);
+            curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
+            curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
+            curl_setopt($ch, CURLOPT_TIMEOUT, $timeout);
+            curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 5);
+            curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+            $response = curl_exec($ch);
+            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            $curlError = curl_error($ch);
+            curl_close($ch);
+        }
 
         $latencyMs = (int)round((microtime(true) - $startTime) * 1000);
 

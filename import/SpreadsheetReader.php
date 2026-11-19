@@ -46,14 +46,126 @@ class SpreadsheetReader {
             ];
         }
 
-        $headers = array_shift($rows);
-        $totalRows = count($rows);
-        $preview = array_slice($rows, 0, $previewLimit);
+        $extracted = self::extractHeaderAndRows($rows);
+        $headers = $extracted['headers'];
+        $dataRows = $extracted['rows'];
+        $totalRows = count($dataRows);
+        $preview = array_slice($dataRows, 0, $previewLimit);
 
         return [
             'headers' => $headers,
             'preview_rows' => $preview,
             'total_rows' => $totalRows
+        ];
+    }
+
+    /**
+     * Intelligently detects the header row from the first candidate rows (up to 10 rows).
+     * Skips title rows, metadata rows, and notes above the table.
+     *
+     * @param array<int, array<int, string>> $allRows
+     * @return array{headers: array<string>, rows: array<array<string>>, header_index: int}
+     * @throws RuntimeException if header detection fails
+     */
+    public static function extractHeaderAndRows(array $allRows): array {
+        if (empty($allRows)) {
+            throw new RuntimeException("Spreadsheet contains no data rows.");
+        }
+
+        $maxScan = min(10, count($allRows));
+        $bestRowIdx = -1;
+        $bestScore = -100;
+
+        // Common grocery / retail header keywords
+        $headerKeywords = [
+            'product', 'item', 'name', 'title', 'description', 'particulars',
+            'category', 'type', 'dept', 'department', 'group',
+            'selling', 'price', 'mrp', 'rate', 'retail', 'sp',
+            'cost', 'purchase', 'buying', 'cp',
+            'stock', 'qty', 'quantity', 'units', 'hand', 'count', 'balance', 'pcs',
+            'sku', 'code', 'barcode', 'ean', 'hsn', 'upc', 'id',
+            'min', 'minimum', 'threshold', 'level', 'reorder', 'alert'
+        ];
+
+        for ($i = 0; $i < $maxScan; $i++) {
+            $row = $allRows[$i];
+            $nonEmptyCells = [];
+            foreach ($row as $cell) {
+                $trimmed = trim((string)$cell);
+                if ($trimmed !== '') {
+                    $nonEmptyCells[] = $trimmed;
+                }
+            }
+
+            $cellCount = count($nonEmptyCells);
+            if ($cellCount < 2) {
+                // Title row or single-cell comment; not the column header row
+                continue;
+            }
+
+            $keywordMatches = 0;
+            $textOnlyCount = 0;
+            $numericCount = 0;
+
+            foreach ($nonEmptyCells as $c) {
+                $clean = strtolower(preg_replace('/[^a-zA-Z0-9]/', '', $c));
+                $isNum = is_numeric(str_replace([',', ' '], '', $c));
+
+                if ($isNum) {
+                    $numericCount++;
+                } else {
+                    $textOnlyCount++;
+                }
+
+                foreach ($headerKeywords as $kw) {
+                    if (strpos($clean, $kw) !== false) {
+                        $keywordMatches++;
+                        break;
+                    }
+                }
+            }
+
+            // High score for matching known header keywords and non-numeric labels
+            // Penalty for numbers (data rows have prices / stock)
+            $score = ($keywordMatches * 15) + ($textOnlyCount * 3) - ($numericCount * 6) + $cellCount;
+
+            if ($score > $bestScore && ($keywordMatches >= 1 || ($textOnlyCount >= 2 && $numericCount == 0))) {
+                $bestScore = $score;
+                $bestRowIdx = $i;
+            }
+        }
+
+        // Fallback: If no keywords matched, pick the first row with at least 2 non-empty cells where majority are text
+        if ($bestRowIdx === -1) {
+            for ($i = 0; $i < $maxScan; $i++) {
+                $row = $allRows[$i];
+                $nonEmpty = array_values(array_filter(array_map('trim', $row), fn($v) => $v !== ''));
+                if (count($nonEmpty) >= 2) {
+                    $textCount = count(array_filter($nonEmpty, fn($v) => !is_numeric(str_replace([',', ' '], '', $v))));
+                    if ($textCount >= (count($nonEmpty) / 2)) {
+                        $bestRowIdx = $i;
+                        break;
+                    }
+                }
+            }
+        }
+
+        if ($bestRowIdx === -1) {
+            throw new RuntimeException("Header detection failed: Unable to detect column headers in spreadsheet. Please ensure your file contains column headers.");
+        }
+
+        $headerRow = $allRows[$bestRowIdx];
+        $dataRows = array_slice($allRows, $bestRowIdx + 1);
+
+        $headers = array_map(fn($h) => trim((string)$h), $headerRow);
+        while (count($headers) > 0 && end($headers) === '') {
+            array_pop($headers);
+        }
+
+        return [
+            'headers' => $headers,
+            'rows' => $dataRows,
+            'header_index' => $bestRowIdx
         ];
     }
 
@@ -130,7 +242,15 @@ class SpreadsheetReader {
 
         // 1. Read shared strings if present
         $sharedStrings = [];
-        $sharedIndex = $zip->locateName('xl/sharedStrings.xml', ZipArchive::FL_NODIR);
+        $sharedIndex = $zip->locateName('xl/sharedStrings.xml');
+        if ($sharedIndex === false) {
+            for ($i = 0; $i < $zip->numFiles; $i++) {
+                if (stripos($zip->getNameIndex($i), 'sharedStrings.xml') !== false) {
+                    $sharedIndex = $i;
+                    break;
+                }
+            }
+        }
         if ($sharedIndex !== false) {
             $xmlContent = $zip->getFromIndex($sharedIndex);
             if ($xmlContent !== false) {
@@ -154,7 +274,7 @@ class SpreadsheetReader {
         }
 
         // 2. Locate first worksheet
-        $sheetIndex = $zip->locateName('xl/worksheets/sheet1.xml', ZipArchive::FL_NODIR);
+        $sheetIndex = $zip->locateName('xl/worksheets/sheet1.xml');
         if ($sheetIndex === false) {
             // Fallback: search for any worksheet in xl/worksheets/
             for ($i = 0; $i < $zip->numFiles; $i++) {
