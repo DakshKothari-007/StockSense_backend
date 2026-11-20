@@ -81,9 +81,9 @@ $token3 = $login3['json']['token'] ?? null;
 assertCheck("0b. Login Shop 3 successful", $login3['code'] === 200 && !empty($token3));
 $authHeader3 = ["Authorization: Bearer $token3"];
 
-// Clean up any existing test products and test POs from previous test runs (skipping any linked to sales)
-$pdo->exec("DELETE FROM purchase_order_items WHERE product_id IN (SELECT id FROM products WHERE sku LIKE 'TEST-%' OR sku LIKE 'SKU-%' OR name LIKE 'Auto Sku Product%' OR name LIKE 'Super Extra Long%' OR name LIKE '@#$%^&*()%' OR name LIKE 'Clean Delete Product%' OR name LIKE 'Delete Test%')");
-$pdo->exec("DELETE FROM products WHERE id NOT IN (SELECT product_id FROM sales_items) AND (sku LIKE 'TEST-%' OR sku LIKE 'SKU-%' OR name LIKE 'Auto Sku Product%' OR name LIKE 'Super Extra Long%' OR name LIKE '@#$%^&*()%' OR name LIKE 'Clean Delete Product%' OR name LIKE 'Delete Test%')");
+// Clean up any existing test products and test POs from previous test runs strictly for test shops 2 and 3
+$pdo->exec("DELETE FROM purchase_order_items WHERE product_id IN (SELECT id FROM products WHERE shop_owner_id IN (2, 3) AND (sku LIKE 'TEST-%' OR sku LIKE 'SKU-%' OR name LIKE 'Auto Sku Product%' OR name LIKE 'Super Extra Long%' OR name LIKE '@#$%^&*()%' OR name LIKE 'Clean Delete Product%' OR name LIKE 'Delete Test%'))");
+$pdo->exec("DELETE FROM products WHERE shop_owner_id IN (2, 3) AND id NOT IN (SELECT product_id FROM sales_items) AND (sku LIKE 'TEST-%' OR sku LIKE 'SKU-%' OR name LIKE 'Auto Sku Product%' OR name LIKE 'Super Extra Long%' OR name LIKE '@#$%^&*()%' OR name LIKE 'Clean Delete Product%' OR name LIKE 'Delete Test%')");
 
 $createdProductIds = [];
 

@@ -17,6 +17,13 @@ function apiCall($url, $method = 'GET', $body = null, $headers = []) {
         $payload = ($body !== null) ? (is_string($body) ? $body : json_encode($body)) : "{}";
         curl_setopt($ch, CURLOPT_POSTFIELDS, $payload);
         $headers[] = "Content-Type: application/json";
+    } elseif ($method !== 'GET') {
+        curl_setopt($ch, CURLOPT_CUSTOMREQUEST, $method);
+        if ($body !== null) {
+            $payload = is_string($body) ? $body : json_encode($body);
+            curl_setopt($ch, CURLOPT_POSTFIELDS, $payload);
+            $headers[] = "Content-Type: application/json";
+        }
     }
 
     if (!empty($headers)) {
@@ -199,11 +206,15 @@ assertCheck("7b. suggested_quantity subtracted on_order_units",
     $prod1After['suggested_quantity'] === max(0, $prod1After['gross_suggested_quantity'] - 10)
 );
 
-// 8. Test: reorder/orders.php lists orders with items
+// 8. Test: reorder/orders.php lists orders with items and product icon info
 $resOrders = apiCall("$baseUrl/reorder/orders.php", 'GET', null, ["Authorization: Bearer $token2"]);
 assertCheck("8a. reorder/orders.php returns 200", $resOrders['code'] === 200);
 $allOrders = $resOrders['json']['data']['orders'] ?? [];
 assertCheck("8b. Order has items loaded", !empty($allOrders) && !empty($allOrders[0]['items']));
+assertCheck("8c. Order has first_product_name populated", !empty($allOrders[0]['first_product_name']));
+assertCheck("8d. Order item contains category and icon_key fields", 
+    isset($allOrders[0]['items'][0]['category']) && array_key_exists('icon_key', $allOrders[0]['items'][0])
+);
 
 // 9. Test: Isolation - Shop 3 cannot see or receive Shop 2's order
 $resReceiveShop3 = apiCall("$baseUrl/reorder/receive.php", 'POST', ["order_id" => $createdOrderId], ["Authorization: Bearer $token3"]);
@@ -263,6 +274,89 @@ assertCheck("13e. Cleaned up cover order with cancel", $resCancelCover['code'] =
 $pdo->prepare("DELETE FROM purchase_order_items WHERE purchase_order_id = ?")->execute([$coverOrderId]);
 $pdo->prepare("DELETE FROM purchase_orders WHERE id = ?")->execute([$coverOrderId]);
 $pdo->prepare("DELETE FROM products WHERE id = ?")->execute([$zeroDemandId]);
+
+// 14. Test: Purchase Order Delete Rule Enforcements
+// Rule: Open purchase orders allow delete only if nothing has been received on them.
+// Rule: Partly received or received orders: never delete. Cancel instead. Stock stays correct.
+// Rule: Backend must enforce this with a clear refusal message.
+
+// 14a. Missing auth token returns 401
+$resDelNoAuth = apiCall("$baseUrl/reorder/delete.php", 'POST', ["order_id" => 99999], []);
+assertCheck("14a. Delete PO without auth returns 401 Unauthorized", $resDelNoAuth['code'] === 401);
+
+// 14b. Missing order_id and order_no returns 400
+$resDelNoId = apiCall("$baseUrl/reorder/delete.php", 'POST', [], ["Authorization: Bearer $token2"]);
+assertCheck("14b. Delete PO with empty body returns 400", $resDelNoId['code'] === 400);
+
+// 14c. Order belonging to another shop returns 404 (shop isolation)
+$createOtherPo = apiCall("$baseUrl/reorder/create_order.php", 'POST', ["items" => [["product_id" => 1, "quantity" => 2]]], ["Authorization: Bearer $token2"]);
+$otherPoId = (int)($createOtherPo['json']['data']['order_id'] ?? 0);
+$resDelOtherShop = apiCall("$baseUrl/reorder/delete.php", 'POST', ["order_id" => $otherPoId], ["Authorization: Bearer $token3"]);
+assertCheck("14c. Shop 3 deleting Shop 2 order returns 404 Not Found", $resDelOtherShop['code'] === 404);
+
+// 14d. Create order, receive it -> Delete must be refused with 400
+$stockBeforePo = (int)$pdo->query("SELECT units FROM products WHERE id = 1")->fetchColumn();
+$createRecPo = apiCall("$baseUrl/reorder/create_order.php", 'POST', ["items" => [["product_id" => 1, "quantity" => 5]]], ["Authorization: Bearer $token2"]);
+$recPoId = (int)($createRecPo['json']['data']['order_id'] ?? 0);
+$resRecPo = apiCall("$baseUrl/reorder/receive.php", 'POST', ["order_id" => $recPoId], ["Authorization: Bearer $token2"]);
+assertCheck("14d. PO marked as received", $resRecPo['code'] === 200);
+
+$stockAfterRec = (int)$pdo->query("SELECT units FROM products WHERE id = 1")->fetchColumn();
+assertCheck("14e. Product stock increased by 5 units", $stockAfterRec === ($stockBeforePo + 5));
+
+// Now attempt to delete received PO -> Must be refused!
+$resDelReceived = apiCall("$baseUrl/reorder/delete.php", 'POST', ["order_id" => $recPoId], ["Authorization: Bearer $token2"]);
+assertCheck("14f. Deleting received purchase order is REFUSED with 400", $resDelReceived['code'] === 400);
+$refusalMsg = $resDelReceived['json']['message'] ?? '';
+assertCheck("14g. Refusal message informs user to cancel instead", 
+    strpos($refusalMsg, 'Cannot delete purchase order with received items. Cancel the order instead to keep stock correct.') !== false,
+    "Got message: $refusalMsg"
+);
+
+// Verify order still exists in DB and stock has not been corrupted
+$checkPoExists = $pdo->prepare("SELECT COUNT(*) FROM purchase_orders WHERE id = ?");
+$checkPoExists->execute([$recPoId]);
+assertCheck("14h. Received purchase order still exists in DB", (int)$checkPoExists->fetchColumn() === 1);
+$stockAfterRefusedDel = (int)$pdo->query("SELECT units FROM products WHERE id = 1")->fetchColumn();
+assertCheck("14i. Inventory stock unchanged and stays correct", $stockAfterRefusedDel === $stockAfterRec);
+
+// 14j. Cancel the received order instead -> Must succeed, and stock stays correct!
+$resCancelRec = apiCall("$baseUrl/reorder/cancel.php", 'POST', ["order_id" => $recPoId], ["Authorization: Bearer $token2"]);
+assertCheck("14j. Cancel received PO returns 200 OK", $resCancelRec['code'] === 200);
+$stockAfterCancelRec = (int)$pdo->query("SELECT units FROM products WHERE id = 1")->fetchColumn();
+assertCheck("14k. Stock stays correct after cancelling received PO", $stockAfterCancelRec === $stockAfterRec);
+
+// 14l. Attempting to delete the cancelled PO that had received items is STILL refused
+$resDelCancelledWithRec = apiCall("$baseUrl/reorder/delete.php", 'POST', ["order_id" => $recPoId], ["Authorization: Bearer $token2"]);
+assertCheck("14l. Deleting cancelled order that had received items is refused with 400", $resDelCancelledWithRec['code'] === 400);
+
+// Clean up the received test order manually (and revert the 5 test units so test isolation is maintained)
+$pdo->prepare("DELETE FROM purchase_order_items WHERE purchase_order_id = ?")->execute([$recPoId]);
+$pdo->prepare("DELETE FROM purchase_orders WHERE id = ?")->execute([$recPoId]);
+$pdo->prepare("UPDATE products SET units = units - 5 WHERE id = 1")->execute();
+
+// 14m. Open purchase order with nothing received -> Delete is allowed and succeeds cleanly
+$resDelOpen = apiCall("$baseUrl/reorder/delete.php", 'POST', ["order_id" => $otherPoId], ["Authorization: Bearer $token2"]);
+assertCheck("14m. Deleting open purchase order with 0 received returns 200 OK", $resDelOpen['code'] === 200, "Body: {$resDelOpen['body']}");
+
+// Verify open PO was deleted from DB and line items deleted
+$checkOpenDeleted = $pdo->prepare("SELECT COUNT(*) FROM purchase_orders WHERE id = ?");
+$checkOpenDeleted->execute([$otherPoId]);
+assertCheck("14n. Open purchase order removed from DB", (int)$checkOpenDeleted->fetchColumn() === 0);
+
+$checkOpenItemsDeleted = $pdo->prepare("SELECT COUNT(*) FROM purchase_order_items WHERE purchase_order_id = ?");
+$checkOpenItemsDeleted->execute([$otherPoId]);
+assertCheck("14o. Purchase order items removed from DB", (int)$checkOpenItemsDeleted->fetchColumn() === 0);
+
+// 14p. Deleting already deleted PO returns 404
+$resDelAgain = apiCall("$baseUrl/reorder/delete.php", 'POST', ["order_id" => $otherPoId], ["Authorization: Bearer $token2"]);
+assertCheck("14p. Deleting non-existent PO returns 404 Not Found", $resDelAgain['code'] === 404);
+
+// 14q. Delete via HTTP DELETE method with query param
+$createPoForHttpDel = apiCall("$baseUrl/reorder/create_order.php", 'POST', ["items" => [["product_id" => 1, "quantity" => 1]]], ["Authorization: Bearer $token2"]);
+$httpDelId = (int)($createPoForHttpDel['json']['data']['order_id'] ?? 0);
+$resHttpDel = apiCall("$baseUrl/reorder/delete.php?order_id=$httpDelId", 'DELETE', null, ["Authorization: Bearer $token2"]);
+assertCheck("14q. HTTP DELETE method deletes open PO cleanly", $resHttpDel['code'] === 200);
 
 echo "\n========================================================\n";
 echo "   RESULT: $passed / $tests TESTS PASSED                \n";

@@ -952,7 +952,7 @@ Validation Rule: Only `name` and `units` (quantity) are strictly required to be 
 #### 7.5 Cancel Purchase Order
 - **Method & Path**: `POST /reorder/cancel.php`
 - **Token Required**: Yes
-- **App Screen**: `ReorderPlacedScreen.kt`
+- **App Screen**: `ReorderPlacedScreen.kt`, `OrderDetailScreen.kt`
 - **Request Body**:
   ```json
   {
@@ -960,6 +960,34 @@ Validation Rule: Only `name` and `units` (quantity) are strictly required to be 
   }
   ```
 - **Success Response (`200 OK`)**
+- **Note**: Allowed on open (`placed`), partly received, or received orders. Cancelling leaves received inventory units unchanged ("Stock stays correct").
+
+#### 7.6 Delete Purchase Order
+- **Method & Path**: `POST /reorder/delete.php` or `DELETE /reorder/delete.php`
+- **Token Required**: Yes
+- **App Screen**: `OrderDetailScreen.kt`
+- **Request Body**:
+  ```json
+  {
+    "order_id": 12
+  }
+  ```
+- **Delete Rules**:
+  - **Open purchase orders**: Allowed only if nothing has been received on them (`received_at IS NULL` and `status = 'placed'`). Order and line items are removed without altering stock.
+  - **Partly received or received orders**: **Never deleted**. Refused with HTTP `400 Bad Request`:
+    `"Cannot delete purchase order with received items. Cancel the order instead to keep stock correct."`
+    Users must cancel instead so inventory history and stock counts stay correct.
+- **Success Response (`200 OK`)**:
+  ```json
+  {
+    "status": true,
+    "message": "Purchase order 'PO-2026-001' successfully deleted.",
+    "data": {
+      "order_id": 12,
+      "order_no": "PO-2026-001"
+    }
+  }
+  ```
 
 ---
 

@@ -89,12 +89,13 @@ try {
                 poi.quantity,
                 poi.cost_price,
                 poi.line_estimated_cost,
-                p.name AS product_name,
+                COALESCE(p.name, 'Unknown Product') AS product_name,
                 p.sku,
                 p.units AS current_stock,
-                COALESCE(p.category, 'Uncategorised') AS category
+                COALESCE(p.category, 'Uncategorised') AS category,
+                p.icon_key
             FROM purchase_order_items poi
-            INNER JOIN products p ON poi.product_id = p.id
+            LEFT JOIN products p ON poi.product_id = p.id
             WHERE poi.purchase_order_id IN ({$placeholders})
             ORDER BY poi.id ASC
         ");
@@ -106,6 +107,8 @@ try {
                 "name" => $row["product_name"],
                 "sku" => $row["sku"],
                 "category" => $row["category"],
+                "icon_key" => $row["icon_key"],
+                "icon" => $row["icon_key"],
                 "quantity" => (int)$row["quantity"],
                 "cost_price" => ($row["cost_price"] !== null) ? (float)$row["cost_price"] : null,
                 "line_estimated_cost" => ($row["line_estimated_cost"] !== null) ? (float)$row["line_estimated_cost"] : null,
@@ -119,6 +122,11 @@ try {
         $oid = (int)$o["id"];
         $items = $itemsByOrder[$oid] ?? [];
 
+        $firstItem = !empty($items) ? $items[0] : null;
+        $firstProductName = $firstItem ? $firstItem["name"] : null;
+        $firstProductCategory = $firstItem ? $firstItem["category"] : null;
+        $firstProductIcon = $firstItem ? ($firstItem["icon_key"] ?? null) : null;
+
         $formattedOrders[] = [
             "id" => $oid,
             "order_no" => $o["order_no"],
@@ -129,6 +137,9 @@ try {
             "received_at" => $o["received_at"],
             "notes" => $o["notes"],
             "created_at" => $o["created_at"],
+            "first_product_name" => $firstProductName,
+            "first_product_category" => $firstProductCategory,
+            "first_product_icon" => $firstProductIcon,
             "items" => $items
         ];
     }

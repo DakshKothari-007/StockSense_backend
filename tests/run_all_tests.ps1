@@ -15,6 +15,7 @@ $suites = @(
     "test_sale_without_sale_date.php",
     "test_insights_backend.php",
     "test_reorder_backend.php",
+    "test_purchase_order_delete_rule.php",
     "test_settings_backend.php",
     "test_notifications_and_delete.php",
     "test_notification_product_icons.php",

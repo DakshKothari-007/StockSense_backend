@@ -62,11 +62,11 @@ try {
         $orderId = (int)$findStmt->fetchColumn();
     }
 
-    // Cancel open orders only (status = 'placed')
+    // Cancel open, partly received, or received orders (Rule: Partly received or received orders: never delete. Cancel instead. Stock stays correct.)
     $cancelStmt = $pdo->prepare("
         UPDATE purchase_orders 
         SET status = 'cancelled' 
-        WHERE id = ? AND shop_owner_id = ? AND status = 'placed'
+        WHERE id = ? AND shop_owner_id = ? AND status IN ('placed', 'received', 'partially_received')
     ");
     $cancelStmt->execute([$orderId, $shopOwnerId]);
 
