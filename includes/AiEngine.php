@@ -1356,6 +1356,89 @@ EOT;
         ];
     }
 
+    public static function formatStockValueResponse(array $data, string $lang, ?string $target = null): array {
+        if (empty($data['has_data'])) {
+            $msg = $lang === 'hi' 
+                ? "आपकी दुकान की इन्वेंटरी में अभी कोई डेटा नहीं है (no data)। कृपया पहले अपने उत्पाद जोड़ें या इम्पोर्ट करें।"
+                : ($lang === 'ta'
+                    ? "உங்கள் கடை இருப்பில் இன்னும் தகவல் எதுவும் இல்லை (no data). தயவுசெய்து முதலில் பொருட்களை சேர்க்கவும்."
+                    : "You have no data in your shop inventory yet. Please import or add products first.");
+            return [
+                'answer' => $msg,
+                'cards' => [],
+                'actions' => [['label' => $lang === 'hi' ? 'इम्पोर्ट' : ($lang === 'ta' ? 'பதிவேற்றம்' : 'Import products'), 'target' => 'import']],
+                'suggestions' => [['label' => 'Import products', 'message' => 'How do I import products?']]
+            ];
+        }
+
+        if (($data['valid_cost_count'] ?? 0) === 0 && ($data['missing_cost_count'] ?? 0) > 0) {
+            $msg = $lang === 'hi'
+                ? "आपके उत्पादों का लागत मूल्य (cost price) दर्ज नहीं है। स्टॉक मूल्य जानने के लिए कृपया इन्वेंटरी में लागत मूल्य जोड़ें।"
+                : ($lang === 'ta'
+                    ? "உங்கள் பொருட்களுக்கு அடக்க விலை (cost price) இல்லை. இருப்பு மதிப்பை கணக்கிட தயவுசெய்து அடக்க விலையை சேர்க்கவும்."
+                    : "Cost price is missing for your products. Please add cost prices in inventory to calculate stock value.");
+            return [
+                'answer' => $msg,
+                'cards' => [],
+                'actions' => [['label' => 'View inventory', 'target' => 'inventory']],
+                'suggestions' => [['label' => 'Open Inventory', 'message' => 'Show my inventory']]
+            ];
+        }
+
+        $lowStr = PushNotifier::formatIndianCurrency($data['low_stock_value'] ?? 0);
+        $slowStr = PushNotifier::formatIndianCurrency($data['slow_moving_value'] ?? 0);
+        $deadStr = PushNotifier::formatIndianCurrency($data['dead_stock_value'] ?? 0);
+        $missingCount = (int)($data['missing_cost_count'] ?? 0);
+
+        if ($lang === 'hi') {
+            $lines = [
+                "कम स्टॉक वाले सामान की लागत {$lowStr} है।",
+                "धीमी बिक्री वाला स्टॉक: {$slowStr}। डेड स्टॉक: {$deadStr}।"
+            ];
+            if ($target === 'low') {
+                $lines[] = "ज्यादातर पैसा धीमे और डेड स्टॉक में अटका हुआ है।";
+            }
+            if ($missingCount > 0) {
+                $lines[] = "(ध्यान दें: {$missingCount} उत्पाद का लागत मूल्य गायब है और गणना से बाहर है।)";
+            }
+        } elseif ($lang === 'ta') {
+            $lines = [
+                "குறைந்த இருப்புப் பொருட்கள் அடக்க விலையில் {$lowStr} மதிப்புடையவை.",
+                "மெதுவாக நகரும் இருப்பு: {$slowStr}. தேங்கிய இருப்பு: {$deadStr}."
+            ];
+            if ($target === 'low') {
+                $lines[] = "பெரும்பாலான பணம் மெதுவாக நகரும் மற்றும் தேங்கிய இருப்பில் முடங்கியுள்ளது.";
+            }
+            if ($missingCount > 0) {
+                $lines[] = "(குறிப்பு: {$missingCount} பொருட்களுக்கு அடக்க விலை இல்லை.)";
+            }
+        } else {
+            $lines = [
+                "Low stock items are worth {$lowStr} at cost.",
+                "Slow-moving stock: {$slowStr}. Dead stock: {$deadStr}."
+            ];
+            if ($target === 'low') {
+                $lines[] = "Most money is stuck in slow and dead stock.";
+            }
+            if ($missingCount > 0) {
+                $lines[] = "(Note: Cost price is missing for {$missingCount} product(s) and excluded from the calculation.)";
+            }
+        }
+
+        return [
+            'answer' => implode("\n", $lines),
+            'cards' => $data['cards'] ?? [],
+            'actions' => [
+                ['label' => 'Open Insights', 'target' => 'insights'],
+                ['label' => 'View inventory', 'target' => 'inventory']
+            ],
+            'suggestions' => [
+                ['label' => 'What should I reorder?', 'message' => 'What should I reorder this week?'],
+                ['label' => 'Top sellers', 'message' => 'What are my top selling products?']
+            ]
+        ];
+    }
+
     public static function formatPoStatusResponse(array $data, string $lang): array {
         $orders = $data['orders'] ?? [];
         $count = count($orders);
@@ -2189,6 +2272,46 @@ EOT;
             'inniku sales', 'inniki sales', 'iniku sales', 'virpanai', 'indru sales', 'indraya virpanai',
             'sale', 'sales', 'sell', 'sold', 'selling', 'revenue', 'collection', 'income', 'turnover', 'earnings', 'turn over'
         ];
+
+        // 10B. Stock Value / Money Stuck Intent
+        // Trigger on: money stuck, stuck, worth, value, locked, tied up, blocked + stock terms
+        // MUST win over plain low stock list intent!
+        $stockValueKeywords = [
+            'money stuck', 'capital stuck', 'money locked', 'money tied up', 'money blocked',
+            'capital tied up', 'capital locked', 'stock value', 'inventory value', 'total stock value',
+            'value of stock', 'worth at cost', 'stock worth', 'inventory worth',
+            'stuck in low stock', 'stuck in slow stock', 'stuck in dead stock', 'stuck in stock',
+            'पैसा अटका', 'पैसा फंसा', 'पैसे अटके', 'पैसे फंसे', 'स्टॉक में कितना पैसा',
+            'कितना पैसा अटका', 'कितना पैसा फंसा', 'अटका पैसा', 'फंसा पैसा',
+            'स्टॉक का मूल्य', 'इन्वेंटरी मूल्य', 'लागत मूल्य', 'स्टॉक वैल्यू',
+            'பணம் முடங்கி', 'முடங்கிய பணம்', 'ஸ்டாக் மதிப்பு', 'இருப்பு மதிப்பு',
+            'எவ்வளவு பணம் முடங்கி', 'சரக்கு மதிப்பு', 'அடக்க விலை மதிப்பு',
+            'paisa atka', 'paisa fansa', 'paise atke', 'money atka', 'capital atka',
+            'stock value', 'kitna paisa atka', 'kitna paisa fansa', 'panam mudangi',
+            'stock madhippu', 'iruppu madhippu'
+        ];
+
+        $hasStockValueTriggers = self::matchesAnyKeyword($lower, $stockValueKeywords) ||
+            ((preg_match('/\b(money\s+stuck|stuck|worth|value|locked|tied\s+up|blocked)\b/iu', $lower) ||
+              preg_match('/\b(paisa\s+(?:atka|fansa)|panam\s+(?:mudangi|thengi))\b/iu', $lower) ||
+              preg_match('/(पैसा\s*(?:अटका|फंसा)|पैसे\s*(?:अटके|फंसे)|பணம்\s*(?:முடங்கி|தேங்கி)|மதிப்பு|मूल्य)/u', $lower)) &&
+             (preg_match('/\b(stock|inventory|items?|products?|low|slow|dead|all)\b/iu', $lower) ||
+              preg_match('/(स्टॉक|माल|सामान|இருப்பு|சரக்கு)/u', $lower)));
+
+        if ($hasStockValueTriggers) {
+            $target = null;
+            if (preg_match('/\b(low|कम|காலி|குறை)\b/iu', $lower)) {
+                $target = 'low';
+            } elseif (preg_match('/\b(slow|धीम|மெதுவா|pogatha|dheema)\b/iu', $lower)) {
+                $target = 'slow';
+            } elseif (preg_match('/\b(dead|अटक|விற்காத|idle|stagnant)\b/iu', $lower)) {
+                $target = 'dead';
+            } elseif (preg_match('/\b(total|all|कुल|மொத்த)\b/iu', $lower)) {
+                $target = 'total';
+            }
+            $res = AiTools::getStockValue($pdo, $shopId, $target);
+            return self::formatStockValueResponse($res['result'], $lang, $target);
+        }
 
         // 11. Reorder Intent
         if (self::matchesAnyKeyword($lower, $reorderKeywords)) {

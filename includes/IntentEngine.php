@@ -28,6 +28,12 @@ class IntentEngine {
             'desc' => 'Overall inventory level, total units in stock, and warehouse product counts',
             'params' => []
         ],
+        'stock_value' => [
+            'name' => 'stock_value',
+            'category' => 'data',
+            'desc' => 'Rupee value and cost of money tied up or stuck in low stock, slow-moving stock, dead stock, or total inventory',
+            'params' => ['target']
+        ],
         'low_stock' => [
             'name' => 'low_stock',
             'category' => 'data',
@@ -243,6 +249,15 @@ class IntentEngine {
      * English (en), Hindi Devanagari (hi), Tamil script (ta), Hinglish (hi_latin), Tanglish (ta_latin).
      */
     private const CONCEPT_GROUPS = [
+        'stock_value' => [
+            'how much money is stuck', 'money stuck in stock', 'money stuck in low stock', 'money stuck in slow stock', 'money stuck in dead stock',
+            'money stuck', 'capital stuck', 'money locked', 'money tied up', 'money blocked', 'capital tied up', 'capital locked',
+            'stock value', 'inventory value', 'total inventory value', 'value of stock', 'worth at cost', 'stock worth', 'inventory worth',
+            'tied up in stock', 'locked in stock', 'blocked in stock', 'stuck in stock', 'stuck in low stock', 'stuck in slow stock', 'stuck in dead stock',
+            'पैसा अटका', 'पैसा फंसा', 'पैसे अटके', 'पैसे फंसे', 'स्टॉक में कितना पैसा', 'कितना पैसा अटका', 'कितना पैसा फंसा', 'अटका पैसा', 'फंसा पैसा', 'अटका हुआ माल', 'फंसा हुआ माल', 'स्टॉक का मूल्य', 'इन्वेंटरी मूल्य', 'लागत मूल्य', 'स्टॉक वैल्यू',
+            'பணம் முடங்கி', 'முடங்கிய பணம்', 'ஸ்டாக் மதிப்பு', 'இருப்பு மதிப்பு', 'எவ்வளவு பணம் முடங்கி', 'பணம் மாட்டிக்கிச்சு', 'முடங்கியுள்ள பணம்', 'சரக்கு மதிப்பு', 'அடக்க விலை மதிப்பு',
+            'paisa atka', 'paisa fansa', 'paise atke', 'paise fanse', 'money atka', 'capital atka', 'stock value', 'kitna paisa atka', 'kitna paisa fansa', 'stock ki value', 'panam mudangi', 'stock madhippu', 'iruppu madhippu', 'panam thengi'
+        ],
         'stock' => [
             'total stock', 'stock in store', 'overall inventory', 'warehouse balance', 'stk count', 'inventory balance', 'total items', 'units in store', 'stock balance', 'items in stock', 'stock count',
             'stock', 'stocks', 'inventory', 'units', 'items', 'warehouse', 'goods', 'quantity', 'balance', 'count', 'stk',
@@ -882,13 +897,20 @@ class IntentEngine {
             !preg_match('/(margin|profit|markup|munafa|laabam|லாப|மार्जिन).*?(rakhna\s+chahiye|set\s+kare|vaikkanum|vaikka\s+vendum|रखना\s+चाहिए|வைக்க\s+வேண்டும்)/iu', $lower)
         );
 
+        // Stock value / Money stuck inquiry
+        $isStockValueQuery = (bool)(
+            (preg_match('/\b(money\s+stuck|money\s+locked|money\s+tied\s+up|capital\s+stuck|capital\s+tied\s+up|stock\s+value|inventory\s+value|total\s+value|worth|value|locked|tied\s+up|blocked)\b/iu', $lower) &&
+             preg_match('/\b(stock|inventory|items?|products?|goods|maal|sarakku|porul|low|slow|dead)\b|(स्टॉक|माल|सामान|இருப்பு|சரக்கு|பொருள்)/iu', $lower)) ||
+            preg_match('/\b(paisa\s+(?:atka|fansa|phansa)|kitna\s+paisa|panam\s+(?:mudangi|thengi)|evvalavu\s+panam)\b|(पैसा\s*(?:अटका|फंसा)|पैसे\s*(?:अटके|फंसे)|मूल्य|लागत\s*मूल्य|பணம்\s*(?:முடங்கி|தேங்கி)|ஸ்டாக்\s*மதிப்பு|இருப்பு\s*மதிப்பு)/iu', $lower)
+        );
+
         // 4. Evaluate Lookup Signals
         $hasLookupCue = false;
         $lookupConfidence = 0.0;
 
-        if ($isAppHelp || $isPureReorderLookup || $isEntityList || $isDataReport || $isConfiguredSalesPlan || $isDocumentRequest) {
+        if ($isAppHelp || $isPureReorderLookup || $isEntityList || $isDataReport || $isConfiguredSalesPlan || $isDocumentRequest || $isStockValueQuery) {
             $hasLookupCue = true;
-            $lookupConfidence = 0.98;
+            $lookupConfidence = 0.99;
         } elseif ($isPureCount) {
             $hasLookupCue = true;
             $lookupConfidence = 0.95;
@@ -971,8 +993,8 @@ class IntentEngine {
         }
 
         // 6. Decision & Confidence Thresholding
-        // Priority A: Explicit entity list, document list, configured sales plan, reorder recommendations, or app help (Requirement 4)
-        if ($isEntityList || $isDataReport || $isConfiguredSalesPlan || $isDocumentRequest || $isPureReorderLookup || $isAppHelp) {
+        // Priority A: Explicit entity list, document list, configured sales plan, reorder recommendations, app help, or stock value (Requirement 4)
+        if ($isStockValueQuery || $isEntityList || $isDataReport || $isConfiguredSalesPlan || $isDocumentRequest || $isPureReorderLookup || $isAppHelp) {
             return self::wrapType('lookup', $lookupConfidence, 'rule', $withDetails);
         }
 
@@ -1210,6 +1232,29 @@ class IntentEngine {
         // Shop Overview
         if (!empty($matchedConcepts['overview'])) {
             $candidates['shop_overview'] = 0.95;
+        }
+
+        // Stock Value / Money Stuck Intent (Must win over plain low stock, slow sellers, dead stock, and stock)
+        $isStockVal = !empty($matchedConcepts['stock_value']) ||
+            ((preg_match('/\b(money\s+stuck|stuck|worth|value|locked|tied\s+up|blocked)\b/iu', $lower) ||
+              preg_match('/\b(paisa\s+(?:atka|fansa)|panam\s+(?:mudangi|thengi))\b/iu', $lower) ||
+              preg_match('/(पैसा\s*(?:अटका|फंसा)|पैसे\s*(?:अटके|फंसे)|பணம்\s*(?:முடங்கி|தேங்கி)|மதிப்பு|मूल्य)/u', $lower)) &&
+             (preg_match('/\b(stock|inventory|items?|products?|low|slow|dead|all)\b/iu', $lower) ||
+              preg_match('/(स्टॉक|माल|सामान|இருப்பு|சரக்கு)/u', $lower)));
+
+        if ($isStockVal) {
+            $candidates['stock_value'] = 0.99;
+            $target = null;
+            if (preg_match('/\b(low|कम|காலி|குறை)\b/iu', $lower)) {
+                $target = 'low';
+            } elseif (preg_match('/\b(slow|धीम|மெதுவா|pogatha|dheema)\b/iu', $lower)) {
+                $target = 'slow';
+            } elseif (preg_match('/\b(dead|अटक|விற்காத|idle|stagnant)\b/iu', $lower)) {
+                $target = 'dead';
+            } elseif (preg_match('/\b(total|all|कुल|மொத்த)\b/iu', $lower)) {
+                $target = 'total';
+            }
+            $params['target'] = $target;
         }
 
         // Dead Stock vs Slow Sellers
@@ -1505,6 +1550,12 @@ class IntentEngine {
             case 'stock':
                 $res = AiTools::getTotalInventoryCount($pdo, $shopId);
                 $formatted = AiEngine::formatTotalInventoryResponse($res['result'], $lang);
+                break;
+
+            case 'stock_value':
+                $target = $params['target'] ?? null;
+                $res = AiTools::getStockValue($pdo, $shopId, $target);
+                $formatted = AiEngine::formatStockValueResponse($res['result'], $lang, $target);
                 break;
 
             case 'low_stock':

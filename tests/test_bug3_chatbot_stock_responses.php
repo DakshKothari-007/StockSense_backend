@@ -98,6 +98,60 @@ echo "\n--- TEST 5: Healthy Shop (At least 1 product, none low) ---\n";
 $respHealthy = AiEngine::formatLowStockResponse([], [], 'en', 25);
 assertTest("Healthy shop says 'All products in your shop are currently well-stocked'", str_contains($respHealthy['answer'], 'well-stocked'));
 
+// ---------------------------------------------------------
+// TEST 6: Stock Value Intent - "how much money is stuck in low stock"
+// ---------------------------------------------------------
+echo "\n--- TEST 6: 'how much money is stuck in low stock' ---\n";
+$queryLow = "how much money is stuck in low stock";
+$directLow = AiEngine::tryDirectDataPath($pdo, 2, $queryLow);
+assertTest("Direct path handles 'how much money is stuck in low stock'", $directLow !== null);
+assertTest("Returns rupee value for low stock items at cost", str_contains($directLow['answer'] ?? '', "Low stock items are worth ₹"));
+assertTest("Returns slow-moving stock value", str_contains($directLow['answer'] ?? '', "Slow-moving stock: ₹"));
+assertTest("Returns dead stock value", str_contains($directLow['answer'] ?? '', "Dead stock: ₹"));
+assertTest("Appends 'Most money is stuck in slow and dead stock.' when asked about low stock", str_contains($directLow['answer'] ?? '', "Most money is stuck in slow and dead stock."));
+assertTest("Reports missing cost price honestly without inventing numbers", str_contains($directLow['answer'] ?? '', "Cost price is missing for"));
+
+// Also test IntentEngine resolution
+$resolvedLow = IntentEngine::resolve($pdo, 2, $queryLow, [], null, false);
+assertTest("IntentEngine resolves to 'stock_value'", ($resolvedLow['intent'] ?? '') === 'stock_value');
+assertTest("IntentEngine identifies target as 'low'", ($resolvedLow['params']['target'] ?? '') === 'low');
+$executedLow = IntentEngine::executeIntent($pdo, 2, $resolvedLow, 'en');
+assertTest("IntentEngine execution contains expected low stock value answer", str_contains($executedLow['answer'] ?? '', "Low stock items are worth ₹"));
+
+// ---------------------------------------------------------
+// TEST 7: Stock Value Intent - "how much money is stuck in slow stock"
+// ---------------------------------------------------------
+echo "\n--- TEST 7: 'how much money is stuck in slow stock' ---\n";
+$querySlow = "how much money is stuck in slow stock";
+$directSlow = AiEngine::tryDirectDataPath($pdo, 2, $querySlow);
+assertTest("Direct path handles 'how much money is stuck in slow stock'", $directSlow !== null);
+assertTest("Returns rupee value for low stock items at cost", str_contains($directSlow['answer'] ?? '', "Low stock items are worth ₹"));
+assertTest("Returns slow-moving stock value", str_contains($directSlow['answer'] ?? '', "Slow-moving stock: ₹"));
+assertTest("Returns dead stock value", str_contains($directSlow['answer'] ?? '', "Dead stock: ₹"));
+assertTest("Does NOT append 'Most money is stuck in slow and dead stock.' when asked about slow stock", !str_contains($directSlow['answer'] ?? '', "Most money is stuck in slow and dead stock."));
+
+// Also test IntentEngine resolution
+$resolvedSlow = IntentEngine::resolve($pdo, 2, $querySlow, [], null, false);
+assertTest("IntentEngine resolves 'how much money is stuck in slow stock' to 'stock_value'", ($resolvedSlow['intent'] ?? '') === 'stock_value');
+assertTest("IntentEngine identifies target as 'slow'", ($resolvedSlow['params']['target'] ?? '') === 'slow');
+
+// ---------------------------------------------------------
+// TEST 8: Stock Value Intent - "stock value" with an empty shop
+// ---------------------------------------------------------
+echo "\n--- TEST 8: 'stock value' with an empty shop ---\n";
+$emptyShopId = 999999;
+$emptyStockVal = AiTools::getStockValue($pdo, $emptyShopId);
+assertTest("AiTools::getStockValue reports has_data = false for empty shop", ($emptyStockVal['result']['has_data'] ?? true) === false);
+
+$directEmpty = AiEngine::tryDirectDataPath($pdo, $emptyShopId, "stock value");
+assertTest("Direct path handles 'stock value' for empty shop", $directEmpty !== null);
+assertTest("Empty shop response contains 'no data'", stripos($directEmpty['answer'] ?? '', 'no data') !== false);
+
+$resolvedEmpty = IntentEngine::resolve($pdo, $emptyShopId, "stock value", [], null, false);
+assertTest("IntentEngine resolves 'stock value' to 'stock_value'", ($resolvedEmpty['intent'] ?? '') === 'stock_value');
+$executedEmpty = IntentEngine::executeIntent($pdo, $emptyShopId, $resolvedEmpty, 'en');
+assertTest("IntentEngine execution for empty shop says 'no data'", stripos($executedEmpty['answer'] ?? '', 'no data') !== false);
+
 echo "\n========================================================\n";
 echo "RESULT: " . ($allPassed ? "ALL BUG 3 CHATBOT TESTS PASSED!" : "SOME TESTS FAILED!") . "\n";
 echo "========================================================\n";

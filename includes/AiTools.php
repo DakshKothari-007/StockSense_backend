@@ -1784,5 +1784,191 @@ class AiTools {
             ]
         ];
     }
+
+    // -------------------------------------------------------------------------
+    // Tool 19: get_stock_value
+    // Computes SUM(quantity * cost_price) for low stock, slow-moving, dead stock, and total.
+    // Uses the exact same slow and dead definitions as the Insights screen.
+    // -------------------------------------------------------------------------
+    public static function getStockValue(PDO $pdo, int $shopId, ?string $target = null): array {
+        // 1. Total products check
+        $cntStmt = $pdo->prepare("
+            SELECT COUNT(*) FROM products 
+            WHERE shop_owner_id = ? 
+              AND (status IS NULL OR (status NOT LIKE '%Archived%' AND status NOT LIKE '%Inactive%'))
+        ");
+        $cntStmt->execute([$shopId]);
+        $totalShopProducts = (int)$cntStmt->fetchColumn();
+
+        if ($totalShopProducts === 0) {
+            return [
+                'result' => [
+                    'has_data' => false,
+                    'total_products' => 0,
+                    'target' => $target,
+                    'low_stock_value' => 0.0,
+                    'slow_moving_value' => 0.0,
+                    'dead_stock_value' => 0.0,
+                    'total_stock_value' => 0.0,
+                    'missing_cost_count' => 0,
+                    'valid_cost_count' => 0
+                ],
+                'cards' => [],
+                'actions' => [
+                    ['label' => 'Import products', 'target' => 'import']
+                ],
+                'suggestions' => [
+                    ['label' => 'Import products', 'message' => 'How do I import products?']
+                ]
+            ];
+        }
+
+        $settings = get_shop_settings($pdo, $shopId);
+        $leadTime = (int)($settings['lead_time_days'] ?? 2);
+        $safetyDays = (int)($settings['safety_days'] ?? 3);
+        $coverDays = (int)($settings['cover_days'] ?? 7);
+        $reorderThresholdDays = $leadTime + $safetyDays + $coverDays; // 12
+        $slowThresholdDays = (int)($settings['slow_moving_threshold_days'] ?? 60);
+
+        // Fetch 30-day sales per product
+        $stmtSales = $pdo->prepare("
+            SELECT si.product_id, COALESCE(SUM(si.quantity), 0) AS sold_30
+            FROM sales_items si
+            JOIN sales s ON si.sale_id = s.id
+            WHERE s.shop_owner_id = ? AND s.sale_date >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+            GROUP BY si.product_id
+        ");
+        $stmtSales->execute([$shopId]);
+        $salesMap = $stmtSales->fetchAll(PDO::FETCH_KEY_PAIR);
+
+        // Active products with units > 0
+        $stmtProds = $pdo->prepare("
+            SELECT id, name, sku, category, units, min_stock_threshold, price, cost_price
+            FROM products
+            WHERE shop_owner_id = ?
+              AND units > 0
+              AND (status IS NULL OR (status NOT LIKE '%Archived%' AND status NOT LIKE '%Inactive%'))
+            ORDER BY units DESC, name ASC
+        ");
+        $stmtProds->execute([$shopId]);
+        $prods = $stmtProds->fetchAll(PDO::FETCH_ASSOC);
+
+        $lowStockValue = 0.0;
+        $slowMovingValue = 0.0;
+        $deadStockValue = 0.0;
+        $totalStockValue = 0.0;
+
+        $missingCostCount = 0;
+        $validCostCount = 0;
+
+        $lowCards = [];
+        $slowCards = [];
+        $deadCards = [];
+
+        foreach ($prods as $p) {
+            $units = (int)$p['units'];
+            if ($units <= 0) continue;
+
+            $costPrice = ($p['cost_price'] !== null && (float)$p['cost_price'] > 0) ? (float)$p['cost_price'] : null;
+            if ($costPrice === null) {
+                $missingCostCount++;
+            } else {
+                $validCostCount++;
+            }
+
+            $sold30 = (int)($salesMap[$p['id']] ?? 0);
+            $dailyVelocity = $sold30 / 30.0;
+            $stockCoverDays = ($dailyVelocity > 0) ? ($units / $dailyVelocity) : null;
+            $minStock = (int)$p['min_stock_threshold'];
+
+            // Low stock criteria matching Insights & Reorder: units <= minStock OR (stockCoverDays !== null && stockCoverDays < 12)
+            $isLow = ($minStock > 0 && $units <= $minStock) || ($stockCoverDays !== null && $stockCoverDays < $reorderThresholdDays);
+
+            if ($isLow) {
+                if ($costPrice !== null) {
+                    $lowStockValue += ($units * $costPrice);
+                }
+                if (count($lowCards) < 5) {
+                    $lowCards[] = [
+                        'product_id' => (int)$p['id'],
+                        'name' => $p['name'],
+                        'sku' => $p['sku'],
+                        'units_left' => $units,
+                        'status' => 'Low stock',
+                        'price' => (float)($p['price'] ?? 0),
+                        'min_stock' => $minStock
+                    ];
+                }
+            } elseif ($sold30 === 0) {
+                if ($costPrice !== null) {
+                    $deadStockValue += ($units * $costPrice);
+                }
+                if (count($deadCards) < 5) {
+                    $deadCards[] = [
+                        'product_id' => (int)$p['id'],
+                        'name' => $p['name'],
+                        'sku' => $p['sku'],
+                        'units_left' => $units,
+                        'status' => 'Dead stock',
+                        'price' => (float)($p['price'] ?? 0),
+                        'min_stock' => $minStock
+                    ];
+                }
+            } elseif ($stockCoverDays !== null && $stockCoverDays >= $slowThresholdDays) {
+                if ($costPrice !== null) {
+                    $slowMovingValue += ($units * $costPrice);
+                }
+                if (count($slowCards) < 5) {
+                    $slowCards[] = [
+                        'product_id' => (int)$p['id'],
+                        'name' => $p['name'],
+                        'sku' => $p['sku'],
+                        'units_left' => $units,
+                        'status' => 'Slow moving',
+                        'price' => (float)($p['price'] ?? 0),
+                        'min_stock' => $minStock
+                    ];
+                }
+            }
+
+            if ($costPrice !== null) {
+                $totalStockValue += ($units * $costPrice);
+            }
+        }
+
+        $cards = [];
+        if ($target === 'low') {
+            $cards = $lowCards;
+        } elseif ($target === 'slow') {
+            $cards = $slowCards;
+        } elseif ($target === 'dead') {
+            $cards = $deadCards;
+        } else {
+            $cards = array_slice(array_merge($lowCards, $slowCards, $deadCards), 0, 5);
+        }
+
+        return [
+            'result' => [
+                'has_data' => true,
+                'total_products' => $totalShopProducts,
+                'target' => $target,
+                'low_stock_value' => $lowStockValue,
+                'slow_moving_value' => $slowMovingValue,
+                'dead_stock_value' => $deadStockValue,
+                'total_stock_value' => $totalStockValue,
+                'missing_cost_count' => $missingCostCount,
+                'valid_cost_count' => $validCostCount
+            ],
+            'cards' => $cards,
+            'actions' => [
+                ['label' => 'Open Insights', 'target' => 'insights'],
+                ['label' => 'View inventory', 'target' => 'inventory']
+            ],
+            'suggestions' => [
+                ['label' => 'What should I reorder?', 'message' => 'What should I reorder this week?'],
+                ['label' => 'Check low stock', 'message' => 'Which items are low on stock?']
+            ]
+        ];
+    }
 }
 
