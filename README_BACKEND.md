@@ -284,8 +284,8 @@ php cli/seed_demo_data.php --reset
 
 ### Seeded Data Characteristics
 - **Demo Shop Owner**:
-  - Email: `daksh14001@gmail.com`
-  - Store: `Daksh Supermarket` (`Indiranagar, Bengaluru`)
+  - Email: `demo_owner@example.com`
+  - Store: `Demo Supermarket` (`Indiranagar, Bengaluru`)
   - Password: A strong random 16-character password is generated at runtime and printed **once** in the CLI terminal. It is stored solely as a BCrypt hash and never recorded in plaintext, code, or logs.
 - **30 Products Across 8 Categories**:
   - Categories: *Dairy, Grocery, Snacks, Beverages, Household, Personal Care, Bakery, Vegetables*.
@@ -307,7 +307,7 @@ php cli/seed_demo_data.php --reset
 - **Safety & Isolation**:
   - Restricted strictly to CLI (`php_sapi_name() === 'cli'`).
   - Uses prepared statements and transactions.
-  - Touches and resets **only** the `daksh14001@gmail.com` shop owner; never reads or alters other users' records.
+  - Touches and resets **only** the `demo_owner@example.com` shop owner; never reads or alters other users' records.
 
 ### Running the Seeder Test Suite
 ```bash

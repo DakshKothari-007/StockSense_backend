@@ -598,6 +598,45 @@ All responses adhere to the standard JSON envelope:
     ```
   - `422 Unprocessable Entity`: Missing both `id` and `sku` in request payload.
 
+#### 3.6 Batch Import Products (JSON)
+- **Method & Path**: `POST /inventory/import_inventory.php`
+- **Token Required**: Yes
+- **App Screen**: Internal / Direct JSON Import
+- **Request Body**:
+  ```json
+  {
+    "mode": "add_units",
+    "items": [
+      {
+        "name": "Amul Taaza Milk 500ml",
+        "sku": "AMUL-MILK-500",
+        "category": "Dairy",
+        "price": 27.00,
+        "cost_price": 23.50,
+        "units": 20,
+        "min_stock_threshold": 10
+      }
+    ]
+  }
+  ```
+  *(Supported `mode` values: `"add_units"` to increment existing product units atomically, or `"set_units"` to overwrite current inventory units).*
+- **Success Response (`200 OK`)**:
+  ```json
+  {
+    "status": true,
+    "message": "Inventory imported successfully.",
+    "data": {
+      "imported_count": 0,
+      "updated_count": 1,
+      "mode": "add_units"
+    }
+  }
+  ```
+- **Error Responses**:
+  - `400 Bad Request`: Invalid JSON payload.
+  - `401 Unauthorized`: Missing or invalid Bearer token.
+  - `422 Unprocessable Entity`: Missing or empty `items` array.
+
 ---
 
 ### Module 4: Spreadsheet Bulk Import (`import/`)
@@ -918,7 +957,8 @@ Validation Rule: Only `name` and `units` (quantity) are strictly required to be 
 - **Request Body**:
   ```json
   {
-    "supplier_name": "Amul Dairy Dist",
+    "supplier_name": "string (optional)",
+    "notes": "string (optional)",
     "items": [
       {
         "product_id": 1,
@@ -927,19 +967,113 @@ Validation Rule: Only `name` and `units` (quantity) are strictly required to be 
     ]
   }
   ```
-  *(Server automatically assigns order number in format `PO-YYYY-NNN` per shop).*
-- **Success Response (`201 Created`)**
+  *(Server automatically assigns order number in format `PO-YYYY-NNN` sequentially per shop).*
+- **Success Response (`201 Created`)**:
+  ```json
+  {
+    "status": true,
+    "message": "Purchase order placed successfully.",
+    "data": {
+      "order_id": 12,
+      "order_no": "PO-2026-003",
+      "status": "placed",
+      "total_items": 1,
+      "total_units": 60,
+      "total_estimated_cost": 1620.00,
+      "notes": "Urgent restock",
+      "items": [
+        {
+          "product_id": 1,
+          "name": "Amul Taaza Milk 500ml",
+          "sku": "AMUL-MILK-500",
+          "category": "Dairy",
+          "quantity": 60,
+          "cost_price": 27.00,
+          "line_estimated_cost": 1620.00
+        }
+      ]
+    }
+  }
+  ```
+- **Error Responses**:
+  - `400 Bad Request`: Missing or empty `items` array, or invalid item quantities.
+  - `401 Unauthorized`: Missing or invalid Bearer token.
+  - `404 Not Found`: One or more products not found in the shop's catalog.
 
 #### 7.3 List Purchase Orders
-- **Method & Path**: `GET /reorder/orders.php?status={placed|received|cancelled}`
+- **Method & Path**: `GET /reorder/orders.php`
 - **Token Required**: Yes
-- **App Screen**: `ReorderPlacedScreen.kt`
-- **Success Response (`200 OK`)**
+- **App Screen**: `PurchaseOrdersScreen.kt`
+- **Query Parameters**:
+  - `status`: string (optional: `placed`, `received`, `cancelled`, or omitted for all)
+  - `page`: int (optional, default 1)
+  - `limit`: int (optional, default 50)
+- **Success Response (`200 OK`)**:
+  ```json
+  {
+    "status": true,
+    "message": "Purchase orders retrieved successfully.",
+    "data": {
+      "pagination": {
+        "page": 1,
+        "limit": 50,
+        "total_orders": 2,
+        "total_pages": 1
+      },
+      "orders": [
+        {
+          "id": 12,
+          "order_no": "PO-2026-001",
+          "status": "placed",
+          "total_estimated_cost": 12000.00,
+          "total_items": 2,
+          "total_units": 55,
+          "received_at": null,
+          "notes": null,
+          "created_at": "2026-11-20 10:00:00",
+          "first_product_name": "Nandini Pure Ghee 500ml",
+          "first_product_category": "Dairy",
+          "first_product_icon": "milk_bottle",
+          "items": [
+            {
+              "item_id": 101,
+              "product_id": 4,
+              "name": "Nandini Pure Ghee 500ml",
+              "sku": "SKU-DAIR-ECA15",
+              "category": "Dairy",
+              "quantity": 15,
+              "cost_price": 280.00,
+              "line_estimated_cost": 4200.00,
+              "current_stock": 0,
+              "icon_key": "milk_bottle",
+              "icon": "milk_bottle"
+            },
+            {
+              "item_id": 102,
+              "product_id": 8,
+              "name": "Tata Sampann Unpolished Toor Dal 1kg",
+              "sku": "SKU-GROC-4A3DF",
+              "category": "Grocery",
+              "quantity": 40,
+              "cost_price": 195.00,
+              "line_estimated_cost": 7800.00,
+              "current_stock": 4,
+              "icon_key": "sheaf_of_rice",
+              "icon": "sheaf_of_rice"
+            }
+          ]
+        }
+      ]
+    }
+  }
+  ```
+- **Error Responses**:
+  - `401 Unauthorized`: Missing or invalid Bearer token.
 
 #### 7.4 Receive Purchase Order
 - **Method & Path**: `POST /reorder/receive.php`
 - **Token Required**: Yes
-- **App Screen**: `ReorderPlacedScreen.kt`
+- **App Screen**: `PurchaseOrdersScreen.kt`, `OrderDetailScreen.kt`
 - **Request Body**:
   ```json
   {
@@ -947,20 +1081,66 @@ Validation Rule: Only `name` and `units` (quantity) are strictly required to be 
   }
   ```
   *(Atomically transitions status from `placed` to `received` and increments product units).*
-- **Success Response (`200 OK`)**
+- **Success Response (`200 OK`)**:
+  ```json
+  {
+    "status": true,
+    "message": "Purchase order successfully marked as received. Stock quantities added to inventory.",
+    "data": {
+      "order_id": 12,
+      "order_no": "PO-2026-001",
+      "status": "received",
+      "received_at": "2026-11-20 14:00:00",
+      "total_products_updated": 2,
+      "updated_products": [
+        {
+          "product_id": 4,
+          "name": "Nandini Pure Ghee 500ml",
+          "added_units": 15,
+          "new_stock": 15
+        },
+        {
+          "product_id": 8,
+          "name": "Tata Sampann Unpolished Toor Dal 1kg",
+          "added_units": 40,
+          "new_stock": 44
+        }
+      ]
+    }
+  }
+  ```
+- **Error Responses**:
+  - `400 Bad Request`: Order is not in `placed` status (e.g. already received or cancelled).
+  - `401 Unauthorized`: Missing or invalid Bearer token.
+  - `404 Not Found`: Order not found.
 
 #### 7.5 Cancel Purchase Order
 - **Method & Path**: `POST /reorder/cancel.php`
 - **Token Required**: Yes
-- **App Screen**: `ReorderPlacedScreen.kt`, `OrderDetailScreen.kt`
+- **App Screen**: `PurchaseOrdersScreen.kt`, `OrderDetailScreen.kt`
 - **Request Body**:
   ```json
   {
     "order_id": 12
   }
   ```
-- **Success Response (`200 OK`)**
+- **Success Response (`200 OK`)**:
+  ```json
+  {
+    "status": true,
+    "message": "Purchase order successfully cancelled.",
+    "data": {
+      "order_id": 12,
+      "order_no": "PO-2026-001",
+      "status": "cancelled"
+    }
+  }
+  ```
 - **Note**: Allowed on open (`placed`), partly received, or received orders. Cancelling leaves received inventory units unchanged ("Stock stays correct").
+- **Error Responses**:
+  - `400 Bad Request`: Order is already cancelled.
+  - `401 Unauthorized`: Missing or invalid Bearer token.
+  - `404 Not Found`: Order not found.
 
 #### 7.6 Delete Purchase Order
 - **Method & Path**: `POST /reorder/delete.php` or `DELETE /reorder/delete.php`
@@ -1437,7 +1617,7 @@ StockSense uses Firebase Cloud Messaging (FCM) HTTP v1 protocol using pure PHP (
 
 ---
 
-### Module 10.3: Weekly Email Digest (`cron/weekly_digest.php`)
+### Module 11: Weekly Email Digest (`cron/weekly_digest.php`)
 
 Automated weekly email report dispatched every Sunday at 8:00 PM IST (Asia/Kolkata) to shop owners with `weekly_email_digest` enabled and a valid registered email address.
 
@@ -1469,7 +1649,7 @@ Automated weekly email report dispatched every Sunday at 8:00 PM IST (Asia/Kolka
 
 ---
 
-### Module 11: AI Assistant ("Dukaan Mitra") (`ai/`)
+### Module 12: AI Assistant ("Dukaan Mitra") (`ai/`)
 
 Dukaan Mitra is the app's built-in intelligent AI assistant for shop owners. It operates via secure, read-only function calling directly querying shop data and providing practical retail guidance and general assistance.
 
@@ -1571,7 +1751,7 @@ Dukaan Mitra is the app's built-in intelligent AI assistant for shop owners. It 
     - **`actions`**: Array of `[{"label": "...", "target": "...", "product_id"?: int}]`. Returned ONLY when a real answer provides a direct screen navigation shortcut (e.g., `"reorder"`, `"inventory"`, `"sales"`). Default greetings, refusals, and general advice return empty `actions: []`.
     - **`suggestions`**: Array of `[{"label": "...", "message": "..."}]`. Returned for greetings, refusals, advice, and conversation follow-ups. The mobile app renders these as clickable suggestion chips that post a normal chat message (e.g. `"How much did I sell today?"`) instead of navigating.
 
-#### 11.1 Chat Query
+#### 12.1 Chat Query
 - **Method & Path**: `POST /ai/chat.php`
 - **Token Required**: Yes (`Authorization: Bearer <token>`)
 - **Headers**: `Content-Type: application/json`
@@ -1641,12 +1821,60 @@ Dukaan Mitra is the app's built-in intelligent AI assistant for shop owners. It 
     }
   }
   ```
+
+##### Special Intent: Stock Valuation (`stock_value`)
+- **Triggers**: Queries inquiring about money, capital, or rupee worth tied up or stuck in inventory across English, Hindi, Tamil, Hinglish, and Tanglish (e.g., *"How much money is stuck in low stock?"*, *"money stuck in slow stock"*, *"what is my total dead stock worth"*, *"स्टॉक में कितना पैसा अटका है"*, *"பணம் முடங்கி இருக்கும் சரக்கு"*).
+- **Precedence**: Wins over plain entity lists (`low_stock`, `slow_sellers`, `dead_stock`) whenever financial value/stuck capital terms are present.
+- **Computation**: Calculated strictly from the database at cost:
+  $$\text{Value} = \sum (\text{quantity} \times \text{cost\_price})$$
+  Evaluated for low stock, slow-moving stock, dead stock, and total store inventory.
+- **Honesty Rules**:
+  - If `cost_price` is missing on any evaluated items, explicitly reports missing cost counts without inventing numbers.
+  - If the store has zero products or empty inventory, responds truthfully (`"You have no products yet. Import your stock first."`).
+  - Never hallucinates figures or uses retail prices in place of cost prices.
+- **Sample Request**:
+  ```json
+  {
+    "message": "How much money is stuck in low stock?"
+  }
+  ```
+- **Sample Success Response (`200 OK`)**:
+  ```json
+  {
+    "status": true,
+    "message": "Success",
+    "data": {
+      "answer": "Low stock items are worth ₹4,200 at cost.\nSlow-moving stock: ₹8,500. Dead stock: ₹3,100.\nMost money is stuck in slow and dead stock.",
+      "cards": [],
+      "actions": [
+        {
+          "label": "View insights",
+          "target": "insights"
+        },
+        {
+          "label": "Open reorder list",
+          "target": "reorder"
+        }
+      ],
+      "suggestions": [
+        {
+          "label": "Slow moving stock",
+          "message": "Which items are slow moving?"
+        },
+        {
+          "label": "What should I reorder?",
+          "message": "What should I reorder this week?"
+        }
+      ]
+    }
+  }
+  ```
 - **Error Responses**:
   - `400 Bad Request`: Missing `message` or invalid JSON.
   - `401 Unauthorized`: Missing or invalid Bearer token.
   - `429 Too Many Requests`: Daily limit (100) or minute limit (15) exceeded.
 
-#### 11.2 Explain Insight / Product Recommendation
+#### 12.2 Explain Insight / Product Recommendation
 - **Method & Path**: `POST /ai/explain.php`
 - **Token Required**: Yes (`Authorization: Bearer <token>`)
 - **Headers**: `Content-Type: application/json`
@@ -1674,7 +1902,7 @@ Dukaan Mitra is the app's built-in intelligent AI assistant for shop owners. It 
   - `401 Unauthorized`: Missing or invalid token.
   - `404 Not Found`: Product does not exist or belongs to another shop.
 
-#### 11.3 Daily AI Summary
+#### 12.3 Daily AI Summary
 - **Method & Path**: `GET /ai/daily_summary.php`
 - **Token Required**: Yes (`Authorization: Bearer <token>`)
 - **Caching**: 24-hour cache per shop per day (`daily_summary_{shopId}_{date}`).
