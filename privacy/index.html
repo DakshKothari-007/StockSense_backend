@@ -254,8 +254,10 @@
       <h2>3. AI Assistant (Dukaan Mitra)</h2>
       <p>StockSense includes Dukaan Mitra, an AI co-pilot designed for grocery and supermarket operations.</p>
       <ul>
-        <li><strong>How it works:</strong> When you ask Dukaan Mitra a question, your query and relevant shop numbers (such as sales figures or low-stock items) are processed by our hybrid AI engine. The engine runs locally on our private server using Ollama, with Google Gemini used for general knowledge questions.</li>
-        <li><strong>Cloud Privacy:</strong> Shop metrics and sales counts are kept strictly local and are never shared with cloud models for marketing or training.</li>
+        <li><strong>How it works:</strong> All store queries (inventory counts, sales revenue, low stock, margins, reorder recommendations) are processed locally on our private server by our on-premise AI engine (Ollama) and verified database queries. Your shop data stays on our server.</li>
+        <li><strong>What leaves the server to Gemini:</strong> When you ask non-shop general knowledge inquiries (such as science, history, cooking recipes, math, jokes, or general retail concepts), the query text (up to 500 characters) and general conversation turns (up to 300 characters each) are sent via encrypted HTTPS to Google Gemini. A system instruction defining the assistant persona is included.</li>
+        <li><strong>Cloud Privacy Safeguard:</strong> Before any message is transmitted to Gemini, our server automatically filters the text to remove currency amounts (₹), unit quantities, product names, sales numbers, and inventory terms. Gemini receives zero store tools, zero database access, and zero shop identifiers.</li>
+        <li><strong>Quality Improvement:</strong> Anonymous question text (without name, email or shop id) may be kept to improve the assistant, and is not removed on account deletion.</li>
       </ul>
       <div class="alert-box">
         <strong>Please Note:</strong> While Dukaan Mitra uses real verified database numbers for store queries, AI assistants can occasionally make mistakes or interpret conversational requests unexpectedly. Please verify critical financial, tax, or supplier decisions independently.
@@ -304,6 +306,7 @@
         <strong>Account Deletion:</strong> You can permanently delete your entire account and all associated store data at any time directly inside the app under <em>Settings &gt; Delete Account</em>.
       </div>
       <p style="margin-top: 10px;">When you confirm account deletion, the system performs an immediate atomic deletion across all products, sales records, purchase orders, device tokens, and settings. Nothing is retained.</p>
+      <p style="margin-top: 8px; font-size: 13px; color: var(--muted);">Note: Anonymous question text (without name, email or shop id) may be kept to improve the assistant, and is not removed on account deletion.</p>
     </section>
 
     <!-- 8. Contact -->
