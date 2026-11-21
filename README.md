@@ -313,6 +313,14 @@ Download this file from your [Firebase Console](https://console.firebase.google.
 
 ---
 
+## Privacy Policy
+
+StockSense respects the privacy of retail store owners and complies with India's Digital Personal Data Protection (DPDP) Act, 2023. All inventory, sales, and store records are strictly isolated per store and are never sold or shared for advertising.
+
+👉 [**Privacy Policy (`privacy/index.html`)**](privacy/index.html) (served locally at `http://<host>/StockSense_backend/privacy/index.html` and linked in the mobile app settings).
+
+---
+
 ## API Specification
 
 For the complete REST API documentation covering all endpoints, query parameters, request/response bodies, status codes, and error formats, refer to:

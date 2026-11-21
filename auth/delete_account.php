@@ -97,28 +97,34 @@ try {
     // 3. Delete products
     $pdo->prepare("DELETE FROM products WHERE shop_owner_id = ?")->execute([$shopOwnerId]);
 
-    // 4. Delete import history
+    // 4. Delete import history & mappings
     $pdo->prepare("DELETE FROM import_history WHERE shop_owner_id = ?")->execute([$shopOwnerId]);
+    $pdo->prepare("DELETE FROM import_mappings WHERE shop_owner_id = ?")->execute([$shopOwnerId]);
 
-    // 5. Delete recommendation responses
+    // 5. Delete recommendation responses & weekly digest logs
     $pdo->prepare("DELETE FROM recommendation_responses WHERE shop_owner_id = ?")->execute([$shopOwnerId]);
+    $pdo->prepare("DELETE FROM digest_log WHERE shop_owner_id = ?")->execute([$shopOwnerId]);
 
     // 6. Delete notification states, device tokens, and push log
     $pdo->prepare("DELETE FROM notification_states WHERE shop_owner_id = ?")->execute([$shopOwnerId]);
     $pdo->prepare("DELETE FROM device_tokens WHERE shop_id = ? OR user_id = ?")->execute([$shopOwnerId, $shopOwnerId]);
     $pdo->prepare("DELETE FROM push_log WHERE shop_id = ?")->execute([$shopOwnerId]);
 
-    // 7. Delete user settings
+    // 7. Delete AI usage and query cache
+    $pdo->prepare("DELETE FROM ai_usage WHERE shop_id = ?")->execute([$shopOwnerId]);
+    $pdo->prepare("DELETE FROM ai_cache WHERE shop_id = ?")->execute([$shopOwnerId]);
+
+    // 8. Delete user settings
     $pdo->prepare("DELETE FROM user_settings WHERE user_id = ?")->execute([$shopOwnerId]);
 
-    // 8. Delete active session tokens
+    // 9. Delete active session tokens
     $pdo->prepare("DELETE FROM tokens WHERE user_id = ?")->execute([$shopOwnerId]);
 
-    // 9. Clean rate limits & login attempts for this email
+    // 10. Clean rate limits & login attempts for this email
     $pdo->prepare("DELETE FROM rate_limits WHERE identifier = ?")->execute([$ownerEmail]);
     $pdo->prepare("DELETE FROM login_attempts WHERE identifier = ?")->execute([$ownerEmail]);
 
-    // 10. Delete owner account
+    // 11. Delete owner account
     $pdo->prepare("DELETE FROM owner_account WHERE id = ?")->execute([$shopOwnerId]);
 
     $pdo->commit();
