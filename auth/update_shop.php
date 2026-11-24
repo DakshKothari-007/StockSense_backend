@@ -62,6 +62,26 @@ $location = isset($data["location"]) ? trim($data["location"]) : null;
 $storeType = isset($data["store_type"]) ? trim($data["store_type"]) : null;
 $currency = isset($data["currency"]) ? trim($data["currency"]) : null;
 
+$gstinProvided = array_key_exists("gstin", $data);
+$gstin = null;
+if ($gstinProvided) {
+    $rawGstin = is_string($data["gstin"]) ? trim($data["gstin"]) : "";
+    if ($rawGstin !== "") {
+        $gstin = strtoupper($rawGstin);
+        if (!preg_match('/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/', $gstin)) {
+            http_response_code(422);
+            echo json_encode([
+                "status" => false,
+                "success" => false,
+                "message" => "Invalid GSTIN format. Expected 15 characters (e.g. 29ABCDE1234F1Z5)."
+            ]);
+            exit;
+        }
+    } else {
+        $gstin = null;
+    }
+}
+
 // Resolve user from token if available
 if ($userId <= 0 && $token) {
     $tokenHash = hash('sha256', $token);
@@ -172,6 +192,10 @@ try {
         $fields[] = "currency = ?";
         $params[] = $currency;
     }
+    if ($gstinProvided) {
+        $fields[] = "gstin = ?";
+        $params[] = $gstin;
+    }
 
     $params[] = $targetId;
 
@@ -179,7 +203,7 @@ try {
     $updateStmt = $pdo->prepare($updateSql);
     $updateStmt->execute($params);
 
-    $fetchStmt = $pdo->prepare("SELECT id, full_name, shop_name, location, store_type, currency, email, created_at, updated_at FROM owner_account WHERE id = ?");
+    $fetchStmt = $pdo->prepare("SELECT id, full_name, shop_name, location, store_type, currency, gstin, email, created_at, updated_at FROM owner_account WHERE id = ?");
     $fetchStmt->execute([$targetId]);
     $shop = $fetchStmt->fetch(PDO::FETCH_ASSOC);
 
@@ -191,6 +215,7 @@ try {
         "location" => $shop["location"] ?? "",
         "store_type" => $shop["store_type"] ?? "",
         "currency" => $shop["currency"] ?? "",
+        "gstin" => $shop["gstin"] ?? null,
         "email" => $shop["email"],
         "role" => "Owner",
         "plan" => "StockSense Starter",

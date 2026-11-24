@@ -176,7 +176,7 @@ try {
     $updateStmt->execute([$finalFullName, $finalEmail, $targetId]);
 
     // 4. Return updated profile
-    $getUpdated = $pdo->prepare("SELECT id, full_name, shop_name, location, store_type, currency, email, updated_at FROM owner_account WHERE id = ?");
+    $getUpdated = $pdo->prepare("SELECT id, full_name, shop_name, location, store_type, currency, gstin, email, updated_at FROM owner_account WHERE id = ?");
     $getUpdated->execute([$targetId]);
     $updatedUser = $getUpdated->fetch(PDO::FETCH_ASSOC);
 

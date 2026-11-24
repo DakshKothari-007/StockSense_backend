@@ -292,6 +292,7 @@ All responses adhere to the standard JSON envelope:
       "location": "Indiranagar, Bengaluru",
       "store_type": "Neighbourhood supermarket",
       "currency": "₹ INR / IST",
+      "gstin": "29ABCDE1234F1Z5",
       "email": "ananya@example.com",
       "store_id": "GB-BLR-002",
       "role": "Owner",
@@ -355,7 +356,8 @@ All responses adhere to the standard JSON envelope:
   {
     "shop_name": "string (required, max 150)",
     "location": "string (optional, max 255)",
-    "store_type": "string (required, enum: 'Neighbourhood supermarket' | 'Medium supermarket' | 'Grocery / Kirana store' | 'Other')"
+    "store_type": "string (required, enum: 'Neighbourhood supermarket' | 'Medium supermarket' | 'Grocery / Kirana store' | 'Other')",
+    "gstin": "string (optional, 15-character GSTIN matching ^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$)"
   }
   ```
 - **Validation Rules**:
@@ -366,13 +368,14 @@ All responses adhere to the standard JSON envelope:
     2. `"Medium supermarket"`
     3. `"Grocery / Kirana store"`
     4. `"Other"`
+  - `gstin` is optional. Trimmed and uppercased. If provided and non-empty, must match the 15-character GSTIN regex `^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$`. If empty/blank, clears existing GSTIN.
   - Note: `currency` is read-only text in the app and cannot be altered via this endpoint.
 - **Success Response (`200 OK`)**:
   ```json
   {
     "status": true,
     "success": true,
-    "message": "Store details updated successfully.",
+    "message": "Shop details updated successfully.",
     "user": {
       "id": 2,
       "full_name": "Ananya Sharma",
@@ -380,6 +383,7 @@ All responses adhere to the standard JSON envelope:
       "location": "Indiranagar, Bengaluru",
       "store_type": "Medium supermarket",
       "currency": "₹ INR / IST",
+      "gstin": "29ABCDE1234F1Z5",
       "email": "ananya.new@example.com",
       "store_id": "GB-BLR-002",
       "role": "Owner",
@@ -391,7 +395,7 @@ All responses adhere to the standard JSON envelope:
 - **Error Responses**:
   - `400 Bad Request`: Blank `shop_name` or invalid JSON.
   - `401 Unauthorized`: Missing or invalid Bearer token.
-  - `422 Unprocessable Entity`: Location exceeds 255 characters or `store_type` is not in the allowed list (`"Invalid store type. Allowed: Neighbourhood supermarket, Medium supermarket, Grocery / Kirana store, Other"`).
+  - `422 Unprocessable Entity`: Location exceeds 255 characters, invalid `store_type`, or invalid `gstin` format.
 
 ---
 

@@ -93,7 +93,7 @@ if (!empty($email) && !filter_var($email, FILTER_VALIDATE_EMAIL)) {
 try {
     if ($userId > 0) {
         $stmt = $pdo->prepare(
-            "SELECT id, full_name, shop_name, location, store_type, currency, email, created_at, updated_at
+            "SELECT id, full_name, shop_name, location, store_type, currency, gstin, email, created_at, updated_at
              FROM owner_account
              WHERE id = ?
              LIMIT 1"
@@ -101,7 +101,7 @@ try {
         $stmt->execute([$userId]);
     } else {
         $stmt = $pdo->prepare(
-            "SELECT id, full_name, shop_name, location, store_type, currency, email, created_at, updated_at
+            "SELECT id, full_name, shop_name, location, store_type, currency, gstin, email, created_at, updated_at
              FROM owner_account
              WHERE email = ?
              LIMIT 1"
@@ -128,6 +128,7 @@ try {
         "location" => $user["location"] ?? "",
         "store_type" => $user["store_type"] ?? "",
         "currency" => $user["currency"] ?? "",
+        "gstin" => $user["gstin"] ?? null,
         "email" => $user["email"],
         "created_at" => $user["created_at"],
         "updated_at" => $user["updated_at"]

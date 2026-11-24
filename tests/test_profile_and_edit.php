@@ -136,13 +136,60 @@ $invalidTypeRes = apiCall("$baseUrl/auth/update_shop.php", 'POST', [
 ], $testToken);
 assertCheck("6. Invalid store_type returns 422 Unprocessable Entity", $invalidTypeRes['code'] === 422);
 
-// 7. Re-fetch profile to verify full state
+// 7. Test GSTIN validation & persistence
+// 7a. Valid synthetic GSTIN (trimmed, uppercase)
+$validGstin = "29ABCDE1234F1Z5";
+$updateGstinRes = apiCall("$baseUrl/auth/update_shop.php", 'POST', [
+    "shop_name" => "Malhotra Supermart",
+    "location" => "T. Nagar, Chennai",
+    "store_type" => "Medium supermarket",
+    "gstin" => " 29abcde1234f1z5 "
+], $testToken);
+
+assertCheck("7a. POST auth/update_shop.php with valid GSTIN returns 200 OK", $updateGstinRes['code'] === 200);
+assertCheck("7b. Response contains uppercased GSTIN", ($updateGstinRes['json']['shop']['gstin'] ?? '') === $validGstin);
+
+// Verify DB persistence of GSTIN
+$dbGstinStmt = $pdo->prepare("SELECT gstin FROM owner_account WHERE id = ?");
+$dbGstinStmt->execute([$testUserId]);
+$dbGstin = $dbGstinStmt->fetchColumn();
+assertCheck("7c. Database row stores uppercased GSTIN", $dbGstin === $validGstin);
+
+// 7d. Invalid GSTIN rejection (wrong length / pattern)
+$invalidGstinRes = apiCall("$baseUrl/auth/update_shop.php", 'POST', [
+    "shop_name" => "Malhotra Supermart",
+    "location" => "T. Nagar, Chennai",
+    "store_type" => "Medium supermarket",
+    "gstin" => "29ABCDE1234F1"
+], $testToken);
+assertCheck("7d. Invalid GSTIN returns 422 Unprocessable Entity", $invalidGstinRes['code'] === 422);
+
+// 7e. Empty GSTIN clears the field
+$clearGstinRes = apiCall("$baseUrl/auth/update_shop.php", 'POST', [
+    "shop_name" => "Malhotra Supermart",
+    "location" => "T. Nagar, Chennai",
+    "store_type" => "Medium supermarket",
+    "gstin" => ""
+], $testToken);
+assertCheck("7e. Empty GSTIN returns 200 OK", $clearGstinRes['code'] === 200);
+assertCheck("7f. Response GSTIN is null", ($clearGstinRes['json']['shop']['gstin'] ?? null) === null);
+
+// Re-set valid GSTIN to verify profile endpoint returns it
+apiCall("$baseUrl/auth/update_shop.php", 'POST', [
+    "shop_name" => "Malhotra Supermart",
+    "location" => "T. Nagar, Chennai",
+    "store_type" => "Medium supermarket",
+    "gstin" => $validGstin
+], $testToken);
+
+// 8. Re-fetch profile to verify full state including GSTIN
 $finalProfileRes = apiCall("$baseUrl/auth/profile.php", 'GET', null, $testToken);
-assertCheck("7a. Final profile returns updated full_name", ($finalProfileRes['json']['user']['full_name'] ?? '') === "Vikram S. Malhotra");
-assertCheck("7b. Final profile returns updated shop_name", ($finalProfileRes['json']['user']['shop_name'] ?? '') === "Malhotra Supermart");
-assertCheck("7c. Final profile returns updated location", ($finalProfileRes['json']['user']['location'] ?? '') === "T. Nagar, Chennai");
-assertCheck("7d. Final profile returns updated store_type", ($finalProfileRes['json']['user']['store_type'] ?? '') === "Medium supermarket");
-assertCheck("7e. Final profile returns updated email", ($finalProfileRes['json']['user']['email'] ?? '') === $testEmail2);
+assertCheck("8a. Final profile returns updated full_name", ($finalProfileRes['json']['user']['full_name'] ?? '') === "Vikram S. Malhotra");
+assertCheck("8b. Final profile returns updated shop_name", ($finalProfileRes['json']['user']['shop_name'] ?? '') === "Malhotra Supermart");
+assertCheck("8c. Final profile returns updated location", ($finalProfileRes['json']['user']['location'] ?? '') === "T. Nagar, Chennai");
+assertCheck("8d. Final profile returns updated store_type", ($finalProfileRes['json']['user']['store_type'] ?? '') === "Medium supermarket");
+assertCheck("8e. Final profile returns updated email", ($finalProfileRes['json']['user']['email'] ?? '') === $testEmail2);
+assertCheck("8f. Final profile returns updated GSTIN", ($finalProfileRes['json']['user']['gstin'] ?? '') === $validGstin);
 
 // Cleanup test user
 $pdo->prepare("DELETE FROM owner_account WHERE id = ?")->execute([$testUserId]);

@@ -61,6 +61,7 @@ function authenticateShopOwner(PDO $pdo): array {
                 o.location,
                 o.store_type,
                 o.currency,
+                o.gstin,
                 o.email,
                 t.expires_at
             FROM tokens t

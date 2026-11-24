@@ -105,7 +105,7 @@ try {
 
     // 2. Find the account using the email address.
     $stmt = $pdo->prepare(
-        "SELECT id, full_name, shop_name, location, store_type, currency, email, password
+        "SELECT id, full_name, shop_name, location, store_type, currency, gstin, email, password
          FROM owner_account
          WHERE email = ?
          LIMIT 1"
@@ -217,6 +217,7 @@ try {
             "location" => $user["location"] ?? "",
             "store_type" => $user["store_type"] ?? "",
             "currency" => $user["currency"] ?? "",
+            "gstin" => $user["gstin"] ?? null,
             "role" => "Owner",
             "plan" => "StockSense Starter",
             "data_snapshot" => $user["updated_at"] ?? $user["created_at"] ?? "",
