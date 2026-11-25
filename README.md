@@ -85,6 +85,8 @@ Powered by the bilingual Dukaan Mitra AI assistant, StockSense prevents stockout
      php migrations/04_create_ai_tables.php
      php migrations/05_add_icon_columns_to_products.php
      php migrations/06_create_intent_misses_table.php
+      php migrations/07_add_gstin_to_owner_account.php
+      php migrations/08_add_avatar_to_owner_account.php
      ```
 4. **Create Private Directory & Config Files**:
    - For security, credentials reside outside the web root (`htdocs`). Create:
@@ -229,7 +231,9 @@ StockSense_backend/
 │   ├── 03_create_device_tokens_table.php
 │   ├── 04_create_ai_tables.php
 │   ├── 05_add_icon_columns_to_products.php
-│   └── 06_create_intent_misses_table.php
+│   ├── 06_create_intent_misses_table.php
+│   ├── 07_add_gstin_to_owner_account.php
+│   └── 08_add_avatar_to_owner_account.php
 ├── notifications/                         # In-app notifications & push registrations
 │   ├── dismiss.php                        # Dismiss notification
 │   ├── list.php                           # List notifications

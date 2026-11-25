@@ -24,6 +24,7 @@ date_default_timezone_set('Asia/Kolkata');
 
 require_once __DIR__ . "/../config/db.php";
 require_once __DIR__ . "/../inventory/auth_helper.php";
+require_once __DIR__ . "/../includes/AvatarCatalog.php";
 require_once __DIR__ . "/settings_helper.php";
 
 $pdo->exec("SET time_zone = '+05:30'");
@@ -45,7 +46,8 @@ try {
                 "shop_name" => $owner["shop_name"],
                 "location" => $owner["location"],
                 "currency" => $owner["currency"],
-                "timezone" => $settings["timezone"]
+                "timezone" => $settings["timezone"],
+                "avatar" => avatar_format_from_row($owner)
             ],
             "appearance" => [
                 "theme_mode" => $settings["theme_mode"]

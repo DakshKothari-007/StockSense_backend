@@ -177,6 +177,7 @@ try {
             "location" => $location,
             "store_type" => $storeType,
             "currency" => $currency,
+            "avatar" => null,
             "email" => $email
         ]
     ]);

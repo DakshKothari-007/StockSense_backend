@@ -10,6 +10,8 @@ $suites = @(
     "test_token_auth.php",
     "test_login_errors.php",
     "test_profile_and_edit.php",
+    "test_avatar_backend.php",
+    "test_avatar_friendly_only.php",
     "test_inventory_backend.php",
     "test_sales_backend.php",
     "test_sale_without_sale_date.php",

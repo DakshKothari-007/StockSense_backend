@@ -25,6 +25,7 @@ if ($_SERVER["REQUEST_METHOD"] !== "POST") {
 
 // Connect to the database.
 require_once __DIR__ . "/../config/db.php";
+require_once __DIR__ . "/../includes/AvatarCatalog.php";
 
 // Constants for lockout and rate limiting
 const LOGIN_LOCKOUT_SECONDS = 300; // 5 minutes
@@ -105,7 +106,8 @@ try {
 
     // 2. Find the account using the email address.
     $stmt = $pdo->prepare(
-        "SELECT id, full_name, shop_name, location, store_type, currency, gstin, email, password
+        "SELECT id, full_name, shop_name, location, store_type, currency, gstin,
+                avatar_style, avatar_seed, avatar_options, email, password, created_at, updated_at
          FROM owner_account
          WHERE email = ?
          LIMIT 1"
@@ -218,6 +220,7 @@ try {
             "store_type" => $user["store_type"] ?? "",
             "currency" => $user["currency"] ?? "",
             "gstin" => $user["gstin"] ?? null,
+            "avatar" => avatar_format_from_row($user),
             "role" => "Owner",
             "plan" => "StockSense Starter",
             "data_snapshot" => $user["updated_at"] ?? $user["created_at"] ?? "",

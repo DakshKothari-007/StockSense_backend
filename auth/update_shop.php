@@ -21,6 +21,7 @@ if ($_SERVER["REQUEST_METHOD"] !== "POST") {
 }
 
 require_once __DIR__ . "/../config/db.php";
+require_once __DIR__ . "/../includes/AvatarCatalog.php";
 
 $data = json_decode(file_get_contents("php://input"), true);
 if (!is_array($data)) {
@@ -203,7 +204,7 @@ try {
     $updateStmt = $pdo->prepare($updateSql);
     $updateStmt->execute($params);
 
-    $fetchStmt = $pdo->prepare("SELECT id, full_name, shop_name, location, store_type, currency, gstin, email, created_at, updated_at FROM owner_account WHERE id = ?");
+    $fetchStmt = $pdo->prepare("SELECT id, full_name, shop_name, location, store_type, currency, gstin, avatar_style, avatar_seed, avatar_options, email, created_at, updated_at FROM owner_account WHERE id = ?");
     $fetchStmt->execute([$targetId]);
     $shop = $fetchStmt->fetch(PDO::FETCH_ASSOC);
 
@@ -216,6 +217,7 @@ try {
         "store_type" => $shop["store_type"] ?? "",
         "currency" => $shop["currency"] ?? "",
         "gstin" => $shop["gstin"] ?? null,
+        "avatar" => avatar_format_from_row($shop),
         "email" => $shop["email"],
         "role" => "Owner",
         "plan" => "StockSense Starter",
