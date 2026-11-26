@@ -4064,31 +4064,36 @@ EOT;
      * @return array ['summary' => string]
      */
     public static function dailySummary(PDO $pdo, int $shopId): array {
-        // Check 24-hour cache
-        $cacheKey = "daily_summary_" . date('Ymd');
+        // 1. Yesterday's sales (index-friendly DATETIME range)
+        $stmtYest = $pdo->prepare("
+            SELECT COALESCE(SUM(total_amount), 0) as total_rev, COUNT(id) as bill_count
+            FROM sales
+            WHERE shop_owner_id = ?
+              AND sale_date >= CURDATE() - INTERVAL 1 DAY
+              AND sale_date < CURDATE()
+        ");
+        $stmtYest->execute([$shopId]);
+        $yest = $stmtYest->fetch(PDO::FETCH_ASSOC);
+        $yestBills = (int)($yest['bill_count'] ?? 0);
+
+        // Include yesterday's bill count in cache key so new/deleted bills bust stale cache
+        $cacheKey = "daily_summary_" . date('Ymd') . "_b" . $yestBills;
         $cached = self::getCachedResponse($pdo, $shopId, $cacheKey);
         if ($cached !== null) {
             return $cached;
         }
 
-        // 1. Yesterday's sales
-        $stmtYest = $pdo->prepare("
-            SELECT COALESCE(SUM(total_amount), 0) as total_rev, COUNT(id) as bill_count
-            FROM sales
-            WHERE shop_owner_id = ? AND sale_date = CURDATE() - INTERVAL 1 DAY
-        ");
-        $stmtYest->execute([$shopId]);
-        $yest = $stmtYest->fetch(PDO::FETCH_ASSOC);
         $yestRev = PushNotifier::formatIndianCurrency($yest['total_rev'] ?? 0);
-        $yestBills = (int)($yest['bill_count'] ?? 0);
 
-        // Top seller yesterday
+        // Top seller yesterday (same index-friendly DATETIME range)
         $stmtTop = $pdo->prepare("
             SELECT p.name as product_name, SUM(si.quantity) as total_qty
             FROM sales_items si
             JOIN sales s ON s.id = si.sale_id
             JOIN products p ON si.product_id = p.id
-            WHERE s.shop_owner_id = ? AND DATE(s.sale_date) = CURDATE() - INTERVAL 1 DAY
+            WHERE s.shop_owner_id = ?
+              AND s.sale_date >= CURDATE() - INTERVAL 1 DAY
+              AND s.sale_date < CURDATE()
             GROUP BY p.id, p.name
             ORDER BY total_qty DESC
             LIMIT 1
@@ -4124,7 +4129,7 @@ EOT;
         $result = ['summary' => $summary];
 
         $config = require __DIR__ . '/../config/ai.php';
-        $ttl = (int)($config['cache_ttl_daily_summary'] ?? 86400);
+        $ttl = (int)($config['cache_ttl_daily_summary'] ?? 3600);
         self::setCachedResponse($pdo, $shopId, $cacheKey, 'daily_summary', $result, $ttl);
 
         return $result;

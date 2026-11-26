@@ -46,7 +46,7 @@ return [
     // Cache TTLs in seconds
     'cache_ttl_chat' => 300,            // 5 minutes for identical questions
     'cache_ttl_explain' => 86400,       // 24 hours
-    'cache_ttl_daily_summary' => 86400, // 24 hours
+    'cache_ttl_daily_summary' => 3600,  // 1 hour
 
     // Maximum function calling tool iterations per message
     'max_tool_calls' => 3,

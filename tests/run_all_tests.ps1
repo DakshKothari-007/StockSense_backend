@@ -31,6 +31,7 @@ $suites = @(
     "test_import_idempotency.php",
     "test_import_zero_stock.php",
     "test_bug3_chatbot_stock_responses.php",
+    "test_daily_summary_yesterday.php",
     "test_ai.php"
 )
 
