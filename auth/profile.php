@@ -29,7 +29,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     $data = json_decode($raw, true) ?: [];
 }
 
-// 1. Check Bearer token from headers, POST data, or GET query
+// 1. Accept Bearer token strictly from Authorization header
 $authHeader = '';
 if (function_exists('getallheaders')) {
     $headers = getallheaders();
@@ -46,12 +46,6 @@ if (empty($authHeader)) {
 $token = null;
 if (preg_match('/Bearer\s+(\S+)/i', $authHeader, $matches)) {
     $token = trim($matches[1]);
-}
-if (empty($token) && !empty($data['token'])) {
-    $token = trim($data['token']);
-}
-if (empty($token) && !empty($_GET['token'])) {
-    $token = trim($_GET['token']);
 }
 
 $email = strtolower(trim($_GET["email"] ?? $data["email"] ?? ""));

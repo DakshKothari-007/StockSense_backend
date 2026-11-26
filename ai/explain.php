@@ -81,21 +81,24 @@ try {
         "data" => $result
     ]);
 } catch (InvalidArgumentException $e) {
+    error_log("AI explain invalid argument: " . $e->getMessage());
     http_response_code(400);
     echo json_encode([
         "status" => false,
-        "message" => $e->getMessage(),
+        "message" => "Invalid explanation request parameters.",
         "data" => (object)[]
     ]);
 } catch (RuntimeException $e) {
+    error_log("AI explain runtime error: " . $e->getMessage());
     $code = $e->getCode() ?: 404;
     http_response_code($code);
     echo json_encode([
         "status" => false,
-        "message" => $e->getMessage(),
+        "message" => ($code === 404) ? "Product not found or access denied." : "Unable to generate explanation at this time.",
         "data" => (object)[]
     ]);
 } catch (Exception $e) {
+    error_log("AI explain unexpected error: " . $e->getMessage());
     http_response_code(200);
     echo json_encode([
         "status" => true,

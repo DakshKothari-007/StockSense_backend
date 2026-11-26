@@ -34,7 +34,7 @@ if (!is_array($data)) {
     exit;
 }
 
-// 1. Check Bearer token from headers or JSON payload
+// 1. Accept Bearer token strictly from Authorization header
 $authHeader = '';
 if (function_exists('getallheaders')) {
     $headers = getallheaders();
@@ -51,9 +51,6 @@ if (empty($authHeader)) {
 $token = null;
 if (preg_match('/Bearer\s+(\S+)/i', $authHeader, $matches)) {
     $token = trim($matches[1]);
-}
-if (empty($token) && !empty($data['token'])) {
-    $token = trim($data['token']);
 }
 
 $userId = (int)($data["user_id"] ?? $data["id"] ?? 0);

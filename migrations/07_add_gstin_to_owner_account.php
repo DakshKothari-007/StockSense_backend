@@ -1,5 +1,11 @@
 <?php
 
+if (php_sapi_name() !== 'cli') {
+    http_response_code(403);
+    echo "Forbidden: CLI execution only.\n";
+    exit(1);
+}
+
 /**
  * Migration 07: Add nullable column gstin (VARCHAR 15) to owner_account.
  * 

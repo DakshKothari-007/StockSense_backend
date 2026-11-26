@@ -119,11 +119,12 @@ if (!move_uploaded_file($file['tmp_name'], $targetPath)) {
 try {
     $parsed = SpreadsheetReader::getHeadersAndPreview($targetPath, 5);
 } catch (Throwable $e) {
+    error_log("Import upload spreadsheet parse error: " . $e->getMessage());
     @unlink($targetPath);
     http_response_code(400);
     echo json_encode([
         "status" => false,
-        "message" => "Unable to read spreadsheet: " . $e->getMessage(),
+        "message" => "Unable to read the uploaded spreadsheet. Please check the file format.",
         "data" => (object)[]
     ]);
     exit;

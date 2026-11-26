@@ -34,10 +34,6 @@ if (preg_match('/Bearer\s+(\S+)/i', $authHeader, $matches)) {
 $raw = file_get_contents("php://input");
 $data = json_decode($raw, true);
 
-if (!$token && is_array($data) && !empty($data['token'])) {
-    $token = trim($data['token']);
-}
-
 // Delete device token if sent in logout payload
 if (is_array($data) && !empty($data['fcm_token'])) {
     $fcmToken = trim($data['fcm_token']);

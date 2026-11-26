@@ -69,10 +69,11 @@ try {
     $headerRow = $extracted['headers'];
     $rows = $extracted['rows'];
 } catch (Throwable $e) {
+    error_log("Import preview spreadsheet parse error: " . $e->getMessage());
     http_response_code(400);
     echo json_encode([
         "status" => false,
-        "message" => "Unable to read spreadsheet: " . $e->getMessage(),
+        "message" => "Unable to read spreadsheet. Please check the file format.",
         "data" => (object)[]
     ]);
     exit;

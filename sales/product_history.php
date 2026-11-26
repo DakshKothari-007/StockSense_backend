@@ -169,10 +169,11 @@ try {
         ]
     ]);
 } catch (PDOException $e) {
+    error_log("Product history database error: " . $e->getMessage());
     http_response_code(500);
     echo json_encode([
         "status" => false,
-        "message" => "Database error: " . $e->getMessage(),
+        "message" => "An internal database error occurred.",
         "data" => (object)[]
     ]);
 }

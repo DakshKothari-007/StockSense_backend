@@ -8,6 +8,7 @@ $testsDir = $PSScriptRoot
 
 $suites = @(
     "test_token_auth.php",
+    "test_security_hardening.php",
     "test_login_errors.php",
     "test_profile_and_edit.php",
     "test_avatar_backend.php",

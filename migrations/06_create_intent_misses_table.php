@@ -1,5 +1,11 @@
 <?php
 
+if (php_sapi_name() !== 'cli') {
+    http_response_code(403);
+    echo "Forbidden: CLI execution only.\n";
+    exit(1);
+}
+
 /**
  * Migration 06: Create intent_misses table for AI learning loop.
  * 

@@ -1,5 +1,11 @@
 <?php
 
+if (php_sapi_name() !== 'cli') {
+    http_response_code(403);
+    echo "Forbidden: CLI execution only.\n";
+    exit(1);
+}
+
 require_once __DIR__ . "/../config/db.php";
 
 echo "Running migration: 03_create_device_tokens_table.php...\n";

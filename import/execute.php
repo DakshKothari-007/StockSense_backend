@@ -22,7 +22,7 @@ set_exception_handler(function(Throwable $e) use (&$pdo) {
     }
     echo json_encode([
         "status" => false,
-        "message" => "Import execution failed: " . $e->getMessage(),
+        "message" => "An internal server error occurred during import execution.",
         "data" => (object)[]
     ]);
     exit;
@@ -172,10 +172,11 @@ try {
     $headerRow = $extracted['headers'];
     $rows = $extracted['rows'];
 } catch (Throwable $e) {
+    error_log("Import execute spreadsheet parse error: " . $e->getMessage());
     http_response_code(400);
     echo json_encode([
         "status" => false,
-        "message" => "Unable to read spreadsheet: " . $e->getMessage(),
+        "message" => "Unable to read spreadsheet. Please check the file format.",
         "data" => (object)[]
     ]);
     exit;
@@ -710,7 +711,7 @@ try {
     }
     echo json_encode([
         "status" => false,
-        "message" => "Import transaction failed: " . $e->getMessage(),
+        "message" => "An internal database error occurred while executing import.",
         "data" => (object)[]
     ]);
     exit;

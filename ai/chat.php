@@ -66,15 +66,17 @@ try {
     ]);
 } catch (Exception $e) {
     if ($e->getCode() === 429) {
+        error_log("AI chat rate limit error: " . $e->getMessage());
         http_response_code(429);
         echo json_encode([
             "status" => false,
-            "message" => $e->getMessage(),
+            "message" => "Too many requests right now. Please try again later.",
             "data" => (object)[]
         ]);
         exit;
     }
 
+    error_log("AI chat error: " . $e->getMessage());
     // Never return HTTP 500 for AI chat - serve fallback
     $fallback = AiEngine::executeRuleBasedFallback($pdo, $shopId, $message, $history, $languageHint);
     echo json_encode([
