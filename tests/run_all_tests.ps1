@@ -13,6 +13,7 @@ $suites = @(
     "test_avatar_backend.php",
     "test_avatar_friendly_only.php",
     "test_inventory_backend.php",
+    "test_export_products.php",
     "test_sales_backend.php",
     "test_sale_without_sale_date.php",
     "test_insights_backend.php",

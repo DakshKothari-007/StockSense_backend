@@ -719,6 +719,24 @@ All responses adhere to the standard JSON envelope:
   - `401 Unauthorized`: Missing or invalid Bearer token.
   - `422 Unprocessable Entity`: Missing or empty `items` array.
 
+#### 3.7 Export Products (CSV)
+- **Method & Path**: `GET /inventory/export_products.php`
+- **Token Required**: Yes (`Bearer <token>`)
+- **Rate Limit**: 10 exports per 60 minutes per shop (`429 Too Many Requests` when exceeded).
+- **App Screen**: `DeleteAccountScreen.kt`, `SettingsScreen.kt`
+- **Success Response (`200 OK`)**:
+  - `Content-Type: text/csv; charset=UTF-8`
+  - `Content-Disposition: attachment; filename="stocksense_products_YYYYMMDD.csv"`
+  - Starts with a UTF-8 BOM (`\xEF\xBB\xBF`) for Excel Unicode (Hindi/Tamil) compatibility.
+  - Columns match the bulk import headers/order plus metadata:
+    `Product Name,SKU,Category,Quantity,Cost Price,Selling Price,Minimum Stock,Description,Status`
+  - Includes all products belonging to the authenticated `shop_owner_id` (including inactive/archived items).
+  - CSV formula injection protection: values starting with `=`, `+`, `-`, or `@` are prefixed with `'`.
+- **Error Responses**:
+  - `401 Unauthorized`: Missing or invalid Bearer token.
+  - `404 Not Found`: Shop has 0 products (`{"status": false, "message": "No products to export", "data": {}}`).
+  - `429 Too Many Requests`: Hourly export rate limit exceeded.
+
 ---
 
 ### Module 4: Spreadsheet Bulk Import (`import/`)

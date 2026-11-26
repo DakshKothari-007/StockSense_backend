@@ -221,6 +221,7 @@ StockSense_backend/
 │   ├── add_product.php                    # Add single product
 │   ├── auth_helper.php                    # Shared Bearer token authentication
 │   ├── delete_product.php                 # Delete product
+│   ├── export_products.php                # Authenticated CSV export (BOM & injection safe)
 │   ├── get_product_detail.php             # Detailed product view
 │   ├── get_products.php                   # Paginated product list with search/filter
 │   ├── import_inventory.php               # Batch JSON product import
