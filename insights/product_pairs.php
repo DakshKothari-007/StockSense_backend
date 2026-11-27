@@ -34,7 +34,8 @@ const PAIRS_CONFIG = [
     "window_days" => 90,
     "min_total_bills" => 30,
     "min_bills_together" => 3,
-    "default_min_support" => 0.05
+    "default_min_support" => 0.05,
+    "accepted_hide_days" => 14
 ];
 
 // Validate min_support parameter (Rule 6: between 0 and 1)
@@ -62,6 +63,8 @@ if (isset($_GET["min_support"])) {
 }
 
 $includeDismissed = isset($_GET["include_dismissed"]) && ($_GET["include_dismissed"] === "1" || strtolower($_GET["include_dismissed"]) === "true");
+$includeAccepted = isset($_GET["include_accepted"]) && ($_GET["include_accepted"] === "1" || strtolower($_GET["include_accepted"]) === "true");
+$acceptedHideCutoffTs = strtotime("-" . PAIRS_CONFIG["accepted_hide_days"] . " days");
 
 try {
     $windowDays = PAIRS_CONFIG["window_days"];
@@ -231,6 +234,9 @@ try {
         $respondedAt = $resp ? $resp["updated_at"] : null;
 
         if ($action === "dismissed" && !$includeDismissed) {
+            continue;
+        }
+        if ($action === "accepted" && !$includeAccepted && $respondedAt !== null && strtotime($respondedAt) >= $acceptedHideCutoffTs) {
             continue;
         }
 

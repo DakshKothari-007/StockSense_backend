@@ -25,6 +25,7 @@ date_default_timezone_set('Asia/Kolkata');
 require_once __DIR__ . "/../config/db.php";
 require_once __DIR__ . "/../inventory/auth_helper.php";
 require_once __DIR__ . "/../settings/settings_helper.php";
+require_once __DIR__ . "/../insights/slow_moving_helper.php";
 
 $pdo->exec("SET time_zone = '+05:30'");
 $owner = authenticateShopOwner($pdo);
@@ -168,55 +169,27 @@ try {
     if (!$hasEnoughSalesHistory) {
         $slowMovingStatusMessage = "Not enough sales history (minimum {$slowMovingMinDaysHistory} days required to accurately evaluate slow-moving inventory).";
     } else {
-        // Query products with units > 0 and calculate their units sold in the last 30 days
-        $thirtyDaysAgo = date('Y-m-d H:i:s', strtotime('-30 days'));
-        $nowDatetime = date('Y-m-d H:i:s');
-
-        $slowStmt = $pdo->prepare("
-            SELECT 
-                p.id, p.name, p.sku, p.category, p.units, p.min_stock_threshold, p.price, p.cost_price, p.status,
-                COALESCE(SUM(si.quantity), 0) AS units_sold_30_days,
-                COALESCE(SUM(si.line_total), 0.00) AS revenue_30_days
-            FROM products p
-            LEFT JOIN sales_items si ON p.id = si.product_id
-            LEFT JOIN sales s ON si.sale_id = s.id AND s.shop_owner_id = ? AND s.sale_date >= ? AND s.sale_date <= ?
-            WHERE p.shop_owner_id = ? AND p.units > 0 AND {$activeProductCondition}
-            GROUP BY p.id
-            ORDER BY p.units DESC, units_sold_30_days ASC
-        ");
-        $slowStmt->execute([$ownerId, $thirtyDaysAgo, $nowDatetime, $ownerId]);
-
-        while ($r = $slowStmt->fetch(PDO::FETCH_ASSOC)) {
-            $units = (int)$r['units'];
-            $sold30 = (int)$r['units_sold_30_days'];
-            $costPrice = (float)$r['cost_price'];
+        $eval = evaluate_slow_moving_products($pdo, $ownerId, $shopSettings, false, false);
+        foreach ($eval["items"] as $r) {
+            $units = $r['units'];
+            $costPrice = (float)($r['cost_price'] ?? 0.0);
             $price = (float)$r['price'];
-
-            // Calculate stock cover at current pace
-            // stock_cover_days = null when sold is 0 (Rule 7)
-            $stockCoverDays = ($sold30 > 0) ? (int)round($units / ($sold30 / 30.0)) : null;
-
-            // Check slow-moving criteria: sold <= 10 or cover >= threshold
-            $isSlow = ($sold30 <= $slowMovingMaxSold30Days) || ($stockCoverDays !== null && $stockCoverDays >= $slowMovingMinStockCoverDays);
-
-            if ($isSlow) {
-                $cashTiedUp = round($units * ($costPrice > 0 ? $costPrice : $price), 2);
-                $slowMovingItems[] = [
-                    "id" => (int)$r['id'],
-                    "name" => $r['name'],
-                    "sku" => $r['sku'],
-                    "category" => !empty(trim($r['category'])) ? $r['category'] : "Uncategorised",
-                    "current_stock" => $units,
-                    "units" => $units,
-                    "sold_last_30_days" => $sold30,
-                    "revenue_last_30_days" => round((float)$r['revenue_30_days'], 2),
-                    "cash_tied_up_at_cost" => $cashTiedUp,
-                    "stock_cover_days" => $stockCoverDays,
-                    "price" => $price,
-                    "cost_price" => $costPrice,
-                    "status" => $r['status']
-                ];
-            }
+            $cashTiedUp = round($units * ($costPrice > 0 ? $costPrice : $price), 2);
+            $slowMovingItems[] = [
+                "id" => $r['product_id'],
+                "name" => $r['name'],
+                "sku" => $r['sku'],
+                "category" => !empty(trim((string)$r['category'])) ? $r['category'] : "Uncategorised",
+                "current_stock" => $units,
+                "units" => $units,
+                "sold_last_30_days" => $r['sold_30_days'],
+                "revenue_last_30_days" => $r['revenue_30_days'],
+                "cash_tied_up_at_cost" => $cashTiedUp,
+                "stock_cover_days" => $r['stock_cover_days'] !== null ? (int)round($r['stock_cover_days']) : null,
+                "price" => $price,
+                "cost_price" => $costPrice,
+                "status" => $r['status']
+            ];
         }
     }
 
