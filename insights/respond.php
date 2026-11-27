@@ -140,6 +140,8 @@ try {
         $finalP2 = 0;
     }
 
+    $pdo->beginTransaction();
+
     // Upsert into recommendation_responses (latest response wins)
     $upsertStmt = $pdo->prepare("
         INSERT INTO recommendation_responses
@@ -160,6 +162,73 @@ try {
         $notes
     ]);
 
+    $offerData = null;
+    if ($recType === "product_pair" && $action === "accepted") {
+        // Check if an active offer already exists for this pair in this shop
+        $existingOfferStmt = $pdo->prepare("
+            SELECT id, offer_price, combined_price, status, created_at
+            FROM bundle_offers
+            WHERE shop_owner_id = ? AND product_id_1 = ? AND product_id_2 = ? AND status = 'active'
+            LIMIT 1
+        ");
+        $existingOfferStmt->execute([$shopOwnerId, $finalP1, $finalP2]);
+        $existingOffer = $existingOfferStmt->fetch(PDO::FETCH_ASSOC);
+
+        if ($existingOffer) {
+            $offerData = [
+                "id" => (int)$existingOffer["id"],
+                "product_id_1" => $finalP1,
+                "product_id_2" => $finalP2,
+                "offer_price" => (float)$existingOffer["offer_price"],
+                "combined_price" => (float)$existingOffer["combined_price"],
+                "status" => $existingOffer["status"],
+                "created_at" => $existingOffer["created_at"]
+            ];
+        } else {
+            // Compute combined_price and offer_price strictly on the server (10% bundle discount)
+            $priceStmt = $pdo->prepare("
+                SELECT id, price
+                FROM products
+                WHERE shop_owner_id = ? AND id IN (?, ?)
+            ");
+            $priceStmt->execute([$shopOwnerId, $finalP1, $finalP2]);
+            $prices = [];
+            while ($row = $priceStmt->fetch(PDO::FETCH_ASSOC)) {
+                $prices[(int)$row["id"]] = (float)$row["price"];
+            }
+            $p1Price = $prices[$finalP1] ?? 0.0;
+            $p2Price = $prices[$finalP2] ?? 0.0;
+            $combinedPrice = round($p1Price + $p2Price, 2);
+            $offerPrice = round($combinedPrice * (1.0 - (10 / 100.0)), 2);
+
+            $insOfferStmt = $pdo->prepare("
+                INSERT INTO bundle_offers
+                    (shop_owner_id, product_id_1, product_id_2, offer_price, combined_price, status, created_at)
+                VALUES
+                    (?, ?, ?, ?, ?, 'active', NOW())
+            ");
+            $insOfferStmt->execute([
+                $shopOwnerId,
+                $finalP1,
+                $finalP2,
+                $offerPrice,
+                $combinedPrice
+            ]);
+            $newOfferId = (int)$pdo->lastInsertId();
+
+            $offerData = [
+                "id" => $newOfferId,
+                "product_id_1" => $finalP1,
+                "product_id_2" => $finalP2,
+                "offer_price" => $offerPrice,
+                "combined_price" => $combinedPrice,
+                "status" => "active"
+            ];
+        }
+    }
+
+    $pdo->commit();
+
     http_response_code(200);
     echo json_encode([
         "status" => true,
@@ -170,11 +239,15 @@ try {
             "product_id_2" => $finalP2,
             "action" => $action,
             "notes" => $notes,
-            "pair_id" => ($recType === "product_pair") ? "pair_{$finalP1}_{$finalP2}" : null
+            "pair_id" => ($recType === "product_pair") ? "pair_{$finalP1}_{$finalP2}" : null,
+            "offer" => $offerData
         ]
     ]);
 
 } catch (Exception $e) {
+    if ($pdo->inTransaction()) {
+        $pdo->rollBack();
+    }
     error_log("Insights respond error: " . $e->getMessage());
     http_response_code(500);
     echo json_encode([

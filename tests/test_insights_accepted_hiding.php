@@ -217,6 +217,10 @@ try {
         "(a) product_pair accepted today -> hidden"
     );
 
+    // End the active bundle offer created by accepting product_pair so we test the 14-day accepted rule
+    $endPairOfferStmt = $pdo->prepare("UPDATE bundle_offers SET status = 'ended', ended_at = NOW() WHERE shop_owner_id = ?");
+    $endPairOfferStmt->execute([$shopAId]);
+
     // Case (d): include_accepted=1 -> shown
     $slowWithAcc = callEndpoint('GET', 'insights/slow_moving.php?include_accepted=1', $tokenA);
     $pairsWithAcc = callEndpoint('GET', 'insights/product_pairs.php?include_accepted=1', $tokenA);
@@ -275,6 +279,7 @@ try {
 } finally {
     if (!empty($shopIds)) {
         $in = implode(',', array_map('intval', $shopIds));
+        $pdo->exec("DELETE FROM bundle_offers WHERE shop_owner_id IN ({$in})");
         $pdo->exec("DELETE FROM recommendation_responses WHERE shop_owner_id IN ({$in})");
         $pdo->exec("DELETE si FROM sales_items si INNER JOIN sales s ON si.sale_id = s.id WHERE s.shop_owner_id IN ({$in})");
         $pdo->exec("DELETE FROM sales WHERE shop_owner_id IN ({$in})");

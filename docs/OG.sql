@@ -5549,6 +5549,30 @@ ALTER TABLE `tokens`
 --
 ALTER TABLE `user_settings`
   ADD CONSTRAINT `fk_user_settings_owner` FOREIGN KEY (`user_id`) REFERENCES `owner_account` (`id`) ON DELETE CASCADE;
+
+--
+-- Table structure for table `bundle_offers`
+--
+CREATE TABLE `bundle_offers` (
+  `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `shop_owner_id` int(10) UNSIGNED NOT NULL,
+  `product_id_1` int(10) UNSIGNED NOT NULL,
+  `product_id_2` int(10) UNSIGNED NOT NULL,
+  `offer_price` decimal(10,2) NOT NULL,
+  `combined_price` decimal(10,2) NOT NULL,
+  `status` enum('active','ended') NOT NULL DEFAULT 'active',
+  `active_lock` tinyint(1) GENERATED ALWAYS AS (IF(`status` = 'active', 1, NULL)) VIRTUAL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `ended_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uniq_active_bundle_offer` (`shop_owner_id`,`product_id_1`,`product_id_2`,`active_lock`),
+  KEY `idx_bundle_offers_shop_status` (`shop_owner_id`,`status`),
+  KEY `idx_bundle_offers_p1` (`product_id_1`),
+  KEY `idx_bundle_offers_p2` (`product_id_2`),
+  CONSTRAINT `fk_bundle_offers_owner` FOREIGN KEY (`shop_owner_id`) REFERENCES `owner_account` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_bundle_offers_p1` FOREIGN KEY (`product_id_1`) REFERENCES `products` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_bundle_offers_p2` FOREIGN KEY (`product_id_2`) REFERENCES `products` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

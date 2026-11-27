@@ -188,6 +188,19 @@ try {
         ];
     }
 
+    // 4b. Fetch Active Bundle Offers for this shop
+    $activeOffersStmt = $pdo->prepare("
+        SELECT product_id_1, product_id_2
+        FROM bundle_offers
+        WHERE shop_owner_id = ? AND status = 'active'
+    ");
+    $activeOffersStmt->execute([$shopOwnerId]);
+    $activeOffersMap = [];
+    while ($ao = $activeOffersStmt->fetch(PDO::FETCH_ASSOC)) {
+        $aoKey = (int)$ao["product_id_1"] . "_" . (int)$ao["product_id_2"];
+        $activeOffersMap[$aoKey] = true;
+    }
+
     // 5. Build Result Items
     $items = [];
     foreach ($rawPairs as $rp) {
@@ -233,6 +246,9 @@ try {
         $action = $resp ? $resp["action"] : null;
         $respondedAt = $resp ? $resp["updated_at"] : null;
 
+        if (isset($activeOffersMap[$respKey])) {
+            continue;
+        }
         if ($action === "dismissed" && !$includeDismissed) {
             continue;
         }

@@ -2022,3 +2022,44 @@ Dukaan Mitra is the app's built-in intelligent AI assistant for shop owners. It 
 
 
 
+
+
+---
+
+## Bundle Offers (Module 11)
+
+### `GET offers/list.php`
+Lists the logged-in shop's bundle offers (active first, then ended).
+- **Headers**: `Authorization: Bearer <token>`
+- **Query Params**: `status` (optional: `active` or `ended`)
+- **Response 200**:
+  ```json
+  {
+    "status": true,
+    "message": "Bundle offers retrieved successfully.",
+    "data": {
+      "active_count": 1,
+      "ended_count": 0,
+      "offers": [
+        {
+          "id": 12,
+          "product_1": { "product_id": 10, "name": "Tea Pack", "sku": "TEA1", "category": "Beverages", "icon_key": "tea" },
+          "product_2": { "product_id": 14, "name": "Sugar Pack", "sku": "SUG1", "category": "Staples", "icon_key": "sugar" },
+          "offer_price": 81.0,
+          "combined_price": 90.0,
+          "savings": 9.0,
+          "status": "active",
+          "created_at": "2026-11-27 12:10:00",
+          "ended_at": null
+        }
+      ]
+    }
+  }
+  ```
+
+### `POST offers/end.php`
+Ends an active bundle offer owned by the authenticated shop (`status = 'ended'`, `ended_at = NOW()`).
+- **Headers**: `Authorization: Bearer <token>`
+- **Body**: `{ "offer_id": 12 }`
+- **Response 200**: `{ "status": true, "message": "Bundle offer ended.", "data": { "id": 12, "status": "ended", "ended_at": "..." } }`
+- **Response 404**: `{ "status": false, "message": "Offer not found.", "data": {} }` (returned if the offer does not exist or belongs to another shop)
