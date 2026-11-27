@@ -2063,3 +2063,40 @@ Ends an active bundle offer owned by the authenticated shop (`status = 'ended'`,
 - **Body**: `{ "offer_id": 12 }`
 - **Response 200**: `{ "status": true, "message": "Bundle offer ended.", "data": { "id": 12, "status": "ended", "ended_at": "..." } }`
 - **Response 404**: `{ "status": false, "message": "Offer not found.", "data": {} }` (returned if the offer does not exist or belongs to another shop)
+
+
+---
+
+### `POST sales/preview_offers.php`
+Previews active bundle offers applicable to a cart without creating a sale or modifying stock.
+- **Headers**: `Authorization: Bearer <token>`
+- **Body**: `{ "items": [ { "product_id": 10, "quantity": 2 } ], "removed_offer_ids": [ 5 ] }`
+- **Response 200**:
+  ```json
+  {
+    "status": true,
+    "message": "Bundle offers previewed successfully.",
+    "data": {
+      "subtotal": 200.0,
+      "bundle_discount": 20.0,
+      "total_amount": 180.0,
+      "applied_offers": [
+        {
+          "offer_id": 12,
+          "product_id_1": 10,
+          "product_id_2": 14,
+          "product_1_name": "Tea Pack",
+          "product_2_name": "Sugar Pack",
+          "applications": 2,
+          "discount_per_bundle": 10.0,
+          "discount_amount": 20.0
+        }
+      ]
+    }
+  }
+  ```
+
+### `POST sales/create.php` (Bundle Offers Support)
+- Accepts optional `"removed_offer_ids": [ ... ]` (array of offer IDs opted out by the cashier for this bill).
+- Server applies remaining active bundle offers for the shop and stores net paid `total_amount`, `bundle_discount`, and `applied_offers_json` on `sales`.
+- Response `data` includes `"subtotal"`, `"bundle_discount"`, `"total_amount"`, and `"applied_offers"`.

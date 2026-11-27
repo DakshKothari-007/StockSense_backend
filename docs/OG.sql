@@ -322,6 +322,8 @@ CREATE TABLE `sales` (
   `bill_no` varchar(50) NOT NULL,
   `sale_date` datetime NOT NULL DEFAULT current_timestamp(),
   `total_amount` decimal(10,2) NOT NULL DEFAULT 0.00,
+  `bundle_discount` decimal(10,2) NOT NULL DEFAULT 0.00,
+  `applied_offers_json` text DEFAULT NULL,
   `notes` varchar(255) DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

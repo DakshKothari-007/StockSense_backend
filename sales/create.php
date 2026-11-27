@@ -25,6 +25,7 @@ date_default_timezone_set('Asia/Kolkata');
 
 require_once __DIR__ . "/../config/db.php";
 require_once __DIR__ . "/../inventory/auth_helper.php";
+require_once __DIR__ . "/bundle_discount_helper.php";
 
 $pdo->exec("SET time_zone = '+05:30'");
 $owner = authenticateShopOwner($pdo);
@@ -167,6 +168,18 @@ foreach ($rawItems as $idx => $item) {
 }
 
 try {
+    $removedOfferIds = validate_removed_offer_ids($pdo, $shopOwnerId, $data["removed_offer_ids"] ?? null);
+} catch (InvalidArgumentException $e) {
+    http_response_code(400);
+    echo json_encode([
+        "status" => false,
+        "message" => $e->getMessage(),
+        "data" => (object)[]
+    ]);
+    exit;
+}
+
+try {
     $pdo->beginTransaction();
 
     // 5. Check duplicate bill_no for this shop
@@ -185,6 +198,8 @@ try {
 
     // 6. Validate products and perform atomic stock reduction
     $processedItems = [];
+    $qtyByProductId = [];
+    $priceByProductId = [];
     $totalAmount = 0.00;
 
     foreach ($mergedItems as $item) {
@@ -245,6 +260,9 @@ try {
             exit;
         }
 
+        $qtyByProductId[$prodId] = ($qtyByProductId[$prodId] ?? 0) + $qty;
+        $priceByProductId[$prodId] = $unitPrice;
+
         $processedItems[] = [
             "product_id" => $prodId,
             "product_name" => $product["name"],
@@ -255,14 +273,25 @@ try {
         ];
     }
 
-    $totalAmount = round($totalAmount, 2);
+    $discountCalc = calculate_bundle_discounts_for_items(
+        $pdo,
+        $shopOwnerId,
+        $qtyByProductId,
+        $priceByProductId,
+        $removedOfferIds
+    );
+    $subtotal = $discountCalc["subtotal"];
+    $bundleDiscount = $discountCalc["bundle_discount"];
+    $totalAmount = $discountCalc["total_amount"];
+    $appliedOffers = $discountCalc["applied_offers"];
+    $appliedOffersJson = !empty($appliedOffers) ? json_encode($appliedOffers) : null;
 
     // 7. Insert into sales
     $insertSale = $pdo->prepare("
-        INSERT INTO sales (shop_owner_id, bill_no, sale_date, total_amount, notes)
-        VALUES (?, ?, ?, ?, ?)
+        INSERT INTO sales (shop_owner_id, bill_no, sale_date, total_amount, bundle_discount, applied_offers_json, notes)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
     ");
-    $insertSale->execute([$shopOwnerId, $billNo, $saleDate, $totalAmount, $notes]);
+    $insertSale->execute([$shopOwnerId, $billNo, $saleDate, $totalAmount, $bundleDiscount, $appliedOffersJson, $notes]);
     $saleId = (int)$pdo->lastInsertId();
 
     // 8. Insert into sales_items
@@ -301,7 +330,10 @@ try {
             "sale_date" => $saleDate,
             "total_items" => count($processedItems),
             "total_quantity" => array_sum(array_column($processedItems, "quantity")),
+            "subtotal" => $subtotal,
+            "bundle_discount" => $bundleDiscount,
             "total_amount" => $totalAmount,
+            "applied_offers" => $appliedOffers,
             "notes" => $notes,
             "items" => $processedItems
         ]

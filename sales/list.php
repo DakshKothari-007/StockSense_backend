@@ -104,7 +104,7 @@ try {
     $listParams[] = $offset;
 
     $listStmt = $pdo->prepare("
-        SELECT id, bill_no, sale_date, total_amount, notes, created_at
+        SELECT id, bill_no, sale_date, total_amount, bundle_discount, notes, created_at
         FROM sales
         WHERE {$whereClause}
         ORDER BY sale_date DESC, id DESC
@@ -168,6 +168,7 @@ try {
             "bill_no" => $b["bill_no"],
             "sale_date" => $b["sale_date"],
             "total_amount" => (float)$b["total_amount"],
+            "bundle_discount" => (float)($b["bundle_discount"] ?? 0.0),
             "notes" => $b["notes"],
             "item_count" => count($items),
             "total_quantity" => (int)$totalQty,
